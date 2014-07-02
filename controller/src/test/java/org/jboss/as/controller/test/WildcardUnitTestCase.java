@@ -25,6 +25,7 @@ package org.jboss.as.controller.test;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP_ADDR;
 
+import org.jboss.as.controller.ManagementModel;
 import org.jboss.as.controller.ModelController;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
@@ -36,7 +37,6 @@ import org.jboss.as.controller.descriptions.NonResolvingResourceDescriptionResol
 import org.jboss.as.controller.operations.common.GenericSubsystemDescribeHandler;
 import org.jboss.as.controller.operations.global.GlobalOperationHandlers;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
-import org.jboss.as.controller.registry.Resource;
 import org.jboss.dmr.ModelNode;
 import org.junit.Assert;
 import org.junit.Test;
@@ -80,7 +80,8 @@ public class WildcardUnitTestCase extends AbstractControllerTestBase {
     }
 
     @Override
-    protected void initModel(Resource rootResource, ManagementResourceRegistration root) {
+    protected void initModel(ManagementModel managementModel) {
+        ManagementResourceRegistration root = managementModel.getRootResourceRegistration();
             GlobalOperationHandlers.registerGlobalOperations(root, processType);
             root.registerOperationHandler(GenericSubsystemDescribeHandler.DEFINITION, GenericSubsystemDescribeHandler.INSTANCE);
 

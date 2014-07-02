@@ -46,6 +46,7 @@ import javax.management.ObjectName;
 import javax.security.auth.Subject;
 
 import org.jboss.as.controller.CompositeOperationHandler;
+import org.jboss.as.controller.ManagementModel;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.OperationStepHandler;
@@ -530,7 +531,8 @@ public abstract class JmxRbacTestCase extends AbstractControllerTestBase {
         return (PluggableMBeanServer)controller.getValue();
     }
 
-    protected void initModel(Resource rootResource, ManagementResourceRegistration registration) {
+    protected void initModel(ManagementModel managementModel) {
+        ManagementResourceRegistration registration = managementModel.getRootResourceRegistration();
         PathManagerService pathManagerService = new PathManagerService() {
         };
         GlobalOperationHandlers.registerGlobalOperations(registration, processType);
@@ -577,7 +579,7 @@ public abstract class JmxRbacTestCase extends AbstractControllerTestBase {
             }
         }));
 
-
+        Resource rootResource = managementModel.getRootResource();
         pathManagerService.addPathManagerResources(rootResource);
 
 
