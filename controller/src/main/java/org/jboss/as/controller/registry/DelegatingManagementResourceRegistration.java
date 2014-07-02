@@ -42,22 +42,52 @@ import org.jboss.as.controller.descriptions.OverrideDescriptionProvider;
 /**
  * {@link ManagementResourceRegistration} implementation that simply delegates to another
  * {@link ManagementResourceRegistration}. Intended as a convenience class to allow overriding
- * of standard behaviors.
+ * of standard behaviors and also as a means to support a copy-on-write/publish-on-commit
+ * semantic for the management resource tree.
  *
  * @author Brian Stansberry (c) 2013 Red Hat Inc.
  */
 @SuppressWarnings("deprecation")
 public class DelegatingManagementResourceRegistration implements ManagementResourceRegistration {
 
-    private final ManagementResourceRegistration delegate;
+    /**
+     * Provides a delegate for use by a {@code DelegatingManagementResourceRegistration}.
+     * Does not need to provide the same delegate for every call, allowing a copy-on-write
+     * semantic for the underlying @{code ManagementResourceRegistration}.
+     */
+    public interface RegistrationDelegateProvider {
+        /**
+         * Gets the delegate.
+         * @return the delegate. Cannot return {@code null}
+         */
+        ManagementResourceRegistration getDelegateRegistration();
+    }
+
+    private final RegistrationDelegateProvider delegateProvider;
 
     /**
-     * Creates a new DelegatingManagementResourceRegistration.
+     * Creates a new DelegatingManagementResourceRegistration with a fixed delegate.
      *
      * @param delegate the delegate. Cannot be {@code null}
      */
-    public DelegatingManagementResourceRegistration(ManagementResourceRegistration delegate) {
-        this.delegate = delegate;
+    public DelegatingManagementResourceRegistration(final ManagementResourceRegistration delegate) {
+        this(new RegistrationDelegateProvider() {
+            @Override
+            public ManagementResourceRegistration getDelegateRegistration() {
+                return delegate;
+            }
+        });
+    }
+
+    /**
+     * Creates a new DelegatingManagementResourceRegistration with a possibly changing delegate.
+     *
+     * @param delegateProvider provider of the delegate. Cannot be {@code null}
+     */
+    public DelegatingManagementResourceRegistration(final RegistrationDelegateProvider delegateProvider) {
+        assert delegateProvider != null;
+        assert delegateProvider.getDelegateRegistration() != null;
+        this.delegateProvider = delegateProvider;
     }
 
     @Override
@@ -301,6 +331,6 @@ public class DelegatingManagementResourceRegistration implements ManagementResou
     }
 
     private ManagementResourceRegistration getDelegate() {
-        return delegate;
+        return delegateProvider.getDelegateRegistration();
     }
 }

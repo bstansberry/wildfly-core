@@ -27,6 +27,7 @@ import java.util.concurrent.CountDownLatch;
 import org.jboss.as.controller.AbstractControllerService;
 import org.jboss.as.controller.ControlledProcessState;
 import org.jboss.as.controller.ExpressionResolver;
+import org.jboss.as.controller.ManagementModel;
 import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.ProcessType;
 import org.jboss.as.controller.ResourceBuilder;
@@ -63,14 +64,14 @@ public class PlatformMBeanTestModelControllerService extends AbstractControllerS
     }
 
     @Override
-    protected void initModel(Resource rootResource, ManagementResourceRegistration rootRegistration, Resource modelControllerResource) {
-
+    protected void initModel(ManagementModel managementModel, Resource modelControllerResource) {
+        ManagementResourceRegistration rootRegistration = managementModel.getRootResourceRegistration();
         GlobalOperationHandlers.registerGlobalOperations(rootRegistration, processType);
         rootRegistration.registerOperationHandler(ValidateAddressOperationHandler.DEFINITION, ValidateAddressOperationHandler.INSTANCE);
 
         // Platform mbeans
         PlatformMBeanResourceRegistrar.registerPlatformMBeanResources(rootRegistration);
-        rootResource.registerChild(PlatformMBeanConstants.ROOT_PATH, new RootPlatformMBeanResource());
+        managementModel.getRootResource().registerChild(PlatformMBeanConstants.ROOT_PATH, new RootPlatformMBeanResource());
     }
 
     @Override

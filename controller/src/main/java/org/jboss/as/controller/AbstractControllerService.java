@@ -39,6 +39,7 @@ import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.controller.notification.NotificationSupport;
 import org.jboss.as.controller.persistence.ConfigurationPersistenceException;
 import org.jboss.as.controller.persistence.ConfigurationPersister;
+import org.jboss.as.controller.registry.CloneableManagementResourceRegistration;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.dmr.ModelNode;
@@ -238,7 +239,7 @@ public abstract class AbstractControllerService implements Service<ModelControll
         final NotificationSupport notificationSupport = NotificationSupport.Factory.create(executorService);
         WritableAuthorizerConfiguration authorizerConfig = authorizer.getWritableAuthorizerConfiguration();
         authorizerConfig.reset();
-        ManagementResourceRegistration rootResourceRegistration = rootDescriptionProvider != null
+        CloneableManagementResourceRegistration rootResourceRegistration = rootDescriptionProvider != null
                 ? ManagementResourceRegistration.Factory.create(rootDescriptionProvider, authorizerConfig)
                 : ManagementResourceRegistration.Factory.create(rootResourceDefinition, authorizerConfig);
         final ModelControllerImpl controller = new ModelControllerImpl(container, target,
@@ -248,7 +249,7 @@ public abstract class AbstractControllerService implements Service<ModelControll
                 processState, executorService, expressionResolver, authorizer, auditLogger, notificationSupport);
 
         // Initialize the model
-        initModel(controller.getRootResource(), controller.getRootRegistration(), controller.getModelControllerResource());
+        initModel(controller.getManagementModel(), controller.getModelControllerResource());
         this.controller = controller;
 
         final long bootStackSize = getBootStackSize();
@@ -392,17 +393,18 @@ public abstract class AbstractControllerService implements Service<ModelControll
     }
 
     protected void runPerformControllerInitialization(BootContext context) {
-        performControllerInitialization(context.getServiceTarget(), controller.getRootResource(), controller.getRootRegistration());
+        performControllerInitialization(context.getServiceTarget(), controller.getManagementModel());
     }
 
-    protected void performControllerInitialization(ServiceTarget target, Resource rootResource, ManagementResourceRegistration rootRegistration) {
+    protected void performControllerInitialization(ServiceTarget target, ManagementModel managementModel) {
         //
     }
 
-    protected abstract void initModel(Resource rootResource, ManagementResourceRegistration rootRegistration, Resource modelControllerResource);
+    protected abstract void initModel(ManagementModel managementModel, Resource modelControllerResource);
 
     protected ManagedAuditLogger getAuditLogger() {
         return auditLogger;
     }
+
 }
 
