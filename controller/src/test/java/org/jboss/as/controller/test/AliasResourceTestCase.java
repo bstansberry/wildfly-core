@@ -62,6 +62,7 @@ import java.util.ResourceBundle;
 
 import org.jboss.as.controller.AbstractAddStepHandler;
 import org.jboss.as.controller.AbstractRemoveStepHandler;
+import org.jboss.as.controller.CapabilityRegistry;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationContext.Stage;
 import org.jboss.as.controller.OperationFailedException;
@@ -638,13 +639,13 @@ public class AliasResourceTestCase extends AbstractControllerTestBase {
 
     @Override
     @SuppressWarnings("deprecation")
-    protected void initModel(Resource rootResource, ManagementResourceRegistration registration) {
-        GlobalOperationHandlers.registerGlobalOperations(registration, processType);
+    protected void initModel(ManagementResourceRegistration rootResourceRegistration, Resource rootResource, CapabilityRegistry capabilityRegistry) {
+        GlobalOperationHandlers.registerGlobalOperations(rootResourceRegistration, processType);
 
-        registration.registerOperationHandler(GenericSubsystemDescribeHandler.DEFINITION, GenericSubsystemDescribeHandler.INSTANCE);
+        rootResourceRegistration.registerOperationHandler(GenericSubsystemDescribeHandler.DEFINITION, GenericSubsystemDescribeHandler.INSTANCE);
 
-        ManagementResourceRegistration coreResourceRegistration = registration.registerSubModel(new CoreResourceDefinition());
-        registration.registerAlias(getAliasedModelElement(),
+        ManagementResourceRegistration coreResourceRegistration = rootResourceRegistration.registerSubModel(new CoreResourceDefinition());
+        rootResourceRegistration.registerAlias(getAliasedModelElement(),
                 new TestAliasEntry(coreResourceRegistration));
 
         ManagementResourceRegistration childReg = coreResourceRegistration.registerSubModel(new ChildResourceDefinition());

@@ -24,6 +24,7 @@ package org.jboss.as.controller.test;
 import org.jboss.as.controller.AbstractAddStepHandler;
 import org.jboss.as.controller.AbstractRemoveStepHandler;
 import org.jboss.as.controller.AttributeDefinition;
+import org.jboss.as.controller.CapabilityRegistry;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.PathElement;
@@ -66,9 +67,9 @@ public class DefaultAttributeTestCase extends AbstractControllerTestBase {
 
 
     @Override
-    protected void initModel(Resource rootResource, ManagementResourceRegistration registration) {
-        registration.registerOperationHandler(ReadAttributeHandler.DEFINITION, ReadAttributeHandler.INSTANCE, true);
-        registration.registerSubModel(new TestResource());
+    protected void initModel(ManagementResourceRegistration rootResourceRegistration, Resource rootResource, CapabilityRegistry capabilityRegistry) {
+        rootResourceRegistration.registerOperationHandler(ReadAttributeHandler.DEFINITION, ReadAttributeHandler.INSTANCE, true);
+        rootResourceRegistration.registerSubModel(new TestResource());
     }
 
 

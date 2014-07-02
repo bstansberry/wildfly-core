@@ -32,6 +32,7 @@ import org.jboss.as.controller.AbstractControllerService;
 import org.jboss.as.controller.CompositeOperationHandler;
 import org.jboss.as.controller.ControlledProcessState;
 import org.jboss.as.controller.ExpressionResolver;
+import org.jboss.as.controller.ManagementModel;
 import org.jboss.as.controller.ModelController.OperationTransactionControl;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
@@ -198,10 +199,10 @@ public abstract class ModelTestModelControllerService extends AbstractController
     }
 
     @Override
-    protected void initModel(Resource rootResource, ManagementResourceRegistration rootRegistration, Resource modelControllerResource) {
-        this.rootRegistration = rootRegistration;
-        initCoreModel(rootResource, rootRegistration, modelControllerResource);
-        initExtraModel(rootResource, rootRegistration);
+    protected void initModel(ManagementModel managementModel, Resource modelControllerResource) {
+        this.rootRegistration = managementModel.getRootResourceRegistration();
+        initCoreModel(managementModel.getRootResource(), rootRegistration, modelControllerResource);
+        initExtraModel(managementModel.getRootResource(), rootRegistration);
     }
 
     protected void initCoreModel(Resource rootResource, ManagementResourceRegistration rootRegistration, Resource modelControllerResource) {

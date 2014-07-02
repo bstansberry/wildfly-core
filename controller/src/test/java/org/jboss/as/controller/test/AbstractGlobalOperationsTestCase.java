@@ -63,6 +63,7 @@ import java.util.Random;
 import java.util.Set;
 
 import org.jboss.as.controller.AttributeDefinition;
+import org.jboss.as.controller.CapabilityRegistry;
 import org.jboss.as.controller.ModelOnlyWriteAttributeHandler;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
@@ -101,7 +102,7 @@ public abstract class AbstractGlobalOperationsTestCase extends AbstractControlle
     }
 
     @Override
-    protected void initModel(Resource rootResource, ManagementResourceRegistration rootRegistration) {
+    protected void initModel(ManagementResourceRegistration rootRegistration, Resource rootResource, CapabilityRegistry capabilityRegistry) {
         GlobalOperationHandlers.registerGlobalOperations(rootRegistration, processType);
         rootRegistration.registerOperationHandler(TestUtils.SETUP_OPERATION_DEF, new OperationStepHandler() {
                     @Override

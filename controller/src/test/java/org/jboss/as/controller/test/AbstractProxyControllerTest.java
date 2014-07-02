@@ -72,6 +72,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.ControlledProcessState;
+import org.jboss.as.controller.ManagementModel;
 import org.jboss.as.controller.ModelController;
 import org.jboss.as.controller.ModelOnlyWriteAttributeHandler;
 import org.jboss.as.controller.OperationContext;
@@ -577,7 +578,8 @@ public abstract class AbstractProxyControllerTest {
                     ResourceBuilder.Factory.create(PathElement.pathElement("root"), new NonResolvingResourceDescriptionResolver()).build());
         }
 
-        protected void initModel(Resource rootResource, ManagementResourceRegistration rootRegistration, Resource modelControllerResource) {
+        protected void initModel(ManagementModel managementModel, Resource modelControllerResource) {
+            ManagementResourceRegistration rootRegistration = managementModel.getRootResourceRegistration();
             GlobalOperationHandlers.registerGlobalOperations(rootRegistration, processType);
             rootRegistration.registerOperationHandler(ValidateOperationHandler.DEFINITION, ValidateOperationHandler.INSTANCE);
 
@@ -608,7 +610,8 @@ public abstract class AbstractProxyControllerTest {
                     ResourceBuilder.Factory.create(PathElement.pathElement("root"), new NonResolvingResourceDescriptionResolver()).build());
         }
 
-        protected void initModel(Resource rootResource, ManagementResourceRegistration rootRegistration, Resource modelControllerResource) {
+        protected void initModel(ManagementModel managementModel, Resource modelControllerResource) {
+            ManagementResourceRegistration rootRegistration = managementModel.getRootResourceRegistration();
             GlobalOperationHandlers.registerGlobalOperations(rootRegistration, processType);
             rootRegistration.registerOperationHandler(ValidateOperationHandler.DEFINITION, ValidateOperationHandler.INSTANCE);
             rootRegistration.registerOperationHandler(createOperationDefinition("Test"),

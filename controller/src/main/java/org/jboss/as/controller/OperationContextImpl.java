@@ -70,6 +70,7 @@ import org.jboss.as.controller.access.ResourceAuthorization;
 import org.jboss.as.controller.access.TargetAttribute;
 import org.jboss.as.controller.access.TargetResource;
 import org.jboss.as.controller.audit.AuditLogger;
+import org.jboss.as.controller.capability.RuntimeCapability;
 import org.jboss.as.controller.client.MessageSeverity;
 import org.jboss.as.controller.client.OperationAttachments;
 import org.jboss.as.controller.client.OperationMessageHandler;
@@ -150,9 +151,9 @@ final class OperationContextImpl extends AbstractOperationContext {
     /** Tracks whether any steps have gotten write access to the management resource registration*/
     private volatile boolean affectsResourceRegistration;
 
-    private volatile Resource model;
+    private volatile ModelControllerImpl.ManagementModelImpl model;
 
-    private volatile Resource originalModel;
+    private volatile ModelControllerImpl.ManagementModelImpl originalModel;
 
     /** Tracks the relationship between domain resources and hosts and server groups */
     private volatile HostServerGroupTracker hostServerGroupTracker;
@@ -183,10 +184,11 @@ final class OperationContextImpl extends AbstractOperationContext {
 
     private volatile ExecutionStatus executionStatus = ExecutionStatus.EXECUTING;
 
-    OperationContextImpl(final Integer operationId, final String operationName, final ModelNode operationAddress, final ModelControllerImpl modelController, final ProcessType processType,
+    OperationContextImpl(final Integer operationId, final String operationName, final ModelNode operationAddress,
+                         final ModelControllerImpl modelController, final ProcessType processType,
                          final RunningMode runningMode, final EnumSet<ContextFlag> contextFlags,
                          final OperationMessageHandler messageHandler, final OperationAttachments attachments,
-                         final Resource model, final ModelController.OperationTransactionControl transactionControl,
+                         final ModelControllerImpl.ManagementModelImpl model, final ModelController.OperationTransactionControl transactionControl,
                          final ControlledProcessState processState, final AuditLogger auditLogger, final boolean booting,
                          final HostServerGroupTracker hostServerGroupTracker,
                          final ModelNode blockingTimeoutConfig,
@@ -578,7 +580,7 @@ final class OperationContextImpl extends AbstractOperationContext {
             }
             throw ControllerLogger.ROOT_LOGGER.unauthorized(activeStep.operationId.name, activeStep.address, authResult.getExplanation());
         }
-        Resource model = this.model;
+        Resource model = this.model.getRootResource();
         final Iterator<PathElement> iterator = address.iterator();
         while(iterator.hasNext()) {
             final PathElement element = iterator.next();
@@ -639,15 +641,9 @@ final class OperationContextImpl extends AbstractOperationContext {
         }
         checkHostServerGroupTracker(address);
         authorize(false, runtimeOnly ? READ_WRITE_RUNTIME : READ_WRITE_CONFIG);
-        if ((!runtimeOnly && !isModelAffected()) || (runtimeOnly && !affectsRuntime)) {
-            takeWriteLock();
-            model = model.clone();
-            if (runtimeOnly) {
-                affectsRuntime = true;
-            }
-        }
+        ensureLocalRootResource(runtimeOnly);
         affectsModel.put(address, NULL);
-        Resource resource = this.model;
+        Resource resource = this.model.getRootResource();
         for (PathElement element : address) {
             if (element.isMultiTarget()) {
                 throw ControllerLogger.ROOT_LOGGER.cannotWriteTo("*");
@@ -658,7 +654,7 @@ final class OperationContextImpl extends AbstractOperationContext {
     }
 
     private boolean isResourceRuntimeOnly(PathAddress fullAddress) {
-        Resource resource = this.model;
+        Resource resource = this.model.getRootResource();
         for (Iterator<PathElement> it = fullAddress.iterator(); it.hasNext() && resource != null;) {
             PathElement element = it.next();
             if (element.isMultiTarget()) {
@@ -679,7 +675,7 @@ final class OperationContextImpl extends AbstractOperationContext {
     @Override
     public Resource getOriginalRootResource() {
         // TODO restrict
-        return originalModel.clone();
+        return originalModel.getRootResource().clone();
     }
 
     @Override
@@ -715,15 +711,9 @@ final class OperationContextImpl extends AbstractOperationContext {
         }
         checkHostServerGroupTracker(absoluteAddress);
         authorizeAdd(runtimeOnly);
-        if ((!runtimeOnly && !isModelAffected()) || (runtimeOnly && !affectsRuntime)) {
-            takeWriteLock();
-            model = model.clone();
-            if (runtimeOnly) {
-                affectsRuntime = true;
-            }
-        }
+        ensureLocalRootResource(runtimeOnly);
         affectsModel.put(absoluteAddress, NULL);
-        Resource model = this.model;
+        Resource model = this.model.getRootResource();
         final Iterator<PathElement> i = absoluteAddress.iterator();
         while (i.hasNext()) {
             final PathElement element = i.next();
@@ -782,15 +772,9 @@ final class OperationContextImpl extends AbstractOperationContext {
         }
         checkHostServerGroupTracker(address);
         authorize(false, runtimeOnly ? READ_WRITE_RUNTIME : READ_WRITE_CONFIG);
-        if ((!runtimeOnly && !isModelAffected()) || (runtimeOnly && !affectsRuntime)) {
-            takeWriteLock();
-            model = model.clone();
-            if (runtimeOnly) {
-                affectsRuntime = true;
-            }
-        }
+        ensureLocalRootResource(runtimeOnly);
         affectsModel.put(address, NULL);
-        Resource model = this.model;
+        Resource model = this.model.getRootResource();
         final Iterator<PathElement> i = address.iterator();
         while (i.hasNext()) {
             final PathElement element = i.next();
@@ -1051,7 +1035,7 @@ final class OperationContextImpl extends AbstractOperationContext {
 
     @Override
     Resource getModel() {
-        return model;
+        return model.getRootResource();
     }
 
     @Override
@@ -1125,6 +1109,42 @@ final class OperationContextImpl extends AbstractOperationContext {
 
             return AuthorizationResult.PERMITTED;
         }
+    }
+
+    @Override
+    public void registerCapability(RuntimeCapability capability) {
+        //TODO implement registerCapability
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void registerAdditionalCapabilityRequirement(String required, RuntimeCapability dependent) {
+        //TODO implement registerAdditionalCapabilityRequirement
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void removeCapabilityRequirement(String required, RuntimeCapability dependent) {
+        //TODO implement removeCapabilityRequirement
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void removeCapability(RuntimeCapability capability) {
+        //TODO implement removeCapability
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean hasCapability(String capabilityName) {
+        //TODO implement hasCapability
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public <T> T getCapabilityRuntimeAPI(String capabilityName, Class<T> apiType) {
+        //TODO implement getCapabilityRuntimeAPI
+        throw new UnsupportedOperationException();
     }
 
     private void rejectUserDomainServerUpdates() {
@@ -1269,13 +1289,13 @@ final class OperationContextImpl extends AbstractOperationContext {
         if (processType.isManagedDomain()) {
             HostServerGroupTracker.HostServerGroupEffect hostServerGroupEffect;
             if (processType.isServer()) {
-                ModelNode rootModel = model.getModel();
+                ModelNode rootModel = model.getRootResource().getModel();
                 String serverGroup = rootModel.get(SERVER_GROUP).asString();
                 String host = rootModel.get(HOST).asString();
                 hostServerGroupEffect = HostServerGroupTracker.HostServerGroupEffect.forServer(opId.address, serverGroup, host);
             } else {
                 hostServerGroupEffect =
-                    hostServerGroupTracker.getHostServerGroupEffects(opId.address, operation, model);
+                    hostServerGroupTracker.getHostServerGroupEffects(opId.address, operation, model.getRootResource());
             }
             targetResource = TargetResource.forDomain(opId.address, mrr, resource, hostServerGroupEffect, hostServerGroupEffect);
         } else {
@@ -1296,7 +1316,7 @@ final class OperationContextImpl extends AbstractOperationContext {
     }
 
     private Resource getAuthorizationResource(PathAddress address) {
-        Resource model = this.model;
+        Resource model = this.model.getRootResource();
         for (PathElement element : address) {
             // Allow wildcard navigation for the last element
             if (element.isWildcard()) {
@@ -1345,6 +1365,16 @@ final class OperationContextImpl extends AbstractOperationContext {
             }
         }
         return blockingTimeout;
+    }
+
+    private void ensureLocalRootResource(boolean runtimeOnly) {
+        if ((!runtimeOnly && !isModelAffected()) || (runtimeOnly && !affectsRuntime)) {
+            takeWriteLock();
+            model = model.cloneRootResource();
+            if (runtimeOnly) {
+                affectsRuntime = true;
+            }
+        }
     }
 
     class ContextServiceTarget implements ServiceTarget {

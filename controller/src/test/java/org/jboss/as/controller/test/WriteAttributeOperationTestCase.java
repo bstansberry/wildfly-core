@@ -25,6 +25,8 @@ import java.math.BigInteger;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.core.IsNull.notNullValue;
+
+import org.jboss.as.controller.CapabilityRegistry;
 import org.jboss.as.controller.ControlledProcessState;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationDefinition;
@@ -135,7 +137,7 @@ public class WriteAttributeOperationTestCase extends AbstractControllerTestBase 
             BOOLEAN_ATT, LONG_ATT, STRING_ATT, DOUBLE_ATT, INT_ATT, BYTES_ATT, BIGINT_ATT, BIGDEC_ATT);
 
     @Override
-    protected void initModel(Resource rootResource, ManagementResourceRegistration rootRegistration) {
+    protected void initModel(ManagementResourceRegistration rootRegistration, Resource rootResource, CapabilityRegistry capabilityRegistry) {
         System.setProperty("boolean-value", "true");
         System.setProperty("long-value", "1000");
         System.setProperty("string-value", "wildfly");
@@ -438,7 +440,7 @@ public class WriteAttributeOperationTestCase extends AbstractControllerTestBase 
         assertThat(result.getType(), is(ModelType.EXPRESSION));
         assertThat(result.asExpression().resolveString(), is("100"));
     }
-    
+
     @Test
     public void testWriteReloadBigintAttributeExpressionOverValue() throws Exception {
         ModelNode operation = createOperation(READ_ATTRIBUTE_OPERATION, "profile", "profilType", "subsystem", "subsystem1");

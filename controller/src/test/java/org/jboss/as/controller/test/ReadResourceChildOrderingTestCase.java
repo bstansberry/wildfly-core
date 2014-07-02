@@ -26,6 +26,7 @@ import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.REC
 
 import java.util.Locale;
 
+import org.jboss.as.controller.CapabilityRegistry;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.OperationStepHandler;
@@ -67,9 +68,9 @@ public class ReadResourceChildOrderingTestCase extends AbstractControllerTestBas
     }
 
     @Override
-    protected void initModel(Resource rootResource, ManagementResourceRegistration registration) {
-        GlobalOperationHandlers.registerGlobalOperations(registration, processType);
-        registration.registerOperationHandler(new SimpleOperationDefinitionBuilder("setup", new NonResolvingResourceDescriptionResolver())
+    protected void initModel(ManagementResourceRegistration rootResourceRegistration, Resource rootResource, CapabilityRegistry capabilityRegistry) {
+        GlobalOperationHandlers.registerGlobalOperations(rootResourceRegistration, processType);
+        rootResourceRegistration.registerOperationHandler(new SimpleOperationDefinitionBuilder("setup", new NonResolvingResourceDescriptionResolver())
                 .setPrivateEntry()
                 .build()
                 , new OperationStepHandler() {
@@ -80,7 +81,7 @@ public class ReadResourceChildOrderingTestCase extends AbstractControllerTestBas
             }
         });
 
-        registration.registerSubModel(new SimpleResourceDefinition(PathElement.pathElement("test"), new NonResolvingResourceDescriptionResolver()));
+        rootResourceRegistration.registerSubModel(new SimpleResourceDefinition(PathElement.pathElement("test"), new NonResolvingResourceDescriptionResolver()));
 
         rootResource.getModel().set(model);
     }

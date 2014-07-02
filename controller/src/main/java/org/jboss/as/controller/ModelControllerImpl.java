@@ -66,6 +66,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.jboss.as.controller.access.Authorizer;
 import org.jboss.as.controller.audit.AuditLogger;
 import org.jboss.as.controller.audit.ManagedAuditLogger;
+import org.jboss.as.controller.capability.RuntimeCapability;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.controller.client.Operation;
 import org.jboss.as.controller.client.OperationAttachments;
@@ -110,7 +111,7 @@ class ModelControllerImpl implements ModelController {
     private final ManagementResourceRegistration rootRegistration;
     private final ModelControllerLock controllerLock = new ModelControllerLock();
     private final ContainerStateMonitor stateMonitor;
-    private final RootResource model = new RootResource();
+    private final RootResource rootResource = new RootResource();
     private final ConfigurationPersister persister;
     private final ProcessType processType;
     private final RunningModeControl runningModeControl;
@@ -127,6 +128,8 @@ class ModelControllerImpl implements ModelController {
     /** Tracks the relationship between domain resources and hosts and server groups */
     private final HostServerGroupTracker hostServerGroupTracker;
     private final Resource.ResourceEntry modelControllerResource;
+
+    private final ManagementModelImpl model;
 
     ModelControllerImpl(final ServiceRegistry serviceRegistry, final ServiceTarget serviceTarget, final ManagementResourceRegistration rootRegistration,
                         final ContainerStateMonitor stateMonitor, final ConfigurationPersister persister,
@@ -150,6 +153,7 @@ class ModelControllerImpl implements ModelController {
         this.auditLogger = auditLogger;
         this.hostServerGroupTracker = processType.isManagedDomain() ? new HostServerGroupTracker() : null;
         this.modelControllerResource = new ModelControllerResource();
+        this.model = new ManagementModelImpl(rootRegistration, rootResource, null);
         auditLogger.startBoot();
     }
 
@@ -276,7 +280,7 @@ class ModelControllerImpl implements ModelController {
             final Integer operationID = new Random(new SecureRandom().nextLong()).nextInt();
             final OperationContextImpl context = new OperationContextImpl(operationID, operation.get(OP).asString(),
                     operation.get(OP_ADDR), this, processType, runningModeControl.getRunningMode(),
-                    contextFlags, handler, attachments, model, originalResultTxControl, processState, auditLogger,
+                    contextFlags, handler, attachments, rootResource, originalResultTxControl, processState, auditLogger,
                     bootingFlag.get(), hostServerGroupTracker, blockingTimeoutConfig, accessMechanism);
             // Try again if the operation-id is already taken
             if(activeOperations.putIfAbsent(operationID, context) == null) {
@@ -330,7 +334,7 @@ class ModelControllerImpl implements ModelController {
                 : EnumSet.noneOf(OperationContextImpl.ContextFlag.class);
         final OperationContextImpl context = new OperationContextImpl(operationID, INITIAL_BOOT_OPERATION, EMPTY_ADDRESS,
                 this, processType, runningModeControl.getRunningMode(),
-                contextFlags, handler, null, model, control, processState, auditLogger, bootingFlag.get(),
+                contextFlags, handler, null, rootResource, control, processState, auditLogger, bootingFlag.get(),
                 hostServerGroupTracker, null, null);
 
         // Add to the context all ops prior to the first ExtensionAddHandler as well as all ExtensionAddHandlers; save the rest.
@@ -350,7 +354,7 @@ class ModelControllerImpl implements ModelController {
             // Success. Now any extension handlers are registered. Continue with remaining ops
             final OperationContextImpl postExtContext = new OperationContextImpl(operationID, POST_EXTENSION_BOOT_OPERATION,
                     EMPTY_ADDRESS, this, processType, runningModeControl.getRunningMode(),
-                    contextFlags, handler, null, model, control, processState, auditLogger, bootingFlag.get(), hostServerGroupTracker, null, null);
+                    contextFlags, handler, null, rootResource, control, processState, auditLogger, bootingFlag.get(), hostServerGroupTracker, null, null);
 
             for (ParsedBootOp parsedOp : bootOperations.postExtensionOps) {
                 if (parsedOp.handler == null) {
@@ -476,7 +480,7 @@ class ModelControllerImpl implements ModelController {
         bootingFlag.set(false);
     }
 
-    public Resource getRootResource() {
+    public ManagementModel getManagementModel() {
         return model;
     }
 
@@ -604,7 +608,7 @@ class ModelControllerImpl implements ModelController {
         };
     }
 
-    ConfigurationPersister.PersistenceResource writeModel(final Resource resource, Set<PathAddress> affectedAddresses) throws ConfigurationPersistenceException {
+    ConfigurationPersister.PersistenceResource writeModel(final ManagementModelImpl model, Set<PathAddress> affectedAddresses) throws ConfigurationPersistenceException {
         final ModelNode newModel = Resource.Tools.readModel(resource);
         final ConfigurationPersister.PersistenceResource delegate = persister.store(newModel, affectedAddresses);
         return new ConfigurationPersister.PersistenceResource() {
@@ -616,7 +620,7 @@ class ModelControllerImpl implements ModelController {
                 if (hostServerGroupTracker != null) {
                     hostServerGroupTracker.invalidate();
                 }
-                model.set(resource);
+                rootResource.set(resource);
                 delegate.commit();
             }
 
@@ -958,6 +962,94 @@ class ModelControllerImpl implements ModelController {
                 result.add(context.getActiveOperationResource());
             }
             return result;
+        }
+    }
+
+    static final class ManagementModelImpl implements ManagementModel {
+        private final ManagementResourceRegistration resourceRegistration;
+        private final Resource rootResource;
+        private final CapabilityRegistryImpl capabilityRegistry;
+
+        ManagementModelImpl(ManagementResourceRegistration resourceRegistration,
+                            Resource rootResource, CapabilityRegistryImpl capabilityRegistry) {
+            this.resourceRegistration = resourceRegistration;
+            this.rootResource = rootResource;
+            this.capabilityRegistry = capabilityRegistry;
+        }
+
+        @Override
+        public ManagementResourceRegistration getRootResourceRegistration() {
+            return resourceRegistration;
+        }
+
+        @Override
+        public Resource getRootResource() {
+            return rootResource;
+        }
+
+        @Override
+        public CapabilityRegistryImpl getCapabilityRegistry() {
+            return capabilityRegistry;
+        }
+
+        ManagementModelImpl cloneRootResourceRegistration() {
+            return new ManagementModelImpl(resourceRegistration.clone(), rootResource, capabilityRegistry);
+        }
+
+        ManagementModelImpl cloneRootResource() {
+            return new ManagementModelImpl(resourceRegistration, rootResource.clone(), capabilityRegistry);
+        }
+
+        ManagementModelImpl cloneCapabilityRegistry() throws CloneNotSupportedException {
+            return new ManagementModelImpl(resourceRegistration, rootResource, capabilityRegistry.clone());
+        }
+    }
+
+    static class CapabilityRegistryImpl implements CapabilityRegistry, Cloneable {
+
+        @Override
+        public void registerCapability(RuntimeCapability capability) {
+            //TODO implement registerCapability
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void registerAdditionalCapabilityRequirement(String required, RuntimeCapability dependent) {
+            //TODO implement registerAdditionalCapabilityRequirement
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void removeCapabilityRequirement(String required, RuntimeCapability dependent) {
+            //TODO implement removeCapabilityRequirement
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void removeCapability(RuntimeCapability capability) {
+            //TODO implement removeCapability
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean hasCapability(String capabilityName) {
+            //TODO implement hasCapability
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public <T> T getCapabilityRuntimeAPI(String capabilityName, Class<T> apiType) {
+            //TODO implement getCapabilityRuntimeAPI
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        protected CapabilityRegistryImpl clone()  {
+            try {
+                return (CapabilityRegistryImpl) super.clone();
+            } catch (CloneNotSupportedException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

@@ -43,6 +43,7 @@ import javax.management.ObjectName;
 import javax.management.QueryExp;
 
 import org.jboss.as.controller.CompositeOperationHandler;
+import org.jboss.as.controller.ManagementModel;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.ProcessType;
@@ -719,7 +720,7 @@ public class JmxAuditLogHandlerTestCase extends AbstractControllerTestBase {
         bootOperations.addAll(this.bootOperations);
     }
 
-    protected void initModel(Resource rootResource, ManagementResourceRegistration registration) {
+    protected void initModel(ManagementModel managementModel) {
         if (logDir == null){
             logDir = new File(".");
             logDir = new File(logDir, "target");
@@ -738,6 +739,7 @@ public class JmxAuditLogHandlerTestCase extends AbstractControllerTestBase {
                 super.addHardcodedAbsolutePath(getContainer(), "log.dir", logDir.getAbsolutePath());
             }
         };
+        ManagementResourceRegistration registration = managementModel.getRootResourceRegistration();
         GlobalOperationHandlers.registerGlobalOperations(registration, processType);
         registration.registerOperationHandler(CompositeOperationHandler.DEFINITION, CompositeOperationHandler.INSTANCE);
 
@@ -773,7 +775,7 @@ public class JmxAuditLogHandlerTestCase extends AbstractControllerTestBase {
             }
         }));
 
-
+        Resource rootResource = managementModel.getRootResource();
         pathManagerService.addPathManagerResources(rootResource);
 
 

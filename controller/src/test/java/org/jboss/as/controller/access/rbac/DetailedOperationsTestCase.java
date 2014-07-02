@@ -34,6 +34,7 @@ import java.util.Random;
 
 import org.jboss.as.controller.AbstractAddStepHandler;
 import org.jboss.as.controller.AbstractRemoveStepHandler;
+import org.jboss.as.controller.CapabilityRegistry;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.OperationStepHandler;
@@ -577,16 +578,16 @@ public class DetailedOperationsTestCase extends AbstractRbacTestBase {
             = new ApplicationTypeAccessConstraintDefinition(MY_APPLICATION_TYPE);
 
     @Override
-    protected void initModel(Resource rootResource, ManagementResourceRegistration registration) {
-        GlobalOperationHandlers.registerGlobalOperations(registration, ProcessType.EMBEDDED_SERVER);
+    protected void initModel(ManagementResourceRegistration rootResourceRegistration, Resource rootResource, CapabilityRegistry capabilityRegistry) {
+        GlobalOperationHandlers.registerGlobalOperations(rootResourceRegistration, ProcessType.EMBEDDED_SERVER);
 
-        registration.registerSubModel(new TestResourceDefinition(UNCONSTRAINED_RESOURCE));
-        registration.registerSubModel(new TestResourceDefinition(SENSITIVE_CONSTRAINED_RESOURCE,
+        rootResourceRegistration.registerSubModel(new TestResourceDefinition(UNCONSTRAINED_RESOURCE));
+        rootResourceRegistration.registerSubModel(new TestResourceDefinition(SENSITIVE_CONSTRAINED_RESOURCE,
                 MY_SENSITIVE_CONSTRAINT));
-        registration.registerSubModel(new TestResourceDefinition(APPLICATION_CONSTRAINED_RESOURCE,
+        rootResourceRegistration.registerSubModel(new TestResourceDefinition(APPLICATION_CONSTRAINED_RESOURCE,
                 MY_APPLICATION_CONSTRAINT));
 
-        ManagementResourceRegistration mgmt = registration.registerSubModel(new TestResourceDefinition(CORE_MANAGEMENT));
+        ManagementResourceRegistration mgmt = rootResourceRegistration.registerSubModel(new TestResourceDefinition(CORE_MANAGEMENT));
         mgmt.registerSubModel(new TestResourceDefinition(ACCESS_AUDIT));
 
     }

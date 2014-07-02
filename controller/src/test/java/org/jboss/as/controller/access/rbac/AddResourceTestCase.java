@@ -32,6 +32,7 @@ import java.util.List;
 import org.jboss.as.controller.AbstractAddStepHandler;
 import org.jboss.as.controller.AbstractRemoveStepHandler;
 import org.jboss.as.controller.AttributeDefinition;
+import org.jboss.as.controller.CapabilityRegistry;
 import org.jboss.as.controller.ModelOnlyWriteAttributeHandler;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.PathElement;
@@ -288,9 +289,9 @@ public class AddResourceTestCase extends AbstractControllerTestBase {
     }
 
     @Override
-    protected void initModel(Resource rootResource, ManagementResourceRegistration registration) {
+    protected void initModel(ManagementResourceRegistration rootResourceRegistration, Resource rootResource, CapabilityRegistry capabilityRegistry) {
         this.rootResource = rootResource;
-        this.rootRegistration = registration;
+        this.rootRegistration = rootResourceRegistration;
     }
 
     private static class TestResourceDefinition extends SimpleResourceDefinition {

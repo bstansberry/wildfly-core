@@ -30,6 +30,7 @@ import org.jboss.as.controller.access.Environment;
 import org.jboss.as.controller.access.ResourceAuthorization;
 import org.jboss.as.controller.access.AuthorizationResult;
 import org.jboss.as.controller.access.Caller;
+import org.jboss.as.controller.capability.RuntimeCapability;
 import org.jboss.as.controller.client.MessageSeverity;
 import org.jboss.as.controller.registry.ImmutableManagementResourceRegistration;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
@@ -687,6 +688,61 @@ public interface OperationContext extends ExpressionResolver {
      * @return the call environment
      */
     Environment getCallEnvironment();
+
+    /**
+     * Registers a capability with the system. Any {@link org.jboss.as.controller.capability.RuntimeCapability#getRequirements() requirements}
+     * associated with the capability will be recorded as requirements.
+     *
+     * @param capability  the capability. Cannot be {@code null}
+     *
+     * @throws java.lang.IllegalStateException if {@link #getCurrentStage() the current stage} is not {@link Stage#MODEL}
+     */
+    void registerCapability(RuntimeCapability capability);
+
+    /**
+     * Registers an additional requirement a capability has beyond what it was aware of when {@code capability}
+     * was passed to {@link #registerCapability(org.jboss.as.controller.capability.RuntimeCapability)}. Used for cases
+     * where a capability optionally depends on another capability, and whether or not that requirement is needed is
+     * not known when the capability is first registered.
+     *
+     * @param required the name of the required capability. Cannot be {@code null}
+     * @param dependent the capability that requires the other capability. Cannot be {@code null}
+     *
+     * @throws java.lang.IllegalStateException if {@link #getCurrentStage() the current stage} is not {@link Stage#MODEL}
+     *                                         or if {@code capability} is not registered
+     */
+    void registerAdditionalCapabilityRequirement(String required, RuntimeCapability dependent);
+
+    /**
+     * Remove a previously registered requirement for a capability.
+     *
+     * @param required the name of the no longer required capability
+     * @param dependent the capability that no longer has the requirement
+     *
+     * @throws java.lang.IllegalStateException if {@link #getCurrentStage() the current stage} is not {@link Stage#MODEL}
+     */
+    void removeCapabilityRequirement(String required, RuntimeCapability dependent);
+
+    /**
+     * Remove a previously registered requirement for a capability.
+     *
+     * @param capability the capability
+     *
+     * @throws java.lang.IllegalStateException if {@link #getCurrentStage() the current stage} is not {@link Stage#MODEL}
+     */
+    void removeCapability(RuntimeCapability capability);
+
+    /**
+     * Gets whether a capability with the given name is registered.
+     * @param capabilityName the name of the capability. Cannot be {@code null}
+     * @return {@code true} if there is a capability with the given name registered
+     *
+     * @throws java.lang.IllegalStateException if {@link #getCurrentStage() the current stage} is {@link Stage#MODEL}. The
+     *                                          complete set of capabilities is not known until the end of the model stage.
+     */
+    boolean hasCapability(String capabilityName);
+
+    <T> T getCapabilityRuntimeAPI(String capabilityName, Class<T> apiType);
 
     /**
      * The stage at which a step should apply.

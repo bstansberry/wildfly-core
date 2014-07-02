@@ -42,6 +42,7 @@ import java.util.List;
 
 import org.jboss.as.controller.AbstractAddStepHandler;
 import org.jboss.as.controller.AbstractRemoveStepHandler;
+import org.jboss.as.controller.CapabilityRegistry;
 import org.jboss.as.controller.ProcessType;
 import org.jboss.as.controller.SimpleResourceDefinition;
 import org.jboss.as.controller.access.constraint.SensitivityClassification;
@@ -154,11 +155,11 @@ public class FilteredReadChildrenResourcesTestCase extends AbstractRbacTestBase 
             = new SensitiveTargetAccessConstraintDefinition(MY_SENSITIVITY);
 
     @Override
-    protected void initModel(Resource rootResource, ManagementResourceRegistration registration) {
-        GlobalOperationHandlers.registerGlobalOperations(registration, ProcessType.EMBEDDED_SERVER);
+    protected void initModel(ManagementResourceRegistration rootResourceRegistration, Resource rootResource, CapabilityRegistry capabilityRegistry) {
+        GlobalOperationHandlers.registerGlobalOperations(rootResourceRegistration, ProcessType.EMBEDDED_SERVER);
 
-        registration.registerSubModel(new TestResourceDefinition(UNCONSTRAINED_RESOURCE));
-        registration.registerSubModel(new TestResourceDefinition(SENSITIVE_CONSTRAINED_RESOURCE,
+        rootResourceRegistration.registerSubModel(new TestResourceDefinition(UNCONSTRAINED_RESOURCE));
+        rootResourceRegistration.registerSubModel(new TestResourceDefinition(SENSITIVE_CONSTRAINED_RESOURCE,
                 MY_SENSITIVE_CONSTRAINT));
     }
 

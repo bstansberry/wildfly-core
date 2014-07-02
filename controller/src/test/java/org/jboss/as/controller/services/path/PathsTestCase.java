@@ -44,6 +44,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.jboss.as.controller.CapabilityRegistry;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.operations.global.GlobalOperationHandlers;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
@@ -801,13 +802,13 @@ public class PathsTestCase extends AbstractControllerTestBase {
     }
 
     @Override
-    protected void initModel(Resource rootResource, ManagementResourceRegistration registration) {
+    protected void initModel(ManagementResourceRegistration rootResourceRegistration, Resource rootResource, CapabilityRegistry capabilityRegistry) {
         pathManagerService = new PathManagerService() {
             {
                 super.addHardcodedAbsolutePath(getContainer(), "hardcoded", "/hard/coded");
             }
         };
-        GlobalOperationHandlers.registerGlobalOperations(registration, processType);
+        GlobalOperationHandlers.registerGlobalOperations(rootResourceRegistration, processType);
 
         TestServiceListener listener = new TestServiceListener();
         listener.reset(1);
@@ -822,7 +823,7 @@ public class PathsTestCase extends AbstractControllerTestBase {
             throw new RuntimeException(e);
         }
 
-        registration.registerSubModel(PathResourceDefinition.createSpecified(pathManagerService));
+        rootResourceRegistration.registerSubModel(PathResourceDefinition.createSpecified(pathManagerService));
 
         pathManagerService.addPathManagerResources(rootResource);
     }

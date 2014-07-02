@@ -41,6 +41,7 @@ import org.jboss.as.controller.AbstractAddStepHandler;
 import org.jboss.as.controller.AbstractRemoveStepHandler;
 import org.jboss.as.controller.AbstractWriteAttributeHandler;
 import org.jboss.as.controller.AttributeDefinition;
+import org.jboss.as.controller.CapabilityRegistry;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationDefinition;
 import org.jboss.as.controller.OperationFailedException;
@@ -229,7 +230,7 @@ public class ReadResourceDescriptionAccessConstraintDefinitionTestCase extends A
     }
 
     @Override
-    protected void initModel(Resource rootResource, ManagementResourceRegistration registration) {
+    protected void initModel(ManagementResourceRegistration rootResourceRegistration, Resource rootResource, CapabilityRegistry capabilityRegistry) {
     }
 
     private static class TestResourceDefinition extends SimpleResourceDefinition {
