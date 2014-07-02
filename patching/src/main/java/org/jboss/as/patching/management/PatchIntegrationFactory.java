@@ -23,9 +23,8 @@
 package org.jboss.as.patching.management;
 
 
+import org.jboss.as.controller.ManagementModel;
 import org.jboss.as.controller.ModelControllerServiceInitialization;
-import org.jboss.as.controller.registry.ManagementResourceRegistration;
-import org.jboss.as.controller.registry.Resource;
 import org.jboss.as.patching.installation.InstallationManager;
 import org.jboss.as.patching.installation.InstallationManagerService;
 import org.jboss.msc.service.ServiceController;
@@ -39,29 +38,29 @@ import org.jboss.msc.service.ServiceTarget;
 public final class PatchIntegrationFactory implements ModelControllerServiceInitialization {
 
     @Override
-    public void initializeStandalone(final ServiceTarget serviceTarget, final ManagementResourceRegistration registration, final Resource resource) {
-        initializeCoreServices(serviceTarget, registration, resource);
+    public void initializeStandalone(final ServiceTarget serviceTarget, final ManagementModel managementModel) {
+        initializeCoreServices(serviceTarget, managementModel);
     }
 
     @Override
-    public void initializeHost(final ServiceTarget serviceTarget, final ManagementResourceRegistration registration, final Resource resource) {
-        initializeCoreServices(serviceTarget, registration, resource);
+    public void initializeHost(final ServiceTarget serviceTarget, final ManagementModel managementModel) {
+        initializeCoreServices(serviceTarget, managementModel);
     }
 
-    protected void initializeCoreServices(final ServiceTarget serviceTarget, final ManagementResourceRegistration registration, final Resource resource) {
+    protected void initializeCoreServices(final ServiceTarget serviceTarget, final ManagementModel managementModel) {
 
         // Install the installation manager service
         final ServiceController<InstallationManager> imController = InstallationManagerService.installService(serviceTarget);
 
         // Register the patch resource description
-        registration.registerSubModel(PatchResourceDefinition.INSTANCE);
+        managementModel.getRootResourceRegistration().registerSubModel(PatchResourceDefinition.INSTANCE);
         // and resource
         PatchResource patchResource = new PatchResource(imController);
-        resource.registerChild(PatchResourceDefinition.PATH, patchResource);
+        managementModel.getRootResource().registerChild(PatchResourceDefinition.PATH, patchResource);
     }
 
     @Override
-    public void initializeDomain(final ServiceTarget serviceTarget, final ManagementResourceRegistration registration, final Resource resource) {
+    public void initializeDomain(final ServiceTarget serviceTarget, final ManagementModel managementModel) {
         // Nothing required here
     }
 
