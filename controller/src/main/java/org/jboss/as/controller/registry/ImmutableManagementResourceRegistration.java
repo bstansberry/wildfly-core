@@ -47,6 +47,14 @@ public interface ImmutableManagementResourceRegistration {
     RuntimePermission ACCESS_PERMISSION = new RuntimePermission("canAccessManagementResourceRegistration");
 
     /**
+     * Gets the address under which this object is registered.
+     *
+     * @return  the address. Will not return {@code null},
+     *          returning {@link org.jboss.as.controller.PathAddress#EMPTY_ADDRESS} for the root registration
+     */
+    PathAddress getPathAddress();
+
+    /**
      * Gets whether this model node only exists in the runtime and has no representation in the
      * persistent configuration model.
      *

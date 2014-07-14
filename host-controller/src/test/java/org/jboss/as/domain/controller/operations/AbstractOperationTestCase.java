@@ -800,6 +800,11 @@ public abstract class AbstractOperationTestCase {
 
         }
 
+        @Override
+        public PathAddress getPathAddress() {
+            return PathAddress.EMPTY_ADDRESS;
+        }
+
         public boolean isRuntimeOnly() {
             return false;
         }

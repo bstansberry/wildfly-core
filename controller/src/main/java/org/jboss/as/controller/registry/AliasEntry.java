@@ -27,22 +27,20 @@ import org.jboss.as.controller.PathAddress;
  *
  * @author <a href="kabir.khan@jboss.com">Kabir Khan</a>
  */
-public abstract class AliasEntry {
+public abstract class AliasEntry implements Cloneable {
 
-    private final ManagementResourceRegistration target;
     private volatile PathAddress aliasAddress;
-    private volatile PathAddress targetAddress;
+    private final PathAddress targetAddress;
 
     protected AliasEntry(final ManagementResourceRegistration target) {
-        this.target = target;
+        this(target.getPathAddress());
     }
 
-    ManagementResourceRegistration getTarget() {
-        return target;
-    }
-
-    void setAddresses(PathAddress targetAddress, PathAddress aliasAddress) {
+    protected AliasEntry(final PathAddress targetAddress) {
         this.targetAddress = targetAddress;
+    }
+
+    void setAliasAddress(PathAddress aliasAddress) {
         this.aliasAddress = aliasAddress;
     }
 
@@ -50,9 +48,19 @@ public abstract class AliasEntry {
         return aliasAddress;
     }
 
-    protected PathAddress getTargetAddress() {
+    public PathAddress getTargetAddress() {
         return targetAddress;
     }
 
     public abstract PathAddress convertToTargetAddress(PathAddress address);
+
+    @Override
+    public AliasEntry clone() {
+        try {
+            return (AliasEntry) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 }
