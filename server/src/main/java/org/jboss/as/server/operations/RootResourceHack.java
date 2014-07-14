@@ -128,6 +128,11 @@ public class RootResourceHack implements OperationStepHandler {
     private static class EmptyResourceRegistration implements ImmutableManagementResourceRegistration {
 
         @Override
+        public PathAddress getPathAddress() {
+            return PathAddress.EMPTY_ADDRESS;
+        }
+
+        @Override
         public boolean isRuntimeOnly() {
             return false;
         }

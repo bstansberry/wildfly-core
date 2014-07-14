@@ -33,15 +33,16 @@ import java.util.Set;
 
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.NotificationDefinition;
-import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.controller.OperationDefinition;
 import org.jboss.as.controller.OperationStepHandler;
+import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.ProxyController;
 import org.jboss.as.controller.ResourceDefinition;
 import org.jboss.as.controller.access.management.AccessConstraintDefinition;
 import org.jboss.as.controller.descriptions.DescriptionProvider;
 import org.jboss.as.controller.descriptions.OverrideDescriptionProvider;
+import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.controller.registry.OperationEntry.EntryType;
 import org.jboss.dmr.ModelNode;
 
@@ -51,22 +52,23 @@ import org.jboss.dmr.ModelNode;
  * @author Kabir Khan
  */
 @SuppressWarnings("deprecation")
-final class AliasResourceRegistration extends AbstractResourceRegistration implements DescriptionProvider {
+final class AliasResourceRegistration extends AbstractResourceRegistration<AliasResourceRegistration> implements DescriptionProvider {
 
     private final AliasEntry aliasEntry;
     private final AliasStepHandler handler;
-    private final AbstractResourceRegistration target;
+    private final PathAddress targetAddress;
+    private AbstractResourceRegistration resolvedTarget;
 
-    AliasResourceRegistration(final String valueString, final NodeSubregistry parent, final AliasEntry aliasEntry, final AbstractResourceRegistration target) {
+    AliasResourceRegistration(final String valueString, final NodeSubregistry parent, final AliasEntry aliasEntry, final PathAddress targetAddress) {
         super(valueString, parent);
         this.aliasEntry = aliasEntry;
         this.handler = new AliasStepHandler(aliasEntry);
-        this.target = target;
+        this.targetAddress = targetAddress;
     }
 
     @Override
     OperationEntry getOperationEntry(final ListIterator<PathElement> iterator, final String operationName, OperationEntry inherited) {
-        OperationEntry targetOp = target.getOperationEntry(iterator, operationName, inherited);
+        OperationEntry targetOp = getTarget().getOperationEntry(iterator, operationName, inherited);
         if (targetOp == null) {
             return null;
         }
@@ -76,13 +78,13 @@ final class AliasResourceRegistration extends AbstractResourceRegistration imple
 
     @Override
     OperationEntry getInheritableOperationEntry(String operationName) {
-        return target.getInheritableOperationEntry(operationName);
+        return getTarget().getInheritableOperationEntry(operationName);
     }
 
     @Override
     public boolean isRuntimeOnly() {
         //TODO use target resource?
-        return target.isRuntimeOnly();
+        return getTarget().isRuntimeOnly();
     }
 
     @Override
@@ -92,7 +94,7 @@ final class AliasResourceRegistration extends AbstractResourceRegistration imple
 
     @Override
     public boolean isRemote() {
-        return target.isRemote();
+        return getTarget().isRemote();
     }
 
     @Override
@@ -102,7 +104,7 @@ final class AliasResourceRegistration extends AbstractResourceRegistration imple
 
     @Override
     public List<AccessConstraintDefinition> getAccessConstraints() {
-        return target.getAccessConstraints();
+        return getTarget().getAccessConstraints();
     }
 
     @Override
@@ -208,7 +210,7 @@ final class AliasResourceRegistration extends AbstractResourceRegistration imple
     @Override
     void getOperationDescriptions(final ListIterator<PathElement> iterator, final Map<String, OperationEntry> providers, final boolean inherited) {
         Map<String, OperationEntry> temp = new HashMap<String, OperationEntry>();
-        target.getOperationDescriptions(iterator, temp, inherited);
+        getTarget().getOperationDescriptions(iterator, temp, inherited);
         for (Map.Entry<String, OperationEntry> entry : providers.entrySet()) {
             OperationEntry value = entry.getValue();
             providers.put(entry.getKey(),
@@ -219,13 +221,13 @@ final class AliasResourceRegistration extends AbstractResourceRegistration imple
 
     @Override
     void getInheritedOperationEntries(final Map<String, OperationEntry> providers) {
-        target.getInheritedOperationEntries(providers);
+        getTarget().getInheritedOperationEntries(providers);
     }
 
     @Override
     void getNotificationDescriptions(ListIterator<PathElement> iterator, Map<String, NotificationEntry> providers, boolean inherited) {
         Map<String, NotificationEntry> temp = new HashMap<String, NotificationEntry>();
-        target.getNotificationDescriptions(iterator, temp, inherited);
+        getTarget().getNotificationDescriptions(iterator, temp, inherited);
         for (Map.Entry<String, NotificationEntry> entry : providers.entrySet()) {
             providers.put(entry.getKey(),
                     new NotificationEntry(entry.getValue().getDescriptionProvider(), entry.getValue().isInherited()));
@@ -234,37 +236,37 @@ final class AliasResourceRegistration extends AbstractResourceRegistration imple
 
     @Override
     void getInheritedNotificationEntries(Map<String, NotificationEntry> providers) {
-        target.getInheritedNotificationEntries(providers);
+        getTarget().getInheritedNotificationEntries(providers);
     }
 
     @Override
     DescriptionProvider getModelDescription(final ListIterator<PathElement> iterator) {
-        return target.getModelDescription(iterator);
+        return getTarget().getModelDescription(iterator);
     }
 
     @Override
     Set<String> getAttributeNames(final ListIterator<PathElement> iterator) {
-        return target.getAttributeNames(iterator);
+        return getTarget().getAttributeNames(iterator);
     }
 
     @Override
     Set<String> getChildNames(final ListIterator<PathElement> iterator) {
-        return target.getChildNames(iterator);
+        return getTarget().getChildNames(iterator);
     }
 
     @Override
     Set<PathElement> getChildAddresses(final ListIterator<PathElement> iterator) {
-        return target.getChildAddresses(iterator);
+        return getTarget().getChildAddresses(iterator);
     }
 
     @Override
     AttributeAccess getAttributeAccess(final ListIterator<PathElement> address, final String attributeName) {
-        return target.getAttributeAccess(address, attributeName);
+        return getTarget().getAttributeAccess(address, attributeName);
     }
 
     @Override
     ProxyController getProxyController(ListIterator<PathElement> iterator) {
-        return target.getProxyController(iterator);
+        return getTarget().getProxyController(iterator);
     }
 
     @Override
@@ -276,7 +278,7 @@ final class AliasResourceRegistration extends AbstractResourceRegistration imple
         if (!iterator.hasNext()) {
             return this;
         }
-        return target.getResourceRegistration(iterator);
+        return getTarget().getResourceRegistration(iterator);
     }
 
     @Override
@@ -297,5 +299,17 @@ final class AliasResourceRegistration extends AbstractResourceRegistration imple
     @Override
     protected void registerAlias(PathElement address, AliasEntry alias, AbstractResourceRegistration target) {
         throw alreadyRegistered();
+    }
+
+    @Override
+    AliasResourceRegistration clone(NodeSubregistry parent) {
+        return new AliasResourceRegistration(getValueString(), parent, aliasEntry.clone(), targetAddress);
+    }
+
+    private AbstractResourceRegistration getTarget() {
+        if (resolvedTarget == null) {
+            resolvedTarget = (AbstractResourceRegistration) getRootResourceRegistration().getSubModel(targetAddress);
+        }
+        return resolvedTarget;
     }
 }

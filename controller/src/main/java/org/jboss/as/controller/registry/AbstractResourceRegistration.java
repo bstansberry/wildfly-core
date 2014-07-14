@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.controller.OperationDefinition;
 import org.jboss.as.controller.OperationStepHandler;
 import org.jboss.as.controller.PathAddress;
@@ -44,6 +43,7 @@ import org.jboss.as.controller.access.management.AccessConstraintDefinition;
 import org.jboss.as.controller.descriptions.DescriptionProvider;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.as.controller.descriptions.OverrideDescriptionProvider;
+import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.controller.registry.OperationEntry.EntryType;
 import org.jboss.as.controller.registry.OperationEntry.Flag;
 import org.jboss.dmr.ModelNode;
@@ -54,7 +54,7 @@ import org.jboss.dmr.ModelNode;
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
  */
 @SuppressWarnings("deprecation")
-abstract class AbstractResourceRegistration implements ManagementResourceRegistration {
+abstract class AbstractResourceRegistration<T extends AbstractResourceRegistration> implements ManagementResourceRegistration {
 
     private final String valueString;
     private final NodeSubregistry parent;
@@ -499,12 +499,8 @@ abstract class AbstractResourceRegistration implements ManagementResourceRegistr
         RootInvocation rootInvocation = parent == null ? null : getRootInvocation();
         AbstractResourceRegistration root = rootInvocation == null ? this : rootInvocation.root;
         PathAddress myaddr = rootInvocation == null ? PathAddress.EMPTY_ADDRESS : rootInvocation.pathAddress;
+        alias.setAliasAddress(myaddr.append(address));
 
-        assert alias.getTarget() instanceof AbstractResourceRegistration : "Unknown alias type";
-
-        AbstractResourceRegistration tgtReg = (AbstractResourceRegistration)alias.getTarget();
-        PathAddress targetAddress = tgtReg.parent == null ? PathAddress.EMPTY_ADDRESS : tgtReg.getRootInvocation().pathAddress;
-        alias.setAddresses(targetAddress, myaddr.append(address));
         AbstractResourceRegistration target = (AbstractResourceRegistration)root.getSubModel(alias.getTargetAddress());
         if (target == null) {
             throw ControllerLogger.ROOT_LOGGER.aliasTargetResourceRegistrationNotFound(alias.getTargetAddress());
@@ -514,6 +510,8 @@ abstract class AbstractResourceRegistration implements ManagementResourceRegistr
     }
 
     protected abstract void registerAlias(PathElement address, AliasEntry alias, AbstractResourceRegistration target);
+
+    abstract T clone(NodeSubregistry parent);
 
     @Override
     public boolean isAlias() {
@@ -527,7 +525,12 @@ abstract class AbstractResourceRegistration implements ManagementResourceRegistr
         throw ControllerLogger.ROOT_LOGGER.resourceRegistrationIsNotAnAlias();
     }
 
-    PathAddress getPathAddress() {
+    @Override
+    public PathAddress getPathAddress() {
+        return PathAddress.pathAddress(pathAddress);
+    }
+
+    PathAddress getPathAddressInternal() {
         return pathAddress;
     }
 

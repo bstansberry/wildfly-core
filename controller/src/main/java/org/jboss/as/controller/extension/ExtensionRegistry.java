@@ -22,6 +22,8 @@
 
 package org.jboss.as.controller.extension;
 
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.DEPLOYMENT;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SUBDEPLOYMENT;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SUBSYSTEM;
 
 import java.util.ArrayList;
@@ -924,9 +926,31 @@ public class ExtensionRegistry {
         }
 
         @Override
-        public void registerAlias(PathElement address, AliasEntry alias) {
+        public void registerAlias(final PathElement address, final AliasEntry alias) {
             deployments.registerAlias(address, alias);
-            subdeployments.registerAlias(address, alias);
+            // For the subdeployment, we need to tweak the target address if if points to a deployment-level resource
+            AliasEntry subAlias = alias;
+            PathAddress targetAddress = alias.getTargetAddress();
+            if (targetAddress.size() > 0 && DEPLOYMENT.equals(targetAddress.getElement(0).getKey())
+                    && (targetAddress.size() == 1 || !SUBDEPLOYMENT.equals(targetAddress.getElement(1).getKey()))) {
+                subAlias = new AliasEntry(targetAddress) {
+                    @Override
+                    public PathAddress convertToTargetAddress(PathAddress address) {
+                        PathAddress origConversion = alias.convertToTargetAddress(address);
+                        PathAddress subAliasAddress = PathAddress.pathAddress(origConversion.getElement(0));
+                        subAliasAddress = PathAddress.pathAddress(subAliasAddress, PathElement.pathElement(SUBDEPLOYMENT));
+                        if (origConversion.size() > 1) {
+                            List<PathElement> otherElements = new ArrayList<>();
+                            for (int i = 1; i < origConversion.size(); i++) {
+                                otherElements.add(origConversion.getElement(i));
+                            }
+                            subAliasAddress = subAliasAddress.append(otherElements);
+                        }
+                        return subAliasAddress;
+                    }
+                };
+            }
+            subdeployments.registerAlias(address, subAlias);
         }
 
         @Override
@@ -943,6 +967,11 @@ public class ExtensionRegistry {
         @Override
         public boolean isAlias() {
             return deployments.isAlias();
+        }
+
+        @Override
+        public PathAddress getPathAddress() {
+            return deployments.getPathAddress();
         }
     }
 
