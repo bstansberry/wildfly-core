@@ -54,7 +54,7 @@ import org.jboss.dmr.ModelNode;
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
  */
 @SuppressWarnings("deprecation")
-abstract class AbstractResourceRegistration implements ManagementResourceRegistration {
+abstract class AbstractResourceRegistration<T extends AbstractResourceRegistration> implements CloneableManagementResourceRegistration<T> {
 
     private final String valueString;
     private final NodeSubregistry parent;
@@ -480,6 +480,8 @@ abstract class AbstractResourceRegistration implements ManagementResourceRegistr
     }
 
     protected abstract void registerAlias(PathElement address, AliasEntry alias, AbstractResourceRegistration target);
+
+    abstract T clone(NodeSubregistry parent);
 
     @Override
     public boolean isAlias() {

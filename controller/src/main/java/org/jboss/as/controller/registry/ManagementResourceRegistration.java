@@ -382,7 +382,7 @@ public interface ManagementResourceRegistration extends ImmutableManagementResou
          *
          * @throws SecurityException if the caller does not have {@link ImmutableManagementResourceRegistration#ACCESS_PERMISSION}
          */
-        public static ManagementResourceRegistration create(final DescriptionProvider rootModelDescriptionProvider) {
+        public static CloneableManagementResourceRegistration create(final DescriptionProvider rootModelDescriptionProvider) {
             return create(rootModelDescriptionProvider, null);
         }
 
@@ -396,7 +396,7 @@ public interface ManagementResourceRegistration extends ImmutableManagementResou
          *
          * @throws SecurityException if the caller does not have {@link ImmutableManagementResourceRegistration#ACCESS_PERMISSION}
          */
-        public static ManagementResourceRegistration create(final DescriptionProvider rootModelDescriptionProvider,
+        public static CloneableManagementResourceRegistration create(final DescriptionProvider rootModelDescriptionProvider,
                                                             AccessConstraintUtilizationRegistry constraintUtilizationRegistry) {
             if (rootModelDescriptionProvider == null) {
                 throw ControllerLogger.ROOT_LOGGER.nullVar("rootModelDescriptionProvider");

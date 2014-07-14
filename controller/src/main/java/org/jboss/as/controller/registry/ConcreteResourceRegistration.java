@@ -36,8 +36,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.jboss.as.controller.AttributeDefinition;
-import org.jboss.as.controller.descriptions.DefaultResourceDescriptionProvider;
-import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.controller.OperationDefinition;
 import org.jboss.as.controller.OperationStepHandler;
 import org.jboss.as.controller.PathAddress;
@@ -47,25 +45,27 @@ import org.jboss.as.controller.ResourceDefinition;
 import org.jboss.as.controller.access.management.AccessConstraintDefinition;
 import org.jboss.as.controller.access.management.AccessConstraintUtilizationRegistry;
 import org.jboss.as.controller.access.management.ConstrainedResourceDefinition;
+import org.jboss.as.controller.descriptions.DefaultResourceDescriptionProvider;
 import org.jboss.as.controller.descriptions.DescriptionProvider;
+import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.controller.registry.AttributeAccess.AccessType;
 import org.jboss.as.controller.registry.AttributeAccess.Storage;
 import org.jboss.as.controller.registry.OperationEntry.EntryType;
 import org.jboss.dmr.ModelNode;
 
 @SuppressWarnings("deprecation")
-final class ConcreteResourceRegistration extends AbstractResourceRegistration {
+final class ConcreteResourceRegistration extends AbstractResourceRegistration<ConcreteResourceRegistration> {
 
     @SuppressWarnings("unused")
     private volatile Map<String, NodeSubregistry> children;
 
-    @SuppressWarnings("unused")
+    @SuppressWarnings({"unused", "MismatchedQueryAndUpdateOfCollection"})
     private volatile Map<String, OperationEntry> operations;
 
     private final ResourceDefinition resourceDefinition;
     private final List<AccessConstraintDefinition> accessConstraintDefinitions;
 
-    @SuppressWarnings("unused")
+    @SuppressWarnings({"unused", "MismatchedQueryAndUpdateOfCollection"})
     private volatile Map<String, AttributeAccess> attributes;
 
     private final AtomicBoolean runtimeOnly = new AtomicBoolean();
@@ -85,6 +85,26 @@ final class ConcreteResourceRegistration extends AbstractResourceRegistration {
         this.resourceDefinition = definition;
         this.runtimeOnly.set(runtimeOnly);
         this.accessConstraintDefinitions = buildAccessConstraints();
+    }
+
+    /** Copy constructor for clone and NodeSubregistry clone */
+    private ConcreteResourceRegistration(ConcreteResourceRegistration toClone, NodeSubregistry parent) {
+        this(toClone.getValueString(), parent, toClone.resourceDefinition, toClone.constraintUtilizationRegistry,
+                toClone.runtimeOnly.get());
+        final Map<String, NodeSubregistry> childMap = childrenUpdater.getReadOnly(toClone);
+        final Map<String, OperationEntry> opsMap = operationsUpdater.getReadOnly(toClone);
+        final Map<String, AttributeAccess> attsMap = attributesUpdater.getReadOnly(toClone);
+        if (attsMap != null) {
+            attributes.putAll(attsMap);
+        }
+        if (opsMap != null) {
+            operations.putAll(opsMap);
+        }
+        if (childMap != null) {
+            for (Map.Entry<String, NodeSubregistry> entry: childMap.entrySet()) {
+                childrenUpdater.putIfAbsent(this, entry.getKey(), entry.getValue().clone(this));
+            }
+        }
     }
 
     @Override
@@ -570,6 +590,46 @@ final class ConcreteResourceRegistration extends AbstractResourceRegistration {
     public AliasEntry getAliasEntry() {
         checkPermission();
         return null;
+    }
+
+    @SuppressWarnings("CloneDoesntCallSuperClone")
+    @Override
+    public ConcreteResourceRegistration clone() throws CloneNotSupportedException {
+        if (getParent() != null) {
+            throw new CloneNotSupportedException();
+        }
+        return clone(null);
+    }
+
+    @Override
+    ConcreteResourceRegistration clone(NodeSubregistry parent) {
+        // TODO the constraintUtilizationRegistry is mutable but we can't really clone it as we
+        // were provided the ref and have no way to publish the clone to the owner.
+        // The effect here is if someone registers a constraint but the op rolls back,
+        // the constraint will be published anyway. Not so bad, since if it gets registered again,
+        // that won't cause a failure. More problematic is if the op unregisters something
+        // and then rolls back.
+        ConcreteResourceRegistration result = new ConcreteResourceRegistration(getValueString(), parent,
+                resourceDefinition, constraintUtilizationRegistry, runtimeOnly.get());
+        final Map<String, NodeSubregistry> childMap = childrenUpdater.getReadOnly(this);
+        final Map<String, OperationEntry> opsMap = operationsUpdater.getReadOnly(this);
+        final Map<String, AttributeAccess> attsMap = attributesUpdater.getReadOnly(this);
+        if (attsMap != null) {
+            for (Map.Entry<String, AttributeAccess> entry : attsMap.entrySet()) {
+                attributesUpdater.put(result, entry.getKey(), entry.getValue());
+            }
+        }
+        if (opsMap != null) {
+            for (Map.Entry<String, OperationEntry> entry : opsMap.entrySet()) {
+                operationsUpdater.put(result, entry.getKey(), entry.getValue());
+            }
+        }
+        if (childMap != null) {
+            for (Map.Entry<String, NodeSubregistry> entry: childMap.entrySet()) {
+                result.children.put(entry.getKey(), entry.getValue().clone(result));
+            }
+        }
+        return new ConcreteResourceRegistration(this, parent);
     }
 }
 
