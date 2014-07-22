@@ -27,6 +27,7 @@ import static java.lang.Thread.holdsLock;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FilterInputStream;
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -457,11 +458,14 @@ final class ManagedProcess {
             final InputStream source = this.source;
             final String processName = ManagedProcess.this.processName;
             try {
-                final BufferedReader reader = new BufferedReader(new InputStreamReader(new BufferedInputStream(source), StandardCharsets.UTF_8));
+                // Defend against OOM by limiting readLine to reading 200K chars w/o a new line
+                final LimitedReadLineStream limitedReadLineStream = new LimitedReadLineStream(new BufferedInputStream(source), 200 * 1024);
+                final BufferedReader reader = new BufferedReader(new InputStreamReader(limitedReadLineStream, StandardCharsets.UTF_8));
                 final OutputStreamWriter writer = new OutputStreamWriter(target, StandardCharsets.UTF_8);
                 String s;
                 String prevEscape = "";
                 while ((s = reader.readLine()) != null) {
+                    limitedReadLineStream.resetCount();
                     // Has ANSI?
                     int i = s.lastIndexOf('\033');
                     int j = i != -1 ? s.indexOf('m', i) : 0;
@@ -498,6 +502,61 @@ final class ManagedProcess {
             } finally {
                 StreamUtils.safeClose(source);
             }
+        }
+    }
+
+    /**
+     * A stream that will introduce a newline char into the stream if a given number
+     * of bytes haven't been read since the last call to {@link #resetCount()}.
+     */
+    private static class LimitedReadLineStream extends FilterInputStream {
+
+        private final AtomicInteger readCount = new AtomicInteger();
+        private final int maxRead;
+
+        LimitedReadLineStream(InputStream in, int maxRead) {
+            super(in);
+            this.maxRead = maxRead;
+        }
+
+        void resetCount() {
+            readCount.set(0);
+        }
+
+        @Override
+        public int read() throws IOException {
+            if (validateReadCount()) {
+                return '\n';
+            } else {
+                int result = super.read();
+                readCount.incrementAndGet();
+                return result;
+            }
+        }
+
+        @Override
+        public int read(byte[] b, int off, int len) throws IOException {
+            if (validateReadCount()) {
+                // Do the basic assertions from the method javadoc
+                if (off < 0 || len < 0 || len > b.length - off)  {
+                    throw new IndexOutOfBoundsException();
+                }
+                b[off] = '\n';
+                return 1;
+            } else {
+                int result =  super.read(b, off, len);
+                readCount.addAndGet(result);
+                return result;
+            }
+        }
+
+        private boolean validateReadCount() {
+            int bytesRead = readCount.get();
+            if (bytesRead > maxRead) {
+                ProcessLogger.ROOT_LOGGER.maxReadCountExceeded(bytesRead);
+                return true;
+            }
+            return false;
         }
     }
 }

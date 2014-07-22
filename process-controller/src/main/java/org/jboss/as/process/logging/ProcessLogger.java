@@ -819,4 +819,15 @@ public interface ProcessLogger extends BasicLogger {
     @Message(id = 67, value = "Process '%s' did not complete normal stop within %d ms; attempting to destroy process " +
             "using java.lang.Process.destroyForcibly()")
     void destroyingProcess(String process, long timeout);
+
+    /**
+     * Creates an exception indicating an excessive amount of data has been read.
+     *
+     * @return an {@link java.io.IOException} for the error.
+     */
+    @LogMessage(level = WARN)
+    @Message(id = 68, value = "An excessive number of bytes (%d) have been read without encountering a newline. " +
+            "Inserting a newline to protect against excessive memory usage.")
+    void maxReadCountExceeded(int bytesRead);
+
 }
