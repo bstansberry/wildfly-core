@@ -50,6 +50,7 @@ import org.jboss.as.controller.descriptions.OverrideDescriptionProvider;
 public class DelegatingManagementResourceRegistration implements ManagementResourceRegistration {
 
     private final ManagementResourceRegistration delegate;
+    private final PathAddress ourAddress;
 
     /**
      * Creates a new DelegatingManagementResourceRegistration.
@@ -57,7 +58,12 @@ public class DelegatingManagementResourceRegistration implements ManagementResou
      * @param delegate the delegate. Cannot be {@code null}
      */
     public DelegatingManagementResourceRegistration(ManagementResourceRegistration delegate) {
+        this(delegate, null);
+    }
+
+    private DelegatingManagementResourceRegistration(ManagementResourceRegistration delegate, PathAddress ourAddress) {
         this.delegate = delegate;
+        this.ourAddress = ourAddress;
     }
 
     @Override
@@ -147,22 +153,26 @@ public class DelegatingManagementResourceRegistration implements ManagementResou
 
     @Override
     public ManagementResourceRegistration getOverrideModel(String name) {
-        return getDelegate().getOverrideModel(name);
+        ManagementResourceRegistration mrr = getDelegate().getOverrideModel(name);
+        return getDelegateTo(mrr);
     }
 
     @Override
     public ManagementResourceRegistration getSubModel(PathAddress address) {
-        return getDelegate().getSubModel(address);
+        ManagementResourceRegistration mrr = getDelegate().getSubModel(address);
+        return getDelegateTo(mrr, address);
     }
 
     @Override
     public ManagementResourceRegistration registerSubModel(PathElement address, DescriptionProvider descriptionProvider) {
-        return getDelegate().registerSubModel(address, descriptionProvider);
+        ManagementResourceRegistration mrr =  getDelegate().registerSubModel(address, descriptionProvider);
+        return getDelegateTo(mrr, address);
     }
 
     @Override
     public ManagementResourceRegistration registerSubModel(ResourceDefinition resourceDefinition) {
-        return getDelegate().registerSubModel(resourceDefinition);
+        ManagementResourceRegistration mrr = getDelegate().registerSubModel(resourceDefinition);
+        return getDelegateTo(mrr);
     }
 
     @Override
@@ -182,7 +192,8 @@ public class DelegatingManagementResourceRegistration implements ManagementResou
 
     @Override
     public ManagementResourceRegistration registerOverrideModel(String name, OverrideDescriptionProvider descriptionProvider) {
-        return getDelegate().registerOverrideModel(name, descriptionProvider);
+        ManagementResourceRegistration mrr = getDelegate().registerOverrideModel(name, descriptionProvider);
+        return getDelegateTo(mrr);
     }
 
     @Override
@@ -301,6 +312,31 @@ public class DelegatingManagementResourceRegistration implements ManagementResou
     }
 
     private ManagementResourceRegistration getDelegate() {
-        return delegate;
+        ManagementResourceRegistration result = ourAddress == null ? delegate : delegate.getSubModel(ourAddress);
+        if (result == null) {
+            // This is a delegate reference to an MRR that has been removed from the underlying MRR
+            throw new IllegalStateException();
+        }
+        return result;
+    }
+
+    private ManagementResourceRegistration getDelegateTo(ManagementResourceRegistration mrr) {
+        return mrr == null ? null : new DelegatingManagementResourceRegistration(delegate, mrr.getPathAddress());
+    }
+
+    private ManagementResourceRegistration getDelegateTo(ManagementResourceRegistration mrr, PathAddress relativeAddress) {
+        return mrr == null ? null : new DelegatingManagementResourceRegistration(delegate, getAbsoluteAddress(relativeAddress));
+    }
+
+    private PathAddress getAbsoluteAddress(PathAddress toAppend) {
+        return ourAddress == null ? toAppend : ourAddress.append(toAppend);
+    }
+
+    private ManagementResourceRegistration getDelegateTo(ManagementResourceRegistration mrr, PathElement relativeAddress) {
+        return mrr == null ? null : new DelegatingManagementResourceRegistration(delegate, getAbsoluteAddress(relativeAddress));
+    }
+
+    private PathAddress getAbsoluteAddress(PathElement toAppend) {
+        return ourAddress == null ? PathAddress.pathAddress(toAppend) : ourAddress.append(toAppend);
     }
 }
