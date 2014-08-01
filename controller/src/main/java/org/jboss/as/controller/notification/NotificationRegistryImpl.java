@@ -36,7 +36,7 @@ import org.jboss.as.controller.PathAddress;
  *
  * @author <a href="http://jmesnil.net/">Jeff Mesnil</a> (c) 2014 Red Hat inc.
  */
-class NotificationRegistryImpl implements NotificationRegistry {
+class NotificationRegistryImpl implements NotificationRegistry, Cloneable {
     /**
      * Keys of the map can be wildcard path addresses.
      * Values are sets of NotificationHandlerEntry (composed of an handler and filter).
@@ -81,6 +81,14 @@ class NotificationRegistryImpl implements NotificationRegistry {
             }
         }
         return handlers;
+    }
+
+    @SuppressWarnings("CloneDoesntCallSuperClone")
+    @Override
+    public final synchronized NotificationRegistryImpl clone() {
+        NotificationRegistryImpl result = new NotificationRegistryImpl();
+        result.notificationHandlers.putAll(notificationHandlers);
+        return result;
     }
 
     private class NotificationHandlerEntry {
