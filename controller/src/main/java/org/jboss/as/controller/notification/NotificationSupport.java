@@ -29,7 +29,7 @@ import java.util.concurrent.ExecutorService;
  *
  * @author <a href="http://jmesnil.net/">Jeff Mesnil</a> (c) 2013 Red Hat inc.
  */
-public interface NotificationSupport {
+public interface NotificationSupport extends Cloneable {
 
     /**
      * Get the notification registry to register/unregister notification handlers
@@ -42,6 +42,8 @@ public interface NotificationSupport {
      * @param notifications the notifications to emit
      */
     void emit(final Notification... notifications);
+
+    NotificationSupport clone() throws CloneNotSupportedException;
 
     class Factory {
         private Factory() {

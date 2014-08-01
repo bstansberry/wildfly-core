@@ -62,6 +62,12 @@ class NotificationSupports {
         public NotificationRegistry getNotificationRegistry() {
             return registry;
         }
+
+        @SuppressWarnings("CloneDoesntCallSuperClone")
+        @Override
+        public NotificationSupport clone() throws CloneNotSupportedException {
+            return new BlockingNotificationSupport(registry.clone());
+        }
     }
 
     static class NonBlockingNotificationSupport implements  NotificationSupport {
@@ -113,6 +119,12 @@ class NotificationSupports {
         @Override
         public NotificationRegistry getNotificationRegistry() {
             return registry;
+        }
+
+        @SuppressWarnings("CloneDoesntCallSuperClone")
+        @Override
+        public NotificationSupport clone() throws CloneNotSupportedException {
+            return new NonBlockingNotificationSupport(registry.clone(), executor);
         }
     }
 
