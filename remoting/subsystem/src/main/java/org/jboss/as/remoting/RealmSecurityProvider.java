@@ -242,7 +242,7 @@ class RealmSecurityProvider implements RemotingSecurityProvider {
                         if (userPrincipal instanceof UserPrincipal) {
                             allPrincipals.add(new RealmUser(userPrincipal.getName()));
                         } else if (userPrincipal instanceof InetAddressPrincipal) {
-                            allPrincipals.add(new org.jboss.as.controller.security.InetAddressPrincipal(
+                            allPrincipals.add(new org.jboss.as.core.security.InetAddressPrincipal(
                                     ((InetAddressPrincipal) userPrincipal).getInetAddress()));
                         }
                     }
@@ -387,7 +387,7 @@ class RealmSecurityProvider implements RemotingSecurityProvider {
                         converted.add(new RealmUser(current.getName()));
                     }
                 } else if (current instanceof InetAddressPrincipal) {
-                    inetAddressPrincipal = new org.jboss.as.controller.security.InetAddressPrincipal(
+                    inetAddressPrincipal = new org.jboss.as.core.security.InetAddressPrincipal(
                             ((InetAddressPrincipal) current).getInetAddress());
                 }
             }

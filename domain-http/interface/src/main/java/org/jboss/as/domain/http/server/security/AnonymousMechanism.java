@@ -21,17 +21,16 @@
  */
 package org.jboss.as.domain.http.server.security;
 
-import io.undertow.security.api.AuthenticationMechanism;
-import io.undertow.security.api.SecurityContext;
-import io.undertow.server.HttpServerExchange;
-
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.security.Principal;
 
 import javax.security.auth.Subject;
 
-import org.jboss.as.controller.security.InetAddressPrincipal;
+import io.undertow.security.api.AuthenticationMechanism;
+import io.undertow.security.api.SecurityContext;
+import io.undertow.server.HttpServerExchange;
+import org.jboss.as.core.security.InetAddressPrincipal;
 import org.jboss.as.core.security.RealmUser;
 
 /**

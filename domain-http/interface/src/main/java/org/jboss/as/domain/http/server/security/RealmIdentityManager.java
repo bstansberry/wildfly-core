@@ -46,7 +46,7 @@ import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.sasl.RealmCallback;
 
-import org.jboss.as.controller.security.InetAddressPrincipal;
+import org.jboss.as.core.security.InetAddressPrincipal;
 import org.jboss.as.core.security.SimplePrincipal;
 import org.jboss.as.core.security.SubjectUserInfo;
 import org.jboss.as.domain.http.server.logging.HttpServerLogger;

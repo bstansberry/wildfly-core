@@ -75,7 +75,7 @@ import org.jboss.as.controller.persistence.ConfigurationPersister;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.NotificationEntry;
 import org.jboss.as.controller.registry.Resource;
-import org.jboss.as.controller.security.InetAddressPrincipal;
+import org.jboss.as.core.security.api.InetAddressPrincipal;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.Property;
 import org.wildfly.security.manager.WildFlySecurityManager;

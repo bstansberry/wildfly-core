@@ -1,6 +1,6 @@
 /*
  * JBoss, Home of Professional Open Source.
- * Copyright 2012, Red Hat, Inc., and individual contributors
+ * Copyright 2014, Red Hat, Inc., and individual contributors
  * as indicated by the @author tags. See the copyright.txt file in the
  * distribution for a full listing of individual contributors.
  *
@@ -19,22 +19,20 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.as.controller.security;
+
+package org.jboss.as.core.security;
 
 import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.security.Principal;
-
 
 /**
+ * Standard implementation of the {@link org.jboss.as.core.security.api.InetAddressPrincipal} interface.
  *
  * @author <a href="kabir.khan@jboss.com">Kabir Khan</a>
- *
- * @deprecated no longer used internally; will be removed
+ * @author Brian Stansberry (c) 2014 Red Hat Inc.
  */
-@Deprecated
-public final class InetAddressPrincipal implements Principal, Cloneable, Serializable {
+public class InetAddressPrincipal implements org.jboss.as.core.security.api.InetAddressPrincipal, Cloneable, Serializable {
 
     private static final long serialVersionUID = -4933833947550618331L;
 

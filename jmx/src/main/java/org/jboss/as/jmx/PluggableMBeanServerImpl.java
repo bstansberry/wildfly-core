@@ -91,7 +91,7 @@ import org.jboss.as.controller.access.JmxAction;
 import org.jboss.as.controller.access.management.JmxAuthorizer;
 import org.jboss.as.controller.audit.AuditLogger;
 import org.jboss.as.controller.audit.ManagedAuditLogger;
-import org.jboss.as.controller.security.InetAddressPrincipal;
+import org.jboss.as.core.security.api.InetAddressPrincipal;
 import org.jboss.as.core.security.RealmUser;
 import org.jboss.as.jmx.logging.JmxLogger;
 import org.jboss.as.server.jmx.MBeanServerPlugin;

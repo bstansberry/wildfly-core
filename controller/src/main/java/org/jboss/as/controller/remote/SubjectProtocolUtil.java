@@ -35,12 +35,12 @@ import java.util.Map;
 
 import javax.security.auth.Subject;
 
-import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.controller.client.impl.ModelControllerProtocol;
-import org.jboss.as.controller.security.InetAddressPrincipal;
+import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.core.security.RealmGroup;
 import org.jboss.as.core.security.RealmRole;
 import org.jboss.as.core.security.RealmUser;
+import org.jboss.as.core.security.api.InetAddressPrincipal;
 import org.jboss.as.protocol.mgmt.ProtocolUtils;
 
 /**
@@ -343,7 +343,7 @@ class SubjectProtocolUtil {
 
                 InetAddress address = InetAddress.getByAddress(host, addr);
 
-                return new InetAddressPrincipal(address);
+                return new org.jboss.as.core.security.InetAddressPrincipal(address);
             }
         };
 

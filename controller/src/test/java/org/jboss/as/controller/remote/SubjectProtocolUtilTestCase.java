@@ -36,7 +36,7 @@ import java.util.HashSet;
 
 import javax.security.auth.Subject;
 
-import org.jboss.as.controller.security.InetAddressPrincipal;
+import org.jboss.as.core.security.InetAddressPrincipal;
 import org.jboss.as.core.security.RealmGroup;
 import org.jboss.as.core.security.RealmRole;
 import org.jboss.as.core.security.RealmUser;
