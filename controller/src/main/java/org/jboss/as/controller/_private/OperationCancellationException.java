@@ -25,10 +25,16 @@ package org.jboss.as.controller._private;
 import java.util.concurrent.CancellationException;
 
 import org.jboss.as.controller.OperationClientException;
+import org.jboss.as.controller.OperationErrorCode;
 import org.jboss.dmr.ModelNode;
 
 /**
  * {@link CancellationException} variant that implements {@link OperationClientException}.
+ * We treat this as a "client exception" internally because the cancellation is due to
+ * an administrative action and we do not want it caught and logged server-side as a server failure.
+ * However, the error code we use indicates a server issue, as from the point of view of the caller
+ * who invoked the operation, the server did not successfully handle the request and also did
+ * not find any flaw in what the client submitted.
  *
  * @author Brian Stansberry (c) 2011 Red Hat Inc.
  */
@@ -44,5 +50,15 @@ public class OperationCancellationException extends CancellationException implem
     @Override
     public ModelNode getFailureDescription() {
         return new ModelNode(getMessage());
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return {@link org.jboss.as.controller.OperationErrorCode.StandardErrorCodes#CANCELLED}
+     */
+    @Override
+    public OperationErrorCode getErrorCode() {
+        return OperationErrorCode.StandardErrorCodes.CANCELLED.getOperationErrorCode();
     }
 }

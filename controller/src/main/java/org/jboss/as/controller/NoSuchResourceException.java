@@ -41,4 +41,14 @@ public class NoSuchResourceException extends OperationFailedRuntimeException {
     public NoSuchResourceException(String message) {
         super(message);
     }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return {@link OperationErrorCode.StandardErrorCodes#RESOURCE_NOT_FOUND}
+     */
+    @Override
+    public OperationErrorCode getErrorCode() {
+        return OperationErrorCode.StandardErrorCodes.RESOURCE_NOT_FOUND.getOperationErrorCode();
+    }
 }

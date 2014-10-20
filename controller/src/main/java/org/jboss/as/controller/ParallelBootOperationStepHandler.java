@@ -360,6 +360,7 @@ public class ParallelBootOperationStepHandler implements OperationStepHandler {
                     ModelNode failure = new ModelNode();
                     failure.get(ModelDescriptionConstants.SUCCESS).set(false);
                     failure.get(ModelDescriptionConstants.FAILURE_DESCRIPTION).set(t.toString());
+                    failure.get(ModelDescriptionConstants.ERROR_CODE).set(OperationErrorCode.StandardErrorCodes.INTERNAL_SERVER_ERROR.getCode());
                     transactionControl.operationFailed(failure);
                 }
             } finally {

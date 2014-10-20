@@ -29,6 +29,7 @@ import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.ALL
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.BLOCKING_TIMEOUT;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.CANCELLED;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.DOMAIN_UUID;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.ERROR_CODE;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.FAILED;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.FAILURE_DESCRIPTION;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.MANAGEMENT_OPERATIONS;
@@ -328,6 +329,7 @@ class ModelControllerImpl implements ModelController {
                         if (!controllerLock.detectDeadlockAndGetLock(operationID)) {
                             response.get(OUTCOME).set(FAILED);
                             response.get(FAILURE_DESCRIPTION).set(ControllerLogger.ROOT_LOGGER.cannotGetControllerLock());
+                            response.get(ERROR_CODE).set(OperationErrorCode.StandardErrorCodes.INTERNAL_SERVER_ERROR.getCode());
                             return response;
                         }
                         shouldUnlock = true;
@@ -365,8 +367,7 @@ class ModelControllerImpl implements ModelController {
         ModelNode result = new ModelNode();
         result.get(OUTCOME).set(FAILED);
         result.get(FAILURE_DESCRIPTION).set(ControllerLogger.MGMT_OP_LOGGER.managementUnavailableDuringBoot());
-        // TODO WFCORE-185 once we have http codes for failure messages, include those, e.g.
-        // result.get("http-code").set(nsre.getHttpCode());
+        result.get(ERROR_CODE).set(OperationErrorCode.StandardErrorCodes.MANAGEMENT_UNAVAILABLE.getCode());
         return result;
     }
 

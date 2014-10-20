@@ -22,14 +22,15 @@
 
 package org.jboss.as.controller.registry;
 
-import org.jboss.as.controller.logging.ControllerLogger;
-import org.jboss.as.controller.OperationClientException;
-import org.jboss.as.controller.PathAddress;
-import org.jboss.as.controller.PathElement;
-import org.jboss.dmr.ModelNode;
-
 import java.util.NoSuchElementException;
 import java.util.Set;
+
+import org.jboss.as.controller.OperationClientException;
+import org.jboss.as.controller.OperationErrorCode;
+import org.jboss.as.controller.PathAddress;
+import org.jboss.as.controller.PathElement;
+import org.jboss.as.controller.logging.ControllerLogger;
+import org.jboss.dmr.ModelNode;
 
 /**
  * An addressable resource in the management model, representing a local model and child resources.
@@ -307,6 +308,16 @@ public interface Resource extends Cloneable {
         @Override
         public ModelNode getFailureDescription() {
             return new ModelNode(getLocalizedMessage());
+        }
+
+        /**
+         * {@inheritDoc}
+         *
+         * @return {@link org.jboss.as.controller.OperationErrorCode.StandardErrorCodes#RESOURCE_NOT_FOUND}
+         */
+        @Override
+        public OperationErrorCode getErrorCode() {
+            return OperationErrorCode.StandardErrorCodes.RESOURCE_NOT_FOUND.getOperationErrorCode();
         }
     }
 

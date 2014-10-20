@@ -136,6 +136,7 @@ public class ModelDescriptionConstants {
     public static final String ENABLED_TIME = "enabled-time";
     public static final String ENABLED_TIMESTAMP = "enabled-timestamp";
     public static final String ENTIRE_RESOURCE = "entire-resource";
+    public static final String ERROR_CODE = "failure-error-code";
     public static final String EXECUTE = "execute";
     public static final String EXCEPTIONS = "exceptions";
     public static final String EXCLUDE = "exclude";

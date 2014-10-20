@@ -1,6 +1,6 @@
 /*
  * JBoss, Home of Professional Open Source.
- * Copyright 2012, Red Hat, Inc., and individual contributors
+ * Copyright 2014, Red Hat, Inc., and individual contributors
  * as indicated by the @author tags. See the copyright.txt file in the
  * distribution for a full listing of individual contributors.
  *
@@ -22,12 +22,24 @@
 
 package org.jboss.as.controller;
 
-/**
- * Marker interface for an Exception indicating a management operation has failed due to a client mistake
- * (e.g. an operation with invalid parameters was invoked.) Should not be used to report server failures.
- *
- * @author Brian Stansberry (c) 2011 Red Hat Inc.
- */
-public interface OperationClientException extends OperationException {
+import org.jboss.dmr.ModelNode;
 
+/**
+ * TODO class javadoc.
+ *
+ * @author Brian Stansberry (c) 2014 Red Hat Inc.
+ */
+public interface OperationException {
+    /**
+     * Get the detyped failure description.
+     *
+     * @return the description. Will not be {@code null}
+     */
+    ModelNode getFailureDescription();
+
+    /**
+     * Gets the error code that is appropriate for this exception.
+     * @return the error code. Will not be {@code null}
+     */
+    OperationErrorCode getErrorCode();
 }

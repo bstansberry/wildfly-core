@@ -52,6 +52,7 @@ import org.jboss.as.controller.ProcessType;
 import org.jboss.as.controller.UnauthorizedException;
 import org.jboss.as.controller._private.OperationCancellationException;
 import org.jboss.as.controller._private.OperationFailedRuntimeException;
+import org.jboss.as.controller._private.OperationTimeoutException;
 import org.jboss.as.controller.capability.RuntimeCapability;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.as.controller.interfaces.InterfaceCriteria;
@@ -2013,13 +2014,14 @@ public interface ControllerLogger extends BasicLogger {
     /**
      * Creates an exception indicating a resource does not exist.
      *
+     *
      * @param ancestor the ancestor path.
      * @param address  the address.
      *
      * @return an {@link OperationFailedRuntimeException} for the error.
      */
     @Message(id = 175, value = "Resource %s does not exist; a resource at address %s cannot be created until all ancestor resources have been added")
-    OperationFailedRuntimeException resourceNotFound(PathAddress ancestor, PathAddress address);
+    NoSuchResourceException resourceNotFound(PathAddress ancestor, PathAddress address);
 
     /**
      * Creates an exception indicating the rollback has already been invoked.
@@ -3160,7 +3162,7 @@ public interface ControllerLogger extends BasicLogger {
     String timeoutExecutingOperation();
 
     @Message(id = 345, value = "Timeout after %d seconds waiting for existing service %s to be removed so a new instance can be installed.")
-    IllegalStateException serviceInstallTimedOut(long timeout, ServiceName name);
+    OperationTimeoutException serviceInstallTimedOut(long timeout, ServiceName name);
 
     @LogMessage(level = Level.ERROR)
     @Message(id = 346, value = "Invalid value %s for property %s; must be a numeric value greater than zero. Default value of %d will be used.")

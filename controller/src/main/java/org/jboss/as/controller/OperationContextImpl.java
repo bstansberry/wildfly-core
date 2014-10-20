@@ -29,6 +29,7 @@ import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.ATT
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.CALLER_THREAD;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.CALLER_TYPE;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.CANCELLED;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.ERROR_CODE;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.EXCLUSIVE_RUNNING_TIME;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.EXECUTION_STATUS;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.FAILURE_DESCRIPTION;
@@ -277,6 +278,7 @@ final class OperationContextImpl extends AbstractOperationContext {
                         }
                     }
                     guilty.response.get(FAILURE_DESCRIPTION).set(msg.toString());
+                    guilty.response.get(ERROR_CODE).set(OperationErrorCode.StandardErrorCodes.BAD_REQUEST.getCode());
                 } else {
                     // Problem wasn't a capability removal.
                     // See what step(s) added this requirement
@@ -305,6 +307,9 @@ final class OperationContextImpl extends AbstractOperationContext {
                         }
                     }
                     response.get(FAILURE_DESCRIPTION).set(msg.toString());
+                }
+                if (!response.hasDefined(ERROR_CODE)) {
+                    response.get(ERROR_CODE).set(OperationErrorCode.StandardErrorCodes.BAD_REQUEST.getCode());
                 }
             }
         }
@@ -659,7 +664,14 @@ final class OperationContextImpl extends AbstractOperationContext {
                     // in AbstractOperationContext.executeStep is not what I wanted
                     ControllerLogger.MGMT_OP_LOGGER.timeoutAwaitingInitialStability(timeout / 1000, activeStep.operationId.name, activeStep.operationId.address);
                     setRollbackOnly();
-                    throw new OperationFailedRuntimeException(ControllerLogger.ROOT_LOGGER.timeoutAwaitingInitialStability());
+                    // We use OperationFailedRuntimeException here as we don't want this logged again. But we
+                    // want the "execution timeout" error code
+                    throw new OperationFailedRuntimeException(ControllerLogger.ROOT_LOGGER.timeoutAwaitingInitialStability()) {
+                        @Override
+                        public OperationErrorCode getErrorCode() {
+                            return OperationErrorCode.StandardErrorCodes.EXECUTION_TIMEOUT.getOperationErrorCode();
+                        }
+                    };
                 } finally {
                     executionStatus = origStatus;
                 }
@@ -1960,6 +1972,9 @@ final class OperationContextImpl extends AbstractOperationContext {
                     step.response.get(ModelDescriptionConstants.FAILURE_DESCRIPTION).set(sb.toString());
                 }
                 // else a handler already recorded a failure; don't overwrite
+                if (!step.response.hasDefined(ERROR_CODE)) {
+                    step.response.get(ERROR_CODE).set(OperationErrorCode.StandardErrorCodes.BAD_REQUEST.getCode());
+                }
             }
 
             if (!missingByStep.isEmpty() && context.isRollbackOnRuntimeFailure()) {

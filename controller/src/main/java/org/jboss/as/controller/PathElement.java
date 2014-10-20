@@ -200,5 +200,15 @@ public class PathElement {
         public ModelNode getFailureDescription() {
             return new ModelNode(getLocalizedMessage());
         }
+
+        /**
+         * {@inheritDoc}
+         *
+         * @return {@link OperationErrorCode.StandardErrorCodes#BAD_REQUEST}
+         */
+        @Override
+        public OperationErrorCode getErrorCode() {
+            return OperationErrorCode.StandardErrorCodes.BAD_REQUEST.getOperationErrorCode();
+        }
     }
 }

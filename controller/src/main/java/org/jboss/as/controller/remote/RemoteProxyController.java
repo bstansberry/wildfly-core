@@ -22,6 +22,7 @@
 package org.jboss.as.controller.remote;
 
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.CANCELLED;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.ERROR_CODE;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.FAILED;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.FAILURE_DESCRIPTION;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP;
@@ -35,6 +36,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 
 import org.jboss.as.controller.ModelController;
+import org.jboss.as.controller.OperationErrorCode;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.ProxyController;
 import org.jboss.as.controller.ProxyOperationAddressTranslator;
@@ -230,6 +232,7 @@ public class RemoteProxyController implements ProxyController {
         ModelNode result = new ModelNode();
         result.get(OUTCOME).set(CANCELLED);
         result.get(FAILURE_DESCRIPTION).set(ControllerLogger.ROOT_LOGGER.operationCancelled());
+        result.get(ERROR_CODE).set(OperationErrorCode.StandardErrorCodes.CANCELLED.getCode());
         return result;
     }
 }

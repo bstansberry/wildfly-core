@@ -67,9 +67,7 @@ class ServiceVerificationHelper extends AbstractServiceListener<Object> implemen
             monitor.awaitStability(failed, problems);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            context.getFailureDescription().set(ControllerLogger.ROOT_LOGGER.operationCancelled());
-            context.completeStep(OperationContext.RollbackHandler.NOOP_ROLLBACK_HANDLER);
-            return;
+            throw ControllerLogger.MGMT_OP_LOGGER.operationCancelledAsynchronously();
         } finally {
             monitor.clear();
         }

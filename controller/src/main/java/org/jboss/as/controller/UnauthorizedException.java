@@ -42,4 +42,14 @@ public class UnauthorizedException extends OperationFailedRuntimeException {
     public UnauthorizedException(String message) {
         super(message);
     }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return {@link OperationErrorCode.StandardErrorCodes#UNAUTHORIZED}
+     */
+    @Override
+    public OperationErrorCode getErrorCode() {
+        return OperationErrorCode.StandardErrorCodes.UNAUTHORIZED.getOperationErrorCode();
+    }
 }

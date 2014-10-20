@@ -129,6 +129,16 @@ public class OperationFailedException extends Exception implements OperationClie
         return failureDescription;
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @return {@link OperationErrorCode.StandardErrorCodes#BAD_REQUEST}
+     */
+    @Override
+    public OperationErrorCode getErrorCode() {
+        return OperationErrorCode.StandardErrorCodes.BAD_REQUEST.getOperationErrorCode();
+    }
+
     @Override
     public String toString() {
         return super.toString() + " [ " + failureDescription + " ]";

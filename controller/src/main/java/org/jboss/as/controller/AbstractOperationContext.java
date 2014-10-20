@@ -24,6 +24,7 @@ package org.jboss.as.controller;
 
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.ALLOW_RESOURCE_SERVICE_RESTART;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.CANCELLED;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.ERROR_CODE;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.FAILED;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.FAILURE_DESCRIPTION;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP;
@@ -580,6 +581,7 @@ abstract class AbstractOperationContext implements OperationContext {
                 if (response != null) {
                     response.get(OUTCOME).set(FAILED);
                     response.get(FAILURE_DESCRIPTION).set(ControllerLogger.ROOT_LOGGER.failedToPersistConfigurationChange(e.getLocalizedMessage()));
+                    response.get(ERROR_CODE).set(OperationErrorCode.StandardErrorCodes.INTERNAL_SERVER_ERROR.getCode());
                 }
                 resultAction = ResultAction.ROLLBACK;
                 logAuditRecord();
@@ -676,6 +678,7 @@ abstract class AbstractOperationContext implements OperationContext {
             if (activeStep != null) {
                 activeStep.response.get(OUTCOME).set(CANCELLED);
                 activeStep.response.get(FAILURE_DESCRIPTION).set(ControllerLogger.ROOT_LOGGER.operationCancelled());
+                activeStep.response.get(ERROR_CODE).set(OperationErrorCode.StandardErrorCodes.CANCELLED.getCode());
                 activeStep.response.get(ROLLED_BACK).set(true);
             }
             resultAction = ResultAction.ROLLBACK;
@@ -722,8 +725,10 @@ abstract class AbstractOperationContext implements OperationContext {
                     // equivalent to
                     // a request that we set the failure description and call
                     // completeStep()
-                    final ModelNode failDesc = OperationClientException.class.cast(t).getFailureDescription();
+                    OperationClientException oce = OperationClientException.class.cast(t);
+                    final ModelNode failDesc = oce.getFailureDescription();
                     step.response.get(FAILURE_DESCRIPTION).set(failDesc);
+                    step.response.get(ERROR_CODE).set(oce.getErrorCode().getCode());
                     if (isErrorLoggingNecessary()) {
                         MGMT_OP_LOGGER.operationFailed(step.operation.get(OP), step.operation.get(OP_ADDR),
                                 step.response.get(FAILURE_DESCRIPTION));
@@ -756,12 +761,20 @@ abstract class AbstractOperationContext implements OperationContext {
             if (currentStage != Stage.DONE) {
                 // It failed before, so consider the operation a failure.
                 if (!step.hasFailed()) {
-                    // If the failure is an OperationClientException we just want its localized message, no class name
-                    String cause = t instanceof OperationClientException ? t.getLocalizedMessage() : t.toString();
-                    if (cause == null) {
+                    String cause;
+                    OperationErrorCode oec;
+                    if (t instanceof OperationException) {
+                        // If the failure is an OperationException we just want its localized message, no class name
+                        cause = t.getLocalizedMessage();
+                        oec = ((OperationException) t).getErrorCode();
+                    } else {
                         cause = t.toString();
+                        oec = OperationErrorCode.StandardErrorCodes.INTERNAL_SERVER_ERROR.getOperationErrorCode();
                     }
                     step.response.get(FAILURE_DESCRIPTION).set(ControllerLogger.ROOT_LOGGER.operationHandlerFailed(cause));
+                    step.response.get(ERROR_CODE).set(oec.getCode());
+                } else if (!step.response.hasDefined(ERROR_CODE)) {
+                    step.response.get(ERROR_CODE).set(OperationErrorCode.StandardErrorCodes.INTERNAL_SERVER_ERROR.getCode());
                 }
                 step.response.get(OUTCOME).set(FAILED);
                 resultAction = getFailedResultAction(t);
@@ -836,6 +849,8 @@ abstract class AbstractOperationContext implements OperationContext {
         if (response != null) {
             response.get(OUTCOME).set(CANCELLED);
             response.get(FAILURE_DESCRIPTION).set(interrupted ? ControllerLogger.ROOT_LOGGER.operationCancelled(): ControllerLogger.ROOT_LOGGER.timeoutExecutingOperation());
+            OperationErrorCode.StandardErrorCodes oec = interrupted ? OperationErrorCode.StandardErrorCodes.CANCELLED : OperationErrorCode.StandardErrorCodes.EXECUTION_TIMEOUT;
+            response.get(ERROR_CODE).set(oec.getCode());
             response.get(ROLLED_BACK).set(true);
         }
         resultAction = ResultAction.ROLLBACK;
@@ -1145,6 +1160,7 @@ abstract class AbstractOperationContext implements OperationContext {
                     currentStage = Stage.DONE;
                     if (!hasFailed()) {
                         response.get(FAILURE_DESCRIPTION).set(ControllerLogger.ROOT_LOGGER.operationHandlerFailedToComplete());
+                        response.get(ERROR_CODE).set(OperationErrorCode.StandardErrorCodes.INTERNAL_SERVER_ERROR.getCode());
                     }
                     response.get(OUTCOME).set(cancelled ? CANCELLED : FAILED);
                     response.get(ROLLED_BACK).set(true);

@@ -22,6 +22,8 @@
 
 package org.jboss.as.controller.remote;
 
+import org.jboss.as.controller.OperationErrorCode;
+import org.jboss.as.controller.OperationException;
 import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.dmr.ModelNode;
@@ -119,22 +121,32 @@ public class BlockingQueueOperationListener<T extends TransactionalProtocolClien
          * @return the failed operation
          */
         public static <T extends TransactionalProtocolClient.Operation> TransactionalProtocolClient.PreparedOperation<T> create(final T operation, final Throwable t) {
-            final String failureDescription = t.getLocalizedMessage() == null ? t.getClass().getName() : t.getLocalizedMessage();
-            return create(operation, failureDescription);
+            ModelNode failDesc;
+            OperationErrorCode errorCode;
+            if (t instanceof  OperationException) {
+                OperationException oe = (OperationException) t;
+                failDesc = oe.getFailureDescription();
+                errorCode = oe.getErrorCode();
+            } else {
+                failDesc = new ModelNode(t.toString());
+                errorCode = OperationErrorCode.StandardErrorCodes.INTERNAL_SERVER_ERROR.getOperationErrorCode();
+            }
+            return create(operation, failDesc, errorCode);
         }
 
         /**
          * Create a failed operation.
          *
          * @param operation the operation
-         * @param failureDescription the failure description
-         * @param <T> the operation type
+         * @param failureDescription the failure description. Cannot be {@code null}
+         * @param errorCode error code for the failure. Cannot be {@code null}
          * @return the failed operation
          */
-        public static <T extends TransactionalProtocolClient.Operation> TransactionalProtocolClient.PreparedOperation<T> create(final T operation, final String failureDescription) {
+        public static <T extends TransactionalProtocolClient.Operation> TransactionalProtocolClient.PreparedOperation<T> create(final T operation, final ModelNode failureDescription, final OperationErrorCode errorCode) {
             final ModelNode failedResult = new ModelNode();
             failedResult.get(ModelDescriptionConstants.OUTCOME).set(ModelDescriptionConstants.FAILED);
             failedResult.get(ModelDescriptionConstants.FAILURE_DESCRIPTION).set(failureDescription);
+            failedResult.get(ModelDescriptionConstants.ERROR_CODE).set(errorCode.getCode());
             return new FailedOperation<T>(operation, failedResult);
         }
 
