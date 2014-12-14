@@ -47,6 +47,7 @@ import org.jboss.as.cli.parsing.operation.OperationFormat;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.protocol.StreamUtils;
 import org.jboss.dmr.ModelNode;
+import org.wildfly.core.expressions.ExpressionReplacer;
 import org.wildfly.security.manager.WildFlySecurityManager;
 
 /**
@@ -990,7 +991,7 @@ public class Util {
     }
 
     public static String resolveProperties(String s) {
-        return StringPropertyReplacer.replaceProperties(s);
+        return ExpressionReplacer.Factory.DEFAULT_REPLACER.replaceExpressions(s);
     }
 
     public static byte[] readBytes(File f) throws OperationFormatException {

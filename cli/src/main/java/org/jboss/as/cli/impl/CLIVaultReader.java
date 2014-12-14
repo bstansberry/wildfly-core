@@ -29,12 +29,13 @@ import java.util.regex.Pattern;
 import org.jboss.security.vault.SecurityVault;
 import org.jboss.security.vault.SecurityVaultException;
 import org.picketbox.plugins.vault.PicketBoxSecurityVault;
+import org.wildfly.core.expressions.SimpleExpressionResolver;
 
 /**
  * @author Alexey Loubyansky
  *
  */
-class CLIVaultReader {
+class CLIVaultReader implements SimpleExpressionResolver {
 
     private static final Pattern VAULT_PATTERN = Pattern.compile("VAULT::.*::.*::.*");
 
@@ -60,17 +61,20 @@ class CLIVaultReader {
         vault.init(vaultConfig.getOptions());
     }
 
-
-
-    String retrieve(String password) throws SecurityVaultException {
-        if(isVaultFormat(password)) {
-            char[] retrieved = getValue(password);
-            return retrieved != null ? new String(retrieved) : null;
+    @Override
+    public ResolutionResult resolveExpressionContent(String expressionContent) {
+        if (isVaultFormat(expressionContent)) {
+            try {
+                char[] retrieved = getValue(expressionContent);
+                return retrieved != null ? new ResolutionResult(new String(retrieved), false) : null;
+            } catch (SecurityVaultException sve) {
+                throw new SecurityException("Failed to retrieve from vault '" + expressionContent + "'", sve);
+            }
         }
-        return password;
+        return null;
     }
 
-    boolean isVaultFormat(String str) {
+    private boolean isVaultFormat(String str) {
         return str != null && VAULT_PATTERN.matcher(str).matches();
     }
 

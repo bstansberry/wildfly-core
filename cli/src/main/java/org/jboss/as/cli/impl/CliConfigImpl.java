@@ -47,6 +47,8 @@ import org.jboss.logging.Logger;
 import org.jboss.staxmapper.XMLElementReader;
 import org.jboss.staxmapper.XMLExtendedStreamReader;
 import org.jboss.staxmapper.XMLMapper;
+import org.wildfly.core.expressions.ExpressionReplacer;
+import org.wildfly.core.expressions.SystemPropertyResolver;
 import org.wildfly.security.manager.WildFlySecurityManager;
 
 /**
@@ -771,6 +773,8 @@ class CliConfigImpl implements CliConfig {
         public void readSSLElement_2_0(XMLExtendedStreamReader reader, Namespace expectedNs, SslConfig config) throws XMLStreamException {
 
             final CLIVaultReader vaultReader = new CLIVaultReader();
+            final ExpressionReplacer expressionReplacer =
+                    ExpressionReplacer.Factory.resolvingReplacer(vaultReader, SystemPropertyResolver.INSTANCE);
             while (reader.hasNext() && reader.nextTag() != END_ELEMENT) {
                 assertExpectedNamespace(reader, expectedNs);
                 final String localName = reader.getLocalName();
@@ -819,13 +823,13 @@ class CliConfigImpl implements CliConfig {
                 } else if ("key-store".equals(localName) || "keyStore".equals(localName)) {
                     config.setKeyStore(reader.getElementText());
                 } else if ("key-store-password".equals(localName) || "keyStorePassword".equals(localName)) {
-                    config.setKeyStorePassword(getPassword(vaultReader, reader.getElementText()));
+                    config.setKeyStorePassword(getPassword(expressionReplacer, reader.getElementText()));
                 } else if ("key-password".equals(localName) || "keyPassword".equals(localName)) {
-                    config.setKeyPassword(getPassword(vaultReader, reader.getElementText()));
+                    config.setKeyPassword(getPassword(expressionReplacer, reader.getElementText()));
                 } else if ("trust-store".equals(localName) || "trustStore".equals(localName)) {
                     config.setTrustStore(reader.getElementText());
                 } else if ("trust-store-password".equals(localName) || "trustStorePassword".equals(localName)) {
-                    config.setTrustStorePassword(getPassword(vaultReader, reader.getElementText()));
+                    config.setTrustStorePassword(getPassword(expressionReplacer, reader.getElementText()));
                 } else if ("modify-trust-store".equals(localName) || "modifyTrustStore".equals(localName)) {
                     config.setModifyTrustStore(resolveBoolean(reader.getElementText()));
                 } else {
@@ -837,6 +841,8 @@ class CliConfigImpl implements CliConfig {
         public void readSSLElement_3_0(XMLExtendedStreamReader reader, Namespace expectedNs, SslConfig config) throws XMLStreamException {
 
             final CLIVaultReader vaultReader = new CLIVaultReader();
+            final ExpressionReplacer expressionReplacer =
+                    ExpressionReplacer.Factory.resolvingReplacer(vaultReader, SystemPropertyResolver.INSTANCE);
             while (reader.hasNext() && reader.nextTag() != END_ELEMENT) {
                 assertExpectedNamespace(reader, expectedNs);
                 final String localName = reader.getLocalName();
@@ -854,13 +860,13 @@ class CliConfigImpl implements CliConfig {
                 } else if ("key-store".equals(localName) || "keyStore".equals(localName)) {
                     config.setKeyStore(reader.getElementText());
                 } else if ("key-store-password".equals(localName) || "keyStorePassword".equals(localName)) {
-                    config.setKeyStorePassword(getPassword(vaultReader, reader.getElementText()));
+                    config.setKeyStorePassword(getPassword(expressionReplacer, reader.getElementText()));
                 } else if ("key-password".equals(localName) || "keyPassword".equals(localName)) {
-                    config.setKeyPassword(getPassword(vaultReader, reader.getElementText()));
+                    config.setKeyPassword(getPassword(expressionReplacer, reader.getElementText()));
                 } else if ("trust-store".equals(localName) || "trustStore".equals(localName)) {
                     config.setTrustStore(reader.getElementText());
                 } else if ("trust-store-password".equals(localName) || "trustStorePassword".equals(localName)) {
-                    config.setTrustStorePassword(getPassword(vaultReader, reader.getElementText()));
+                    config.setTrustStorePassword(getPassword(expressionReplacer, reader.getElementText()));
                 } else if ("modify-trust-store".equals(localName) || "modifyTrustStore".equals(localName)) {
                     config.setModifyTrustStore(resolveBoolean(reader.getElementText()));
                 } else {
@@ -869,11 +875,11 @@ class CliConfigImpl implements CliConfig {
             }
         }
 
-        private String getPassword(CLIVaultReader vaultReader, String str) throws XMLStreamException {
+        private String getPassword(ExpressionReplacer replacer, String str) throws XMLStreamException {
             try {
-                return vaultReader.retrieve(str);
-            } catch (GeneralSecurityException e) {
-                throw new XMLStreamException("Failed to retrieve from vault '" + str + "'", e);
+                return replacer.replaceExpressions(str);
+            } catch (SecurityException e) {
+                throw new XMLStreamException("Failed to resolve expression '" + str + "'", e);
             }
         }
 

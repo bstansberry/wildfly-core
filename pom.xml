@@ -168,6 +168,7 @@
         <module>deployment-scanner</module>
         <module>domain-http</module>
         <module>domain-management</module>
+        <module>expressions</module>
         <module>host-controller</module>
         <module>logging</module>
         <module>management-client-content</module>
@@ -680,6 +681,12 @@
             <dependency>
                 <groupId>org.wildfly.core</groupId>
                 <artifactId>wildfly-domain-management</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.wildfly.core</groupId>
+                <artifactId>wildfly-expressions</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
