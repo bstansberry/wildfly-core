@@ -59,11 +59,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.jboss.metadata</groupId>
-            <artifactId>jboss-metadata-common</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>org.jboss.slf4j</groupId>
             <artifactId>slf4j-jboss-logmanager</artifactId>
         </dependency>
@@ -75,9 +70,14 @@
 
         <dependency>
             <groupId>org.wildfly.core</groupId>
+            <artifactId>wildfly-expressions</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.wildfly.core</groupId>
             <artifactId>wildfly-server</artifactId>
         </dependency>
-        
+
         <dependency>
             <groupId>org.wildfly.legacy.test</groupId>
             <artifactId>wildfly-legacy-spi</artifactId>
