@@ -26,12 +26,16 @@ import java.util.Stack;
 import java.util.regex.Pattern;
 
 /**
- * {@link org.wildfly.core.expressions.ExpressionReplacer} that can deal with nested expressions and
- * with recursively resolution in cases where expression resolves to another expression.
- *
- * @author Brian Stansberry (c) 2014 Red Hat Inc.
- */
-public class DefaultExpressionReplacer implements ExpressionReplacer {
+* Abstract superclass for classes that perform expression resolution and replacement.
+* Subclasses may vary in terms of the output type provided and in terms of the exception
+* type thrown in case of resolution failure.
+*
+ * @param <T> the output type provided when replacement is complete
+ * @param <E> the exception type to throw when resolution fails
+*
+* @author Brian Stansberry (c) 2014 Red Hat Inc.
+*/
+public abstract class AbstractExpressionReplacer<T, E extends Throwable> {
 
     /** A {@link java.util.regex.Pattern} that can be used to identify strings that include expression syntax */
     private static final Pattern EXPRESSION_PATTERN = Pattern.compile(".*\\$\\{.*\\}.*");
@@ -42,7 +46,7 @@ public class DefaultExpressionReplacer implements ExpressionReplacer {
 
     private final SimpleExpressionResolver resolver;
 
-    DefaultExpressionReplacer(SimpleExpressionResolver resolver) {
+    AbstractExpressionReplacer(SimpleExpressionResolver resolver) {
         this.resolver = getDefaultCompatibleResolver(resolver);
     }
 
@@ -51,7 +55,7 @@ public class DefaultExpressionReplacer implements ExpressionReplacer {
     private static SimpleExpressionResolver getDefaultCompatibleResolver(SimpleExpressionResolver resolver) {
         if (resolver instanceof JBossASSimpleExpressionResolver
                 || (resolver instanceof CompositeExpressionResolver
-                    && ((CompositeExpressionResolver) resolver).hasJBossASExpressionSupport)) {
+                && ((CompositeExpressionResolver) resolver).hasJBossASExpressionSupport)) {
             return resolver;
         }
         // Create a composite resolver that will include the needed support
@@ -63,24 +67,55 @@ public class DefaultExpressionReplacer implements ExpressionReplacer {
         });
     }
 
-    @Override
-    public String replaceExpressions(String text) {
-        return resolveExpressionStringRecursively(text, false, true);
+    /**
+     * Attempt to resolve the given expression string, recursing if resolution of one string produces
+     * another expression.
+     *
+     * @param expressionString the expression string
+     * @param ignoreResolutionFailure {@code false} if resolution failures should be ignored
+     *
+     * @return a {@code <T>} containing the resolved expression, or {@code expressionString} if
+     *         {@code ignoreResolutionFailure} and {@code initial} are both {@code true} and the string could not be resolved.
+
+     * @throws E if resolution fails and {@code ignoreResolutionFailure} is {@code false}
+     */
+    protected final T resolveExpressionStringRecursively(final String expressionString, final boolean ignoreResolutionFailure) throws E {
+        return resolveExpressionStringRecursively(expressionString, ignoreResolutionFailure, true);
     }
+
+    /**
+     * Convert a string that is the result of an expression resolution into the expected
+     * output type of the subclass.
+     *
+     * @param resolvedResult the resolved string. Will not be {@code null}
+     * @return the expected type.
+     */
+    protected abstract T convertResolvedResult(String resolvedResult);
+
+    /**
+     * Convert a string that contains an expression resolution but is unmodified from the original input
+     * into the expected output type of the subclass.
+     *
+     * @param unmodifiedResult the unmodified string. Will not be {@code null}
+     * @return the expected type.
+     */
+    protected abstract T convertUnmodifiedExpression(String unmodifiedResult);
+
+    protected abstract T convertNonExpression(String nonExpression);
 
     /**
      * Attempt to resolve the given expression string, recursing if resolution of one string produces
      * another expression.
      *
      * @param expressionString the expression string
-     * @param ignoreResolutionFailure {@code false} if resolution failures should be ignored and {@code expressionString} returned
+     * @param ignoreResolutionFailure {@code false} if resolution failures should be ignored
      * @param initial {@code true} if this call originated outside this method; {@code false} if it is a recursive call
      *
      * @return a string containing the resolved expression, or {@code expressionString} if
      *         {@code ignoreResolutionFailure} and {@code initial} are both {@code true} and the string could not be resolved.
      */
-    private String resolveExpressionStringRecursively(final String expressionString, final boolean ignoreResolutionFailure,
-                                                         final boolean initial) {
+    private T resolveExpressionStringRecursively(final String expressionString, final boolean ignoreResolutionFailure,
+                                                      final boolean initial) throws E {
         ParseAndResolveResult resolved = parseAndResolve(expressionString, resolver, ignoreResolutionFailure);
         if (resolved.recursive) {
             // Some part of expressionString resolved into a different expression.
@@ -89,22 +124,23 @@ public class DefaultExpressionReplacer implements ExpressionReplacer {
             return resolveExpressionStringRecursively(resolved.result, true, false);
         } else if (resolved.modified) {
             // Typical case
-            return resolved.result;
+            return convertResolvedResult(resolved.result);
         } else if (initial && EXPRESSION_PATTERN.matcher(expressionString).matches()) {
             // We should only get an unmodified expression string back if there was a resolution
             // failure that we ignored.
             assert ignoreResolutionFailure;
             // expressionString came from a node of type expression, so since we did nothing send it back in the same type
-            return expressionString;
+            return convertUnmodifiedExpression(expressionString);
         } else {
             // The string wasn't really an expression. Two possible cases:
             // 1) if initial == true, it just wasn't an expression
             // 2) if initial == false, we resolved from an expression to a string that looked like an
             // expression but can't be resolved. We don't require that expressions must not resolve to something that
             // *looks like* an expression but isn't, so we'll just treat this as a string
-            return expressionString;
+            return convertNonExpression(expressionString);
         }
     }
+
 
     private static ParseAndResolveResult parseAndResolve(final String initialValue, final SimpleExpressionResolver resolver, boolean lenient) {
 
@@ -299,7 +335,7 @@ public class DefaultExpressionReplacer implements ExpressionReplacer {
     }
 
     private static ParseAndResolveResult createRecursiveResult(String initialValue, String val,
-                                                          Stack<OpenExpression> stack, int expressionEndIndex) {
+                                                               Stack<OpenExpression> stack, int expressionEndIndex) {
         int initialLength = initialValue.length();
 
         int expressionIndex = -1;
