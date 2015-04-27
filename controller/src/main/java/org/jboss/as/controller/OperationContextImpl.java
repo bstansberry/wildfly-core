@@ -46,6 +46,7 @@ import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.RES
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.RUNNING_TIME;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SERVER_CONFIG;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SERVER_GROUP;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SOCKET_BINDING_GROUP;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.USER;
 import static org.jboss.as.controller.logging.ControllerLogger.MGMT_OP_LOGGER;
 
@@ -256,12 +257,13 @@ final class OperationContextImpl extends AbstractOperationContext {
 
     private boolean validateCapabilities() {
         // Validate that all required capabilities are available and fail any steps that broke this
-        Map<CapabilityId, Set<RuntimeRequirementRegistration>> missing = managementModel.validateCapabilityRegistry();
-        boolean ok = missing.size() == 0;
+        ModelControllerImpl.CapabilityValidation validation = managementModel.validateCapabilityRegistry();
+        boolean ok = validation.isValid();
         if (!ok) {
             // Whether we care about context depends on whether we are a server
             boolean ignoreContext = getProcessType().isServer();
 
+            Map<CapabilityId, Set<RuntimeRequirementRegistration>> missing = validation.getMissingRequirements();
             Map<Step, Set<CapabilityId>> missingForStep = new HashMap<>();
             for (Map.Entry<CapabilityId, Set<RuntimeRequirementRegistration>> entry : missing.entrySet()) {
                 CapabilityId required = entry.getKey();
@@ -331,6 +333,54 @@ final class OperationContextImpl extends AbstractOperationContext {
                 if (bootMsg != null) {
                     ControllerLogger.ROOT_LOGGER.error(bootMsg.toString());
                 }
+            }
+
+            if (!ignoreContext) {
+
+                Map<CapabilityId, Set<RuntimeRequirementRegistration>> inconsistent = validation.getInconsistentRequirements();
+                Map<Step, Set<CapabilityId>> inconsistentForStep = new HashMap<>();
+                for (Map.Entry<CapabilityId, Set<RuntimeRequirementRegistration>> entry : inconsistent.entrySet()) {
+                    CapabilityId required = entry.getKey();
+                    // See what step(s) added this requirement
+                    Set<Step> bereft = addedRequirements.get(required);
+                    assert bereft != null && bereft.size() > 0;
+                    for (Step step : bereft) {
+                        Set<CapabilityId> set = inconsistentForStep.get(step);
+                        if (set == null) {
+                            set = new HashSet<>();
+                            inconsistentForStep.put(step, set);
+                        }
+                        set.add(required);
+                    }
+                }
+                // Change the response for all steps that added an unfulfilled requirement
+                for (Map.Entry<Step, Set<CapabilityId>> entry : inconsistentForStep.entrySet()) {
+                    Step step = entry.getKey();
+                    ModelNode response = step.response;
+                    // only overwrite reponse failure-description if there isn't one
+                    StringBuilder msg = response.hasDefined(FAILURE_DESCRIPTION)
+                            ? null
+                            : new StringBuilder(ControllerLogger.ROOT_LOGGER.requiredCapabilityMissing());
+                    StringBuilder bootMsg = isBooting()
+                            ? new StringBuilder(ControllerLogger.ROOT_LOGGER.requiredCapabilityMissing(step.address.toCLIStyleString()))
+                            : null;
+                    for (CapabilityId id : entry.getValue()) {
+                        String formattedCapability = ControllerLogger.ROOT_LOGGER.formattedCapabilityId(id.getName(), id.getContext().getName());
+                        if (msg != null) {
+                            msg = msg.append('\n').append(formattedCapability);
+                        }
+                        if (bootMsg != null) {
+                            bootMsg = bootMsg.append(System.lineSeparator()).append(formattedCapability);
+                        }
+                    }
+                    if (msg != null) {
+                        response.get(FAILURE_DESCRIPTION).set(msg.toString());
+                    }
+                    if (bootMsg != null) {
+                        ControllerLogger.ROOT_LOGGER.error(bootMsg.toString());
+                    }
+                }
+
             }
         }
         return ok;
@@ -1699,8 +1749,13 @@ final class OperationContextImpl extends AbstractOperationContext {
     private CapabilityContext createCapabilityContext(Step step) {
         CapabilityContext context = CapabilityContext.GLOBAL;
         PathElement pe = getProcessType().isServer() || step.address.size() == 0 ? null : step.address.getElement(0);
-        if (pe != null && pe.getKey().equals(PROFILE)) {
-            context = new ProfileCapabilityContext(pe.getValue());
+        if (pe != null) {
+            String type = pe.getKey();
+            if (type.equals(PROFILE)) {
+                context = new DomainCapabilityContext(type, pe.getValue(), false);
+            } else if (type.equals(SOCKET_BINDING_GROUP)) {
+                context = new DomainCapabilityContext(type, pe.getValue(), true);
+            }
         }
         return context;
     }
@@ -2425,24 +2480,33 @@ final class OperationContextImpl extends AbstractOperationContext {
         private boolean done = false;
     }
 
-    private static class ProfileCapabilityContext implements CapabilityContext {
-        private final String profileName;
+    private static class DomainCapabilityContext implements CapabilityContext {
 
-        private ProfileCapabilityContext(String profileName) {
-            this.profileName = profileName;
+        private final String type;
+        private final String value;
+        private final boolean requiresConsistencyCheck;
+
+        private DomainCapabilityContext(String type, String value, boolean requiresConsistencyCheck) {
+            this.type = type;
+            this.value = value;
+            this.requiresConsistencyCheck = requiresConsistencyCheck;
         }
 
         @Override
         public boolean canSatisfyRequirements(CapabilityContext dependentContext) {
-            // Currently this is a simple match of profile name, but once profile includes are
-            // once again supported we need to account for those
-            return dependentContext instanceof ProfileCapabilityContext
-                    && profileName.equals(((ProfileCapabilityContext) dependentContext).profileName);
+            // Currently this is a simple match of type and value, but once profile/socket-binding-group
+            // includes are once again supported we need to account for those
+            return equals(dependentContext);
+        }
+
+        @Override
+        public boolean requiresConsistencyCheck() {
+            return requiresConsistencyCheck;
         }
 
         @Override
         public String getName() {
-            return "profile=" + profileName;
+            return type + "=" + value;
         }
 
         @Override
@@ -2455,15 +2519,16 @@ final class OperationContextImpl extends AbstractOperationContext {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            ProfileCapabilityContext that = (ProfileCapabilityContext) o;
+            DomainCapabilityContext that = (DomainCapabilityContext) o;
 
-            return profileName.equals(that.profileName);
-
+            return type.equals(that.type) && value.equals(that.value);
         }
 
         @Override
         public int hashCode() {
-            return profileName.hashCode();
+            int result = type.hashCode();
+            result = 31 * result + value.hashCode();
+            return result;
         }
     }
 

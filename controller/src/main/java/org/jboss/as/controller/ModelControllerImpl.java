@@ -1200,19 +1200,20 @@ class ModelControllerImpl implements ModelController {
         }
 
         /**
-         * Compares the registered requirements to the registered capabilities, returning any missing requirements.
+         * Compares the registered requirements to the registered capabilities, returning any missing
+         * or inconsistent requirements.
          *
          * Cannot be called while other threads may be adding or removing capabilities
          *
          * @return a map whose keys are missing capabilities and whose values are the names of other capabilities
          *         that require that capability. Will not return {@code null} but may be empty
          */
-        Map<CapabilityId, Set<RuntimeRequirementRegistration>> validateCapabilityRegistry() {
+        CapabilityValidation validateCapabilityRegistry() {
             if (!published) {
                 return capabilityRegistry.getMissingRequirements();
             } else {
                 // we're unmodified so nothing to validate
-                return Collections.emptyMap();
+                return CapabilityValidation.OK;
             }
         }
 
@@ -1419,24 +1420,24 @@ class ModelControllerImpl implements ModelController {
 
         }
 
-        synchronized Map<CapabilityId, Set<RuntimeRequirementRegistration>> getMissingRequirements() {
-            Map<CapabilityId, Set<RuntimeRequirementRegistration>> result = new HashMap<>();
+        synchronized CapabilityValidation getMissingRequirements() {
+            Map<CapabilityId, Set<RuntimeRequirementRegistration>> missing = new HashMap<>();
             for (Map.Entry<CapabilityId, Map<String, RuntimeRequirementRegistration>> entry : requirements.entrySet()) {
                 CapabilityContext dependentContext = entry.getKey().getContext();
                 for (RuntimeRequirementRegistration req : entry.getValue().values()) {
                     CapabilityId satisfiesId = findSatisfactoryCapability(req.getRequiredName(), dependentContext);
                     if (satisfiesId == null) {
                         CapabilityId basicId = new CapabilityId(req.getRequiredName(), dependentContext);
-                        Set<RuntimeRequirementRegistration> set = result.get(basicId);
+                        Set<RuntimeRequirementRegistration> set = missing.get(basicId);
                         if (set == null) {
                             set = new HashSet<>();
-                            result.put(basicId, set);
+                            missing.put(basicId, set);
                         }
                         set.add(req);
                     }
                 }
             }
-            return result;
+            return missing.isEmpty() ? CapabilityValidation.OK : new CapabilityValidation(missing, null);
         }
 
         private CapabilityId findSatisfactoryCapability(String capabilityName, CapabilityContext capabilityContext) {
@@ -1457,6 +1458,36 @@ class ModelControllerImpl implements ModelController {
                 }
             }
             return null;
+        }
+    }
+
+    /**
+     *
+     */
+    static class CapabilityValidation {
+
+        private static final CapabilityValidation OK = new CapabilityValidation(null, null);
+        private final Map<CapabilityId, Set<RuntimeRequirementRegistration>> missingRequirements;
+        private final Map<CapabilityId, Set<RuntimeRequirementRegistration>> inconsistentRequirements;
+
+        private CapabilityValidation(Map<CapabilityId, Set<RuntimeRequirementRegistration>> missingRequirements,
+                             Map<CapabilityId, Set<RuntimeRequirementRegistration>> inconsistentRequirements) {
+            this.missingRequirements = missingRequirements == null
+                    ? Collections.<CapabilityId, Set<RuntimeRequirementRegistration>>emptyMap() : missingRequirements;
+            this.inconsistentRequirements = inconsistentRequirements == null
+                    ? Collections.<CapabilityId, Set<RuntimeRequirementRegistration>>emptyMap() : inconsistentRequirements;
+        }
+
+        Map<CapabilityId, Set<RuntimeRequirementRegistration>> getMissingRequirements() {
+            return missingRequirements;
+        }
+
+        Map<CapabilityId, Set<RuntimeRequirementRegistration>> getInconsistentRequirements() {
+            return inconsistentRequirements;
+        }
+
+        boolean isValid() {
+            return missingRequirements.isEmpty() && inconsistentRequirements.isEmpty();
         }
     }
 
