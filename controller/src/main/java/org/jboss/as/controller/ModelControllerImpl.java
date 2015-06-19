@@ -40,6 +40,7 @@ import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP_
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OUTCOME;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.PROCESS_STATE;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.RESPONSE_HEADERS;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.ROLLBACK_ON_READ_ONLY_FAILURE;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.ROLLBACK_ON_RUNTIME_FAILURE;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SERVICE;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.UUID;
@@ -318,9 +319,16 @@ class ModelControllerImpl implements ModelController {
             sm.checkPermission(ModelController.ACCESS_PERMISSION);
         }
 
+        final EnumSet<OperationContextImpl.ContextFlag> contextFlags = EnumSet.noneOf(OperationContextImpl.ContextFlag.class);
         final ModelNode headers = operation.has(OPERATION_HEADERS) ? operation.get(OPERATION_HEADERS) : null;
-        final boolean rollbackOnFailure = headers == null || !headers.hasDefined(ROLLBACK_ON_RUNTIME_FAILURE) || headers.get(ROLLBACK_ON_RUNTIME_FAILURE).asBoolean();
-        final EnumSet<OperationContextImpl.ContextFlag> contextFlags = rollbackOnFailure ? EnumSet.of(AbstractOperationContext.ContextFlag.ROLLBACK_ON_FAIL) : EnumSet.noneOf(OperationContextImpl.ContextFlag.class);
+        final boolean rollbackOnRuntimeFailure = headers == null || !headers.hasDefined(ROLLBACK_ON_RUNTIME_FAILURE) || headers.get(ROLLBACK_ON_RUNTIME_FAILURE).asBoolean();
+        if (rollbackOnRuntimeFailure) {
+            contextFlags.add(AbstractOperationContext.ContextFlag.ROLLBACK_ON_RUNTIME_FAIL);
+        }
+        final boolean rollbackOnReadOnlyFailure = headers == null || !headers.hasDefined(ROLLBACK_ON_READ_ONLY_FAILURE) || headers.get(ROLLBACK_ON_READ_ONLY_FAILURE).asBoolean();
+        if (rollbackOnReadOnlyFailure) {
+            contextFlags.add(AbstractOperationContext.ContextFlag.ROLLBACK_ON_READ_ONLY_FAIL);
+        }
         final boolean restartResourceServices = headers != null && headers.hasDefined(ALLOW_RESOURCE_SERVICE_RESTART) && headers.get(ALLOW_RESOURCE_SERVICE_RESTART).asBoolean();
         if (restartResourceServices) {
             contextFlags.add(AbstractOperationContext.ContextFlag.ALLOW_RESOURCE_SERVICE_RESTART);
@@ -436,7 +444,7 @@ class ModelControllerImpl implements ModelController {
         final Integer operationID = random.nextInt();
 
         EnumSet<OperationContextImpl.ContextFlag> contextFlags = rollbackOnRuntimeFailure
-                ? EnumSet.of(AbstractOperationContext.ContextFlag.ROLLBACK_ON_FAIL)
+                ? EnumSet.of(AbstractOperationContext.ContextFlag.ROLLBACK_ON_RUNTIME_FAIL)
                 : EnumSet.noneOf(OperationContextImpl.ContextFlag.class);
 
         //For the initial operations the model will not be complete, so defer the validation

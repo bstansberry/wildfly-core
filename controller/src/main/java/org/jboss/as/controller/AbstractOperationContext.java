@@ -49,7 +49,6 @@ import static org.jboss.as.controller.logging.ControllerLogger.MGMT_OP_LOGGER;
 
 import java.io.IOException;
 import java.io.InputStream;
-import javax.security.auth.Subject;
 import java.net.InetAddress;
 import java.security.Principal;
 import java.util.ArrayDeque;
@@ -70,6 +69,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+
+import javax.security.auth.Subject;
 
 import org.jboss.as.controller.access.Caller;
 import org.jboss.as.controller.access.Environment;
@@ -143,6 +144,8 @@ abstract class AbstractOperationContext implements OperationContext {
     Caller caller;
     /** Whether operation execution has begun; i.e. whether completeStep() has been called */
     private boolean executing;
+    /** Whether a read-only failure in Stage.MODEL has been ignored */
+    private boolean failedInReadOnly;
 
     /** Operations that were added by the controller, before execution started */
     private final List<ModelNode> controllerOperations = new ArrayList<ModelNode>(2);
@@ -162,7 +165,7 @@ abstract class AbstractOperationContext implements OperationContext {
 
 
     enum ContextFlag {
-        ROLLBACK_ON_FAIL, ALLOW_RESOURCE_SERVICE_RESTART,
+        ROLLBACK_ON_RUNTIME_FAIL, ALLOW_RESOURCE_SERVICE_RESTART, ROLLBACK_ON_READ_ONLY_FAIL,
     }
 
     AbstractOperationContext(final ProcessType processType, final RunningMode runningMode,
@@ -215,6 +218,8 @@ abstract class AbstractOperationContext implements OperationContext {
      * @return the resource
      */
     abstract Resource readResourceFromRoot(final ManagementModel model, final PathAddress address, final boolean recursive);
+
+    abstract boolean isIgnoreModelReadFailure();
 
     @Override
     public boolean isBooting() {
@@ -796,16 +801,21 @@ abstract class AbstractOperationContext implements OperationContext {
                         activeStep.operationId.name, activeStep.operationId.address, currentStage);
             }
             resultAction = ResultAction.ROLLBACK;
-        } else if (activeStep != null && activeStep.hasFailed()
-                && (isRollbackOnRuntimeFailure() || currentStage == Stage.MODEL || currentStage == Stage.DOMAIN)) {
-            activeStep.response.get(OUTCOME).set(FAILED);
-            activeStep.response.get(ROLLED_BACK).set(true);
-            resultAction = ResultAction.ROLLBACK;
-            ControllerLogger.MGMT_OP_LOGGER.tracef("Rolling back on failed response %s to operation %s on address %s in stage %s",
-                    activeStep.response, activeStep.operationId.name, activeStep.operationId.address, currentStage);
         } else if (activeStep != null && activeStep.hasFailed()) {
-            ControllerLogger.MGMT_OP_LOGGER.tracef("Not rolling back on failed response %s to operation %s on address %s in stage %s",
-                    activeStep.response, activeStep.operationId.name, activeStep.operationId.address, currentStage);
+            if (isRollbackOnRuntimeFailure() || (currentStage == Stage.MODEL && !isIgnoreModelReadFailure()) || currentStage == Stage.DOMAIN) {
+                activeStep.response.get(OUTCOME).set(FAILED);
+                activeStep.response.get(ROLLED_BACK).set(true);
+                resultAction = ResultAction.ROLLBACK;
+                ControllerLogger.MGMT_OP_LOGGER.tracef("Rolling back on failed response %s to operation %s on address %s in stage %s",
+                        activeStep.response, activeStep.operationId.name, activeStep.operationId.address, currentStage);
+            } else {
+                ControllerLogger.MGMT_OP_LOGGER.tracef("Not rolling back on failed response %s to operation %s on address %s in stage %s",
+                        activeStep.response, activeStep.operationId.name, activeStep.operationId.address, currentStage);
+            }
+        } else if (failedInReadOnly && !isContextReadOnly()) {
+            // We previously ignored a failure because the context was read-only at the time
+            // but now a write has occurred. We can't allow that.
+
         }
         return resultAction != ResultAction.ROLLBACK;
     }

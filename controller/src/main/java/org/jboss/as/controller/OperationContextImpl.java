@@ -257,6 +257,12 @@ final class OperationContextImpl extends AbstractOperationContext {
         return managementModel;
     }
 
+    @Override
+    boolean isIgnoreModelReadFailure() {
+        boolean readOnly = managementModel == originalModel;
+        return readOnly && contextFlags.contains(ContextFlag.ROLLBACK_ON_READ_ONLY_FAIL);
+    }
+
     private boolean validateCapabilities() {
         // Validate that all required capabilities are available and fail any steps that broke this
         Map<CapabilityId, Set<RuntimeRequirementRegistration>> missing = managementModel.validateCapabilityRegistry();
@@ -411,7 +417,7 @@ final class OperationContextImpl extends AbstractOperationContext {
 
     @Override
     public boolean isRollbackOnRuntimeFailure() {
-        return contextFlags.contains(ContextFlag.ROLLBACK_ON_FAIL);
+        return contextFlags.contains(ContextFlag.ROLLBACK_ON_RUNTIME_FAIL);
     }
 
     @Override

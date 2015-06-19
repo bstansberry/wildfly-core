@@ -116,6 +116,13 @@ class ReadOnlyContext extends AbstractOperationContext {
     }
 
     @Override
+    boolean isIgnoreModelReadFailure() {
+        // This context impl is meant for internal calls, and currently there is
+        // no reason to ignore read failures for internal calls
+        return false;
+    }
+
+    @Override
     public InputStream getAttachmentStream(int index) {
         throw readOnlyContext();
     }

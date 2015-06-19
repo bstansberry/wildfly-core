@@ -132,6 +132,13 @@ class ParallelBootOperationContext extends AbstractOperationContext {
     }
 
     @Override
+    boolean isIgnoreModelReadFailure() {
+        // This context impl is meant for boot, and currently there is
+        // no reason to ignore read failures during boot
+        return false;
+    }
+
+    @Override
     public InputStream getAttachmentStream(int index) {
         return primaryContext.getAttachmentStream(index);
     }
