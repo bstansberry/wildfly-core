@@ -72,6 +72,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.jboss.as.controller.access.Authorizer;
 import org.jboss.as.controller.audit.AuditLogger;
 import org.jboss.as.controller.audit.ManagedAuditLogger;
+import org.jboss.as.controller.capability.RuntimeCapability;
 import org.jboss.as.controller.capability.registry.CapabilityContext;
 import org.jboss.as.controller.capability.registry.CapabilityId;
 import org.jboss.as.controller.capability.registry.DelegatingRuntimeCapabilityRegistry;
@@ -1320,6 +1321,21 @@ class ModelControllerImpl implements ModelController {
                     }
                 }
             }
+
+            // Register provided capabilities
+            Set<RegistrationPoint> regPoints = capabilityRegistration.getRegistrationPoints();
+            RuntimeCapability<?> capability = capabilityRegistration.getCapability();
+            for (RuntimeCapability<?> provided : capability.getProvidedCapabilities()) {
+                RuntimeCapabilityRegistration rcr = new RuntimeCapabilityRegistration(provided, capabilityId.getContext(), rp);
+                if (regPoints.size() > 1) {
+                    for (RegistrationPoint other : regPoints) {
+                        if (!rp.equals(other)) {
+                            rcr.addRegistrationPoint(other);
+                        }
+                    }
+                }
+                registerCapability(rcr);
+            }
         }
 
         @Override
@@ -1370,6 +1386,12 @@ class ModelControllerImpl implements ModelController {
                         removed = capabilities.remove(capabilityId);
                         requirements.remove(capabilityId);
                         runtimeOnlyRequirements.remove(capabilityId);
+
+                        // Remove any provided capabilities
+                        RuntimeCapability<?> cap = candidate.getCapability();
+                        for (RuntimeCapability<?> provided : cap.getProvidedCapabilities()) {
+                            removeCapability(provided.getName(), context, registrationPoint);
+                        }
                     } else {
                         // There are still registration points for this capability.
                         // So just remove the requirements for this registration point

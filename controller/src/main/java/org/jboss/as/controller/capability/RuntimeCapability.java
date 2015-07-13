@@ -72,6 +72,7 @@ public class RuntimeCapability<T> extends AbstractCapability  {
     private final Class<?> serviceValueType;
     private final ServiceName serviceName;
     private final T runtimeAPI;
+    private final Set<RuntimeCapability> providedCapabilities;
 
     /**
      * Creates a new capability
@@ -88,6 +89,7 @@ public class RuntimeCapability<T> extends AbstractCapability  {
         this.runtimeAPI = runtimeAPI;
         this.serviceValueType = null;
         this.serviceName = null;
+        this.providedCapabilities = null;
     }
 
     /**
@@ -118,6 +120,7 @@ public class RuntimeCapability<T> extends AbstractCapability  {
         this.runtimeAPI = runtimeAPI;
         this.serviceValueType = null;
         this.serviceName = null;
+        this.providedCapabilities = null;
     }
 
     /**
@@ -125,10 +128,12 @@ public class RuntimeCapability<T> extends AbstractCapability  {
      */
     private RuntimeCapability(Builder<T> builder) {
         super(builder.baseName, builder.dynamic, builder.requirements, builder.optionalRequirements,
-                builder.runtimeOnlyRequirements, builder.dynamicRequirements, builder.dynamicOptionalRequirements);
+                builder.runtimeOnlyRequirements, builder.dynamicRequirements,
+                builder.dynamicOptionalRequirements);
         this.runtimeAPI = builder.runtimeAPI;
         this.serviceValueType = builder.serviceValueType;
         this.serviceName = ServiceName.parse(builder.baseName);
+        this.providedCapabilities = builder.providedCapabilities;
     }
 
     /**
@@ -137,12 +142,22 @@ public class RuntimeCapability<T> extends AbstractCapability  {
     private RuntimeCapability(String baseName, String dynamicElement, Class<?> serviceValueType, T runtimeAPI,
                               Set<String> requirements, Set<String> optionalRequirements,
                               Set<String> runtimeOnlyRequirements, Set<String> dynamicRequirements,
-                              Set<String> dynamicOptionalRequirements) {
+                              Set<String> dynamicOptionalRequirements, Set<RuntimeCapability> providedCapabilities) {
         super(buildDynamicCapabilityName(baseName, dynamicElement), false, requirements,
                 optionalRequirements, runtimeOnlyRequirements, dynamicRequirements, dynamicOptionalRequirements);
         this.runtimeAPI = runtimeAPI;
         this.serviceValueType = serviceValueType;
         this.serviceName = dynamicElement == null ? ServiceName.parse(baseName) : ServiceName.parse(baseName).append(dynamicElement);
+        this.providedCapabilities = providedCapabilities;
+    }
+
+    /**
+     * Gets any capabilities that are automically provided if this capability is registered.
+     *
+     * @return the provided capabilities. Will not be {@code null}, but may be empty
+     */
+    public Set<RuntimeCapability> getProvidedCapabilities() {
+        return providedCapabilities == null ? Collections.emptySet() : providedCapabilities;
     }
 
     /**
@@ -245,7 +260,8 @@ public class RuntimeCapability<T> extends AbstractCapability  {
         assert dynamicElement.length() > 0;
         return new RuntimeCapability<T>(getName(), dynamicElement, serviceValueType, runtimeAPI,
                 getRequirements(), getOptionalRequirements(),
-                getRuntimeOnlyRequirements(), getDynamicRequirements(), getDynamicOptionalRequirements());
+                getRuntimeOnlyRequirements(), getDynamicRequirements(), getDynamicOptionalRequirements(),
+                getProvidedCapabilities());
 
     }
 
@@ -264,6 +280,7 @@ public class RuntimeCapability<T> extends AbstractCapability  {
         private Set<String> runtimeOnlyRequirements;
         private Set<String> dynamicRequirements;
         private Set<String> dynamicOptionalRequirements;
+        private Set<RuntimeCapability> providedCapabilities;
 
         /**
          * Create a builder for a non-dynamic capability with no custom runtime API.
@@ -345,6 +362,21 @@ public class RuntimeCapability<T> extends AbstractCapability  {
          */
         public Builder<T> setServiceType(Class<?> type) {
             this.serviceValueType = type;
+            return this;
+        }
+
+        /**
+         * Adds other capabilities that should be registered and unregistered when
+         * this capability is.
+         * @param provided the provided capabilities
+         * @return the builder
+         */
+        public Builder<T> addProvidedCapabilities(RuntimeCapability... provided) {
+            assert provided != null;
+            if (this.providedCapabilities == null) {
+                this.providedCapabilities = new HashSet<>(provided.length);
+            }
+            Collections.addAll(this.providedCapabilities, provided);
             return this;
         }
 
