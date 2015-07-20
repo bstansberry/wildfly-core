@@ -47,7 +47,8 @@
         <module name="org.jboss.sasl"/>
         <module name="org.jboss.staxmapper"/>
         <module name="org.picketbox" optional="true"/>
+        <module name="org.wildfly.controller-impl"/>
         <module name="javax.api"/>
-        <module name="sun.jdk" export="true" />        
+        <module name="sun.jdk" export="true" />
     </dependencies>
 </module>

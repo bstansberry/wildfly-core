@@ -164,6 +164,7 @@
         <module>cli</module>
         <module>controller</module>
         <module>controller-client</module>
+        <module>controller-impl</module>
         <module>build</module>
         <module>dist</module>
         <module>core-feature-pack</module>
@@ -657,6 +658,12 @@
             <dependency>
                 <groupId>org.wildfly.core</groupId>
                 <artifactId>wildfly-controller-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.wildfly.core</groupId>
+                <artifactId>wildfly-controller-impl</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
