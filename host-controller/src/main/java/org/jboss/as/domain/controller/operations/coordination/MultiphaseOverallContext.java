@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
-import org.jboss.as.controller.TransformingProxyController;
+import org.jboss.as.controller.registry.TransformingProxyController;
 import org.jboss.as.controller.transform.OperationResultTransformer;
 import org.jboss.as.controller.transform.OperationTransformer;
 import org.jboss.as.domain.controller.LocalHostControllerInfo;

@@ -23,8 +23,9 @@
 package org.jboss.as.controller;
 
 /**
- * A handle for a specific cancellable running operation.
+ * @deprecated Not used
  */
+@Deprecated
 public interface Cancellable {
 
     /**
@@ -37,7 +38,10 @@ public interface Cancellable {
 
     /**
      * An empty implementation which does nothing when a cancel is requested.
+     *
+     * @deprecated  Not used
      */
+    @Deprecated
     Cancellable NULL = new Cancellable() {
         public boolean cancel() {
             return false;

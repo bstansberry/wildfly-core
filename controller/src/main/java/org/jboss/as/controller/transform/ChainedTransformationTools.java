@@ -22,7 +22,7 @@
 package org.jboss.as.controller.transform;
 
 import org.jboss.as.controller.PathAddress;
-import org.jboss.as.controller.registry.OperationTransformerRegistry.PlaceholderResolver;
+import org.jboss.as.controller.transform.OperationTransformerRegistry.PlaceholderResolver;
 
 
 

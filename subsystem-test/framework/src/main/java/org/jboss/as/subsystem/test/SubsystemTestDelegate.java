@@ -90,7 +90,6 @@ import org.jboss.as.controller.registry.OperationEntry.EntryType;
 import org.jboss.as.controller.registry.OperationEntry.Flag;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.as.controller.transform.OperationTransformer.TransformedOperation;
-import org.jboss.as.controller.transform.TransformerRegistry;
 import org.jboss.as.model.test.ChildFirstClassLoaderBuilder;
 import org.jboss.as.model.test.EAPRepositoryReachableUtil;
 import org.jboss.as.model.test.ModelFixer;
@@ -111,6 +110,8 @@ import org.jboss.modules.filter.ClassFilter;
 import org.jboss.staxmapper.XMLMapper;
 import org.junit.Assert;
 import org.junit.Assume;
+import org.jboss.as.controller.registry.ManagementResourceRegistrationFactory;
+import org.jboss.as.controller.transform.TransformationUtils;
 import org.wildfly.legacy.test.spi.Version;
 import org.xnio.IoUtils;
 
@@ -522,14 +523,14 @@ final class SubsystemTestDelegate {
         //2) Check that the transformed model is valid according to the resource definition in the legacy subsystem controller
         ResourceDefinition rd = getResourceDefinition(kernelServices, modelVersion);
         Assert.assertNotNull("Could not load legacy dmr for subsystem '" + mainSubsystemName + "' version: '" + modelVersion + "' please add it", rd);
-        ManagementResourceRegistration rr = ManagementResourceRegistration.Factory.create(rd);
+        ManagementResourceRegistration rr = ManagementResourceRegistrationFactory.create(rd);
         ModelTestUtils.checkModelAgainstDefinition(transformed, rr);
         return legacyModel;
     }
 
     private ResourceDefinition getResourceDefinition(KernelServices kernelServices, ModelVersion modelVersion) throws IOException {
         //Look for the file in the org.jboss.as.subsystem.test package - this is where we used to store them before the split
-        ResourceDefinition rd = TransformerRegistry.loadSubsystemDefinitionFromFile(this.getClass(), mainSubsystemName, modelVersion);
+        ResourceDefinition rd = TransformationUtils.loadSubsystemDefinitionFromFile(this.getClass(), mainSubsystemName, modelVersion);
 
         if (rd == null) {
             //This is the 'new' post-split way. First check for a cached .dmr file. This which also allows people
@@ -539,7 +540,7 @@ final class SubsystemTestDelegate {
                 generateLegacySubsystemResourceRegistrationDmr(kernelServices, modelVersion);
             }
             System.out.println("Using legacy resource definition dmr: " + file);
-            rd = TransformerRegistry.loadSubsystemDefinitionFromFile(kernelServices.getTestClass(), mainSubsystemName, modelVersion);
+            rd = TransformationUtils.loadSubsystemDefinitionFromFile(kernelServices.getTestClass(), mainSubsystemName, modelVersion);
         }
         return rd;
     }

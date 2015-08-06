@@ -34,15 +34,11 @@ import org.jboss.as.controller.ModelVersion;
 import org.jboss.as.controller.ModelVersionRange;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.PathElement;
-import org.jboss.as.controller.ResourceDefinition;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
-import org.jboss.as.controller.extension.ExtensionRegistry;
-import org.jboss.as.controller.registry.GlobalTransformerRegistry;
-import org.jboss.as.controller.registry.ImmutableManagementResourceRegistration;
-import org.jboss.as.controller.registry.OperationTransformerRegistry;
-import org.jboss.as.controller.registry.Resource;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.Property;
+
+//import org.jboss.as.controller.extension.ExtensionRegistry;
 
 /**
  * Global transformers registry.
@@ -204,15 +200,6 @@ public final class TransformerRegistry {
         }
     }
 
-    public static Map<PathAddress, ModelVersion> resolveVersions(ExtensionRegistry extensionRegistry) {
-
-        final ModelNode subsystems = new ModelNode();
-        for (final String extension : extensionRegistry.getExtensionModuleNames()) {
-            extensionRegistry.recordSubsystemVersions(extension, subsystems);
-        }
-        return resolveVersions(subsystems);
-    }
-
     public static Map<PathAddress, ModelVersion> resolveVersions(final ModelNode subsystems) {
         final PathAddress base = PathAddress.EMPTY_ADDRESS;
         final Map<PathAddress, ModelVersion> versions = new HashMap<PathAddress, ModelVersion>();
@@ -222,28 +209,6 @@ public final class TransformerRegistry {
             versions.put(address, ModelVersion.fromString(property.getValue().asString()));
         }
         return versions;
-    }
-
-    static ModelVersion convert(final String version) {
-        final String[] s = version.split("\\.");
-        final int length = s.length;
-        if(length > 3) {
-            throw new IllegalStateException();
-        }
-        int major = Integer.valueOf(s[0]);
-        int minor = length > 1 ? Integer.valueOf(s[1]) : 0;
-        int micro = length == 3 ? Integer.valueOf(s[2]) : 0;
-        return ModelVersion.create(major, minor, micro);
-    }
-
-    //todo consider moving this to test harness for transformers
-    public static ResourceDefinition loadSubsystemDefinitionFromFile(final Class<?> classForDmrPackage, final String subsystemName, final ModelVersion version) {
-        return TransformationUtils.loadSubsystemDefinitionFromFile(classForDmrPackage, subsystemName, version);
-    }
-
-    //todo consider moving this to test harness for transformers
-    public static Resource modelToResource(final ImmutableManagementResourceRegistration reg, final ModelNode model, boolean includeUndefined) {
-        return TransformationUtils.modelToResource(PathAddress.EMPTY_ADDRESS, reg, model, includeUndefined);
     }
 
     public static class Factory {

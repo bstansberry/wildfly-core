@@ -45,6 +45,7 @@ import org.jboss.as.controller.access.TargetResource;
 import org.jboss.as.controller.access.management.AccessConstraintDefinition;
 import org.jboss.as.controller.descriptions.NonResolvingResourceDescriptionResolver;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
+import org.jboss.as.controller.registry.ManagementResourceRegistrationFactory;
 import org.jboss.dmr.ModelNode;
 import org.junit.Before;
 import org.junit.Test;
@@ -54,7 +55,7 @@ import org.junit.Test;
  */
 public class ManagementPermissionAuthorizerTestCase {
 
-    private static final ManagementResourceRegistration ROOT_RR = ManagementResourceRegistration.Factory.create(new SimpleResourceDefinition(null, new NonResolvingResourceDescriptionResolver()) {
+    private static final ManagementResourceRegistration ROOT_RR = ManagementResourceRegistrationFactory.create(new SimpleResourceDefinition(null, new NonResolvingResourceDescriptionResolver()) {
         @Override
         public List<AccessConstraintDefinition> getAccessConstraints() {
             return Collections.emptyList();

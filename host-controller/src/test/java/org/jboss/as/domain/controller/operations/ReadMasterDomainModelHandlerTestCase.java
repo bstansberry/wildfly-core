@@ -48,6 +48,7 @@ import org.jboss.as.controller.RunningMode;
 import org.jboss.as.controller.SimpleResourceDefinition;
 import org.jboss.as.controller.descriptions.NonResolvingResourceDescriptionResolver;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
+import org.jboss.as.controller.registry.ManagementResourceRegistrationFactory;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.as.controller.transform.ResourceTransformationContext;
 import org.jboss.as.controller.transform.TransformationTarget;
@@ -71,7 +72,7 @@ public class ReadMasterDomainModelHandlerTestCase {
     public void testResourceTransformation() throws Exception {
         Resource resourceRoot = Resource.Factory.create();
         TransformerRegistry registry = TransformerRegistry.Factory.create();
-        ManagementResourceRegistration resourceRegistration = ManagementResourceRegistration.Factory.create(ROOT);
+        ManagementResourceRegistration resourceRegistration = ManagementResourceRegistrationFactory.create(ROOT);
 
         final Resource extension = Resource.Factory.create();
         extension.getModel().get("attr").set("value");

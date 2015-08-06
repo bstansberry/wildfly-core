@@ -32,7 +32,7 @@ import org.jboss.as.controller.PrimitiveListAttributeDefinition;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.as.controller.operations.validation.StringLengthValidator;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
-import org.jboss.as.controller.resource.AbstractSocketBindingGroupResourceDefinition;
+import org.jboss.as.controller.interfaces.AbstractSocketBindingGroupResourceDefinition;
 import org.jboss.as.domain.controller.resources.SocketBindingResourceDefinition;
 import org.jboss.as.server.services.net.LocalDestinationOutboundSocketBindingResourceDefinition;
 import org.jboss.as.server.services.net.RemoteDestinationOutboundSocketBindingResourceDefinition;

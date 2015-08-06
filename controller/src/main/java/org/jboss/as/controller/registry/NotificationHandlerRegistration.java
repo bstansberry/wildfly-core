@@ -87,15 +87,4 @@ public interface NotificationHandlerRegistration {
      */
     Collection<NotificationHandler> findMatchingNotificationHandlers(Notification notification);
 
-    /**
-     * Factory to create a new {@code NotificationHandlerRegistration}
-     */
-    public static class Factory {
-        /**
-         * @return a new instance of {@code NotificationHandlerRegistration}
-         */
-        public static NotificationHandlerRegistration create() {
-            return new ConcreteNotificationHandlerRegistration();
-        }
-    }
 }

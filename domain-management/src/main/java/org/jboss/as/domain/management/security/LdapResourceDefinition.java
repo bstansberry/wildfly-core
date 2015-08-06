@@ -35,7 +35,7 @@ import org.jboss.as.controller.registry.OperationEntry.Flag;
 import org.jboss.dmr.ModelType;
 
 /**
- * {@link ResourceDefinition} for a management security realm's LDAP-based Authentication / Authorization resource.
+ * {@link org.jboss.as.controller.ResourceDefinition} for a management security realm's LDAP-based Authentication / Authorization resource.
  *
  *  @author <a href="mailto:Flemming.Harms@gmail.com">Flemming Harms</a>
  *  @author <a href="mailto:darran.lofthouse@jboss.com">Darran Lofthouse</a>

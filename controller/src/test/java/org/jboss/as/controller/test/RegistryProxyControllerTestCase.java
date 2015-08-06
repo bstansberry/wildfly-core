@@ -40,6 +40,7 @@ import org.jboss.as.controller.client.OperationAttachments;
 import org.jboss.as.controller.client.OperationMessageHandler;
 import org.jboss.as.controller.descriptions.NonResolvingResourceDescriptionResolver;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
+import org.jboss.as.controller.registry.ManagementResourceRegistrationFactory;
 import org.jboss.dmr.ModelNode;
 import org.junit.Before;
 import org.junit.Test;
@@ -65,7 +66,7 @@ public class RegistryProxyControllerTestCase {
 
     @Before
     public void setup() {
-        root = ManagementResourceRegistration.Factory.create(rootResource);
+        root = ManagementResourceRegistrationFactory.create(rootResource);
         assertNotNull(root);
 
         profileAReg = registerSubModel(root, profileA);

@@ -25,7 +25,6 @@ import java.net.UnknownHostException;
 import java.util.EnumSet;
 
 import org.jboss.as.controller.AttributeDefinition;
-import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.OperationStepHandler;
@@ -33,15 +32,16 @@ import org.jboss.as.controller.SimpleOperationDefinition;
 import org.jboss.as.controller.SimpleOperationDefinitionBuilder;
 import org.jboss.as.controller.access.management.SensitiveTargetAccessConstraintDefinition;
 import org.jboss.as.controller.descriptions.common.ControllerResolver;
-import org.jboss.as.controller.interfaces.ParsedInterfaceCriteria;
+import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.controller.registry.OperationEntry;
-import org.jboss.as.controller.resource.InterfaceDefinition;
 import org.jboss.as.network.NetworkInterfaceBinding;
 import org.jboss.as.network.NetworkUtils;
-import org.jboss.as.server.logging.ServerLogger;
 import org.jboss.as.server.controller.descriptions.ServerDescriptions;
+import org.jboss.as.server.logging.ServerLogger;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
+import org.jboss.as.controller.interfaces.InterfaceDefinition;
+import org.jboss.as.controller.interfaces.ParsedInterfaceCriteria;
 
 /**
  * Handler that resolves an interface criteria to actual IP addresses in order to allow clients to check the validity

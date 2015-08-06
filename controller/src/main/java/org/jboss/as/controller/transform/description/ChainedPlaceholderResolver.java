@@ -28,8 +28,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.jboss.as.controller.PathElement;
-import org.jboss.as.controller.registry.OperationTransformerRegistry.OperationTransformerEntry;
-import org.jboss.as.controller.registry.OperationTransformerRegistry.PlaceholderResolver;
+import org.jboss.as.controller.transform.OperationTransformerRegistry.OperationTransformerEntry;
+import org.jboss.as.controller.transform.OperationTransformerRegistry.PlaceholderResolver;
 import org.jboss.as.controller.transform.OperationTransformer;
 import org.jboss.as.controller.transform.PathAddressTransformer;
 import org.jboss.as.controller.transform.ResourceTransformer;

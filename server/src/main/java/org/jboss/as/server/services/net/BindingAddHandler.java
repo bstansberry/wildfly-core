@@ -34,7 +34,7 @@ import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.controller.operations.validation.MaskedAddressValidator;
 import org.jboss.as.controller.registry.Resource;
-import org.jboss.as.controller.resource.AbstractSocketBindingResourceDefinition;
+import org.jboss.as.controller.interfaces.AbstractSocketBindingResourceDefinition;
 import org.jboss.as.network.ClientMapping;
 import org.jboss.as.network.NetworkInterfaceBinding;
 import org.jboss.as.network.SocketBinding;

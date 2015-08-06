@@ -87,7 +87,7 @@ public class ExtendWildCardRegistrationUnitTestCase {
 
     @BeforeClass
     public static void setup() {
-        registration = ManagementResourceRegistration.Factory.create(new SimpleResourceDefinition(PathElement.pathElement("root","root"), new NonResolvingResourceDescriptionResolver()));
+        registration = ManagementResourceRegistrationFactory.create(new SimpleResourceDefinition(PathElement.pathElement("root", "root"), new NonResolvingResourceDescriptionResolver()));
 
         parentWildReg = registration.registerSubModel(new SimpleResourceDefinition(parentWild, new NonResolvingResourceDescriptionResolver()));
         parentWildReg.registerReadOnlyAttribute(wildAttr, parentWildAttr);

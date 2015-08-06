@@ -52,7 +52,7 @@ import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.controller.parsing.Attribute;
 import org.jboss.as.controller.parsing.Element;
 import org.jboss.as.controller.parsing.ParseUtils;
-import org.jboss.as.controller.resource.AbstractSocketBindingResourceDefinition;
+import org.jboss.as.controller.interfaces.AbstractSocketBindingResourceDefinition;
 import org.jboss.as.server.services.net.LocalDestinationOutboundSocketBindingResourceDefinition;
 import org.jboss.as.server.services.net.OutboundSocketBindingResourceDefinition;
 import org.jboss.as.server.services.net.RemoteDestinationOutboundSocketBindingResourceDefinition;

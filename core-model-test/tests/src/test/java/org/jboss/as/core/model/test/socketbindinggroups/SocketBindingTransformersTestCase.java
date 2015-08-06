@@ -39,7 +39,7 @@ import java.util.List;
 
 import org.jboss.as.controller.ModelVersion;
 import org.jboss.as.controller.OperationFailedException;
-import org.jboss.as.controller.resource.AbstractSocketBindingResourceDefinition;
+import org.jboss.as.controller.interfaces.AbstractSocketBindingResourceDefinition;
 import org.jboss.as.controller.transform.OperationTransformer;
 import org.jboss.as.core.model.test.AbstractCoreModelTest;
 import org.jboss.as.core.model.test.KernelServices;

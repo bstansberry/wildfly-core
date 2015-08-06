@@ -1,6 +1,6 @@
 /*
  * JBoss, Home of Professional Open Source.
- * Copyright 2011, Red Hat, Inc., and individual contributors
+ * Copyright 2015, Red Hat, Inc., and individual contributors
  * as indicated by the @author tags. See the copyright.txt file in the
  * distribution for a full listing of individual contributors.
  *
@@ -19,28 +19,68 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
+
 package org.jboss.as.controller.registry;
 
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 import org.jboss.as.controller.AttributeDefinition;
-import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.controller.OperationStepHandler;
 
 /**
- * Information about handling an attribute in a sub-model.
+ * Information about handling an attribute in a {@link ManagementResourceRegistration}.
  *
  * @author Brian Stansberry
  */
-public final class AttributeAccess {
+public interface AttributeAccess {
+
+    /**
+     * Get the access type.
+     *
+     * @return the access type
+     */
+    AccessType getAccessType();
+
+    /**
+     * Get the storage type.
+     *
+     * @return the storage type
+     */
+    Storage getStorageType();
+
+    /**
+     * Get the read handler.
+     *
+     * @return the read handler, <code>null</code> if not defined
+     */
+    OperationStepHandler getReadHandler();
+
+    /**
+     * Get the write handler.
+     *
+     * @return the write handler, <code>null</code> if not defined.
+     */
+    OperationStepHandler getWriteHandler();
+
+    /**
+     * Gets the definition of the attribute.
+     *
+     * @return the definition. Will not be {@code null}
+     */
+    AttributeDefinition getAttributeDefinition();
+
+    /**
+     * Gets the flags associated with this attribute.
+     * @return the flags. Will not return {@code null}
+     */
+    Set<Flag> getFlags();
 
     /**
      * Indicates how an attributed is accessed.
      */
-    public static enum AccessType {
+    enum AccessType {
         /** A read-only attribute, which can be either {@code Storage.CONFIGURATION} or {@code Storage.RUNTIME} */
         READ_ONLY("read-only", false),
         /** A read-write attribute, which can be either {@code Storage.CONFIGURATION} or {@code Storage.RUNTIME} */
@@ -51,7 +91,7 @@ public final class AttributeAccess {
         private final String label;
         private final boolean writable;
 
-        private AccessType(final String label, final boolean writable) {
+        AccessType(final String label, final boolean writable) {
             this.label = label;
             this.writable = writable;
         }
@@ -88,7 +128,7 @@ public final class AttributeAccess {
     /**
      * Indicates whether an attribute is derived from the persistent configuration or is a purely runtime attribute.
      */
-    public static enum Storage {
+    enum Storage {
         /**
          * An attribute whose value is stored in the persistent configuration.
          * The value may also be stored in runtime services.
@@ -102,7 +142,7 @@ public final class AttributeAccess {
 
         private final String label;
 
-        private Storage(final String label) {
+        Storage(final String label) {
             this.label = label;
         }
 
@@ -114,7 +154,7 @@ public final class AttributeAccess {
     }
 
     /** Flags to indicate special characteristics of an attribute */
-    public enum Flag {
+    enum Flag {
         /** A modification to the attribute can be applied to the runtime without requiring a restart */
         RESTART_NONE,
         /** A modification to the attribute can only be applied to the runtime via a full jvm restart */
@@ -139,93 +179,6 @@ public final class AttributeAccess {
          * The attribute is an alias to something else
          */
         ALIAS
-    }
-
-    private final AccessType access;
-    private final Storage storage;
-    private final OperationStepHandler readHandler;
-    private final OperationStepHandler writeHandler;
-    private final EnumSet<Flag> flags;
-    private final AttributeDefinition definition;
-
-    AttributeAccess(final AccessType access, final Storage storage, final OperationStepHandler readHandler,
-                    final OperationStepHandler writeHandler, AttributeDefinition definition, final EnumSet<Flag> flags) {
-        assert access != null : ControllerLogger.ROOT_LOGGER.nullVar("access").getLocalizedMessage();
-        assert storage != null : ControllerLogger.ROOT_LOGGER.nullVar("storage").getLocalizedMessage();
-        this.access = access;
-        this.readHandler = readHandler;
-        this.writeHandler = writeHandler;
-        this.storage = storage;
-        this.definition = definition;
-        if (flags != null && flags.contains(Flag.ALIAS)) {
-            if (readHandler == null) {
-                throw ControllerLogger.ROOT_LOGGER.nullVar("writeHandler");
-            }
-        }
-        if(access == AccessType.READ_WRITE && writeHandler == null) {
-            throw ControllerLogger.ROOT_LOGGER.nullVar("writeHandler");
-        }
-        this.flags = flags == null ? EnumSet.noneOf(Flag.class) : EnumSet.copyOf(flags);
-        switch (storage) {
-            case CONFIGURATION:
-                this.flags.add(Flag.STORAGE_CONFIGURATION);
-                this.flags.remove(Flag.STORAGE_RUNTIME);
-                break;
-            case RUNTIME:
-                this.flags.add(Flag.STORAGE_RUNTIME);
-                this.flags.remove(Flag.STORAGE_CONFIGURATION);
-                break;
-            default:
-                throw ControllerLogger.ROOT_LOGGER.unexpectedStorage(storage);
-        }
-    }
-
-    /**
-     * Get the access type.
-     *
-     * @return the access type
-     */
-    public AccessType getAccessType() {
-        return access;
-    }
-
-    /**
-     * Get the storage type.
-     *
-     * @return the storage type
-     */
-    public Storage getStorageType() {
-        return storage;
-    }
-
-    /**
-     * Get the read handler.
-     *
-     * @return the read handler, <code>null</code> if not defined
-     */
-    public OperationStepHandler getReadHandler() {
-        return readHandler;
-    }
-
-    /**
-     * Get the write handler.
-     *
-     * @return the write handler, <code>null</code> if not defined.
-     */
-    public OperationStepHandler getWriteHandler() {
-        return writeHandler;
-    }
-
-    public AttributeDefinition getAttributeDefinition() {
-        return definition;
-    }
-
-    /**
-     * Gets the flags associated with this attribute.
-     * @return the flags. Will not return {@code null}
-     */
-    public Set<Flag> getFlags() {
-        return EnumSet.copyOf(flags);
     }
 
 }

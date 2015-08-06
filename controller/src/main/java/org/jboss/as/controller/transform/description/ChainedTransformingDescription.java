@@ -48,7 +48,7 @@ import org.jboss.as.controller.transform.description.ChainedTransformationDescri
 import org.jboss.dmr.ModelNode;
 
 /**
- * Placeholder transformer implementation for chained transformers. It uses {@link org.jboss.as.controller.registry.OperationTransformerRegistry.PlaceholderResolver} to override how the transformers for the child resources
+ * Placeholder transformer implementation for chained transformers. It uses {@link org.jboss.as.controller.transform.OperationTransformerRegistry.PlaceholderResolver} to override how the transformers for the child resources
  * of the placeholder are resolved.
  *
  *

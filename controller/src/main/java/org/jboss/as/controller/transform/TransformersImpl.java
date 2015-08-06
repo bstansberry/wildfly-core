@@ -39,7 +39,7 @@ import org.jboss.dmr.ModelNode;
  * @author Emanuel Muckenhuber
  * @author Tomaz Cerar
  */
-public class TransformersImpl implements Transformers {
+class TransformersImpl implements Transformers {
     private final TransformationTarget target;
 
     TransformersImpl(TransformationTarget target) {

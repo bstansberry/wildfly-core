@@ -44,6 +44,7 @@ import org.jboss.as.controller.access.rbac.StandardRole;
 import org.jboss.as.controller.descriptions.NonResolvingResourceDescriptionResolver;
 import org.jboss.as.controller.operations.common.Util;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
+import org.jboss.as.controller.registry.ManagementResourceRegistrationFactory;
 import org.jboss.as.controller.registry.OperationEntry;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.dmr.ModelNode;
@@ -93,7 +94,7 @@ public class ApplicationTypeConstraintUnitTestCase {
                 return rootResourceConstraints;
             }
         };
-        ManagementResourceRegistration rootRegistration = ManagementResourceRegistration.Factory.create(rootRd);
+        ManagementResourceRegistration rootRegistration = ManagementResourceRegistrationFactory.create(rootRd);
         rootRegistration.registerOperationHandler(WRITE_CONFIG_DEF, NoopOperationStepHandler.WITHOUT_RESULT, true);
 
         PathElement childPE = PathElement.pathElement("child");

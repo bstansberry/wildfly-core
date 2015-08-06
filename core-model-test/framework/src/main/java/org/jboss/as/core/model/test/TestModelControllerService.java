@@ -41,7 +41,6 @@ import java.util.Properties;
 import java.util.concurrent.Executors;
 
 import org.jboss.as.controller.ControlledProcessState;
-import org.jboss.as.controller.DelegatingResourceDefinition;
 import org.jboss.as.controller.ExpressionResolver;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationDefinition;

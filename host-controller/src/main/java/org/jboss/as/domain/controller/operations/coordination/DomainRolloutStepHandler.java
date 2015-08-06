@@ -62,7 +62,7 @@ import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.OperationStepHandler;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.ProxyController;
-import org.jboss.as.controller.TransformingProxyController;
+import org.jboss.as.controller.registry.TransformingProxyController;
 import org.jboss.as.controller.client.OperationResponse;
 import org.jboss.as.controller.remote.ResponseAttachmentInputStreamSupport;
 import org.jboss.as.controller.remote.TransactionalProtocolClient;

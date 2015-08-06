@@ -22,9 +22,9 @@
 
 package org.jboss.as.domain.controller.resources;
 
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.HOST_CONNECTION;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.NAME;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP_ADDR;
-import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.HOST_CONNECTION;
 
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.ObjectListAttributeDefinition;

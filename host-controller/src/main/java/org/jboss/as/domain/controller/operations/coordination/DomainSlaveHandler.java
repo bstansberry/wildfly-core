@@ -45,7 +45,7 @@ import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.OperationStepHandler;
 import org.jboss.as.controller.ProxyController;
-import org.jboss.as.controller.TransformingProxyController;
+import org.jboss.as.controller.registry.TransformingProxyController;
 import org.jboss.as.controller.client.OperationResponse;
 import org.jboss.as.controller.operations.DomainOperationTransformer;
 import org.jboss.as.controller.operations.OperationAttachments;

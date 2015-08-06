@@ -68,7 +68,7 @@ public class CoreManagementResourceRegistrationUnitTestCase {
 
     @Before
     public void setup() {
-        rootRegistration = ManagementResourceRegistration.Factory.create(new SimpleResourceDefinition(null, new NonResolvingResourceDescriptionResolver()));
+        rootRegistration = ManagementResourceRegistrationFactory.create(new SimpleResourceDefinition(null, new NonResolvingResourceDescriptionResolver()));
     }
 
     @Test
@@ -343,7 +343,7 @@ public class CoreManagementResourceRegistrationUnitTestCase {
                 );
             }
         };
-        ManagementResourceRegistration root = ManagementResourceRegistration.Factory.create(rootRd);
+        ManagementResourceRegistration root = ManagementResourceRegistrationFactory.create(rootRd);
 
         List<AccessConstraintDefinition> acds = root.getAccessConstraints();
         assertEquals(2, acds.size());

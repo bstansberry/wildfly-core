@@ -43,6 +43,7 @@ import org.jboss.as.controller.access.rbac.StandardRole;
 import org.jboss.as.controller.descriptions.NonResolvingResourceDescriptionResolver;
 import org.jboss.as.controller.operations.common.Util;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
+import org.jboss.as.controller.registry.ManagementResourceRegistrationFactory;
 import org.jboss.as.controller.registry.OperationEntry;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.dmr.ModelNode;
@@ -95,7 +96,7 @@ public class SensitiveTargetConstraintUnitTestCase {
                 return rootResourceConstraints;
             }
         };
-        ManagementResourceRegistration rootRegistration = ManagementResourceRegistration.Factory.create(rootRd);
+        ManagementResourceRegistration rootRegistration = ManagementResourceRegistrationFactory.create(rootRd);
         rootRegistration.registerOperationHandler(READ_CONFIG_DEF, NoopOperationStepHandler.WITH_RESULT, true);
         PathElement childPE = PathElement.pathElement("child");
         ResourceDefinition childRd = new SimpleResourceDefinition(childPE, new NonResolvingResourceDescriptionResolver()) {

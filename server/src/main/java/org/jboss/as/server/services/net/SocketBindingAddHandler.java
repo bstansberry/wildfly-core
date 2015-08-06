@@ -34,7 +34,7 @@ import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.operations.common.Util;
 import org.jboss.as.controller.registry.Resource;
-import org.jboss.as.controller.resource.AbstractSocketBindingResourceDefinition;
+import org.jboss.as.controller.interfaces.AbstractSocketBindingResourceDefinition;
 import org.jboss.dmr.ModelNode;
 
 /**

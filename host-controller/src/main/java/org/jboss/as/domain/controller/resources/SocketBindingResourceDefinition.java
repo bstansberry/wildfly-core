@@ -26,7 +26,7 @@ import org.jboss.as.controller.ModelOnlyWriteAttributeHandler;
 import org.jboss.as.controller.OperationStepHandler;
 import org.jboss.as.server.services.net.SocketBindingAddHandler;
 import org.jboss.as.server.services.net.SocketBindingRemoveHandler;
-import org.jboss.as.controller.resource.AbstractSocketBindingResourceDefinition;
+import org.jboss.as.controller.interfaces.AbstractSocketBindingResourceDefinition;
 
 /**
  * {@link org.jboss.as.controller.ResourceDefinition} for a domain-level socket binding resource.

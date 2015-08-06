@@ -53,7 +53,6 @@ import org.jboss.as.controller.UnauthorizedException;
 import org.jboss.as.controller._private.OperationCancellationException;
 import org.jboss.as.controller._private.OperationFailedRuntimeException;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
-import org.jboss.as.controller.interfaces.InterfaceCriteria;
 import org.jboss.as.controller.notification.Notification;
 import org.jboss.as.controller.parsing.Element;
 import org.jboss.as.controller.persistence.ConfigurationPersistenceException;
@@ -2813,7 +2812,7 @@ public interface ControllerLogger extends BasicLogger {
     String cantHaveBothLinkLocalAndInetAddressCriteria();
 
     @Message(id = 253, value = "Can't have same criteria for both not and inclusion %s")
-    String cantHaveSameCriteriaForBothNotAndInclusion(InterfaceCriteria interfaceCriteria);
+    String cantHaveSameCriteriaForBothNotAndInclusion(String interfaceCriteriaToString);
 
     @Message(id = 254, value = "Invalid value '%s' for attribute '%s' -- no interface configuration with that name exists")
     OperationFailedException nonexistentInterface(String attributeValue, String attributeName);

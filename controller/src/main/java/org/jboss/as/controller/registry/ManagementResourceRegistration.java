@@ -22,9 +22,7 @@
 
 package org.jboss.as.controller.registry;
 
-import java.util.Collections;
 import java.util.EnumSet;
-import java.util.List;
 
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.NotificationDefinition;
@@ -34,12 +32,9 @@ import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.ProxyController;
 import org.jboss.as.controller.ResourceDefinition;
-import org.jboss.as.controller.access.management.AccessConstraintDefinition;
-import org.jboss.as.controller.access.management.AccessConstraintUtilizationRegistry;
 import org.jboss.as.controller.capability.Capability;
 import org.jboss.as.controller.descriptions.DescriptionProvider;
 import org.jboss.as.controller.descriptions.OverrideDescriptionProvider;
-import org.jboss.as.controller.logging.ControllerLogger;
 
 /**
  * A registration for a management resource which consists of a resource description plus registered operation handlers.
@@ -255,8 +250,8 @@ public interface ManagementResourceRegistration extends ImmutableManagementResou
     /**
      * Records that the given attribute can be both read from and written to, and
      * provides operation handlers for the read and the write. The attribute is assumed to be
-     * {@link org.jboss.as.controller.registry.AttributeAccess.Storage#CONFIGURATION} unless parameter
-     * {@code flags} includes {@link org.jboss.as.controller.registry.AttributeAccess.Flag#STORAGE_RUNTIME}.
+     * {@link AttributeAccess.Storage#CONFIGURATION} unless parameter
+     * {@code flags} includes {@link AttributeAccess.Flag#STORAGE_RUNTIME}.
      *
      * @param definition the attribute definition. Cannot be {@code null}
      * @param readHandler the handler for attribute reads. May be {@code null}
@@ -271,8 +266,8 @@ public interface ManagementResourceRegistration extends ImmutableManagementResou
     /**
      * Records that the given attribute can be read from but not written to, and
      * optionally provides an operation handler for the read. The attribute is assumed to be
-     * {@link org.jboss.as.controller.registry.AttributeAccess.Storage#CONFIGURATION} unless parameter
-     * {@code flags} includes {@link org.jboss.as.controller.registry.AttributeAccess.Flag#STORAGE_RUNTIME}.
+     * {@link AttributeAccess.Storage#CONFIGURATION} unless parameter
+     * {@code flags} includes {@link AttributeAccess.Flag#STORAGE_RUNTIME}.
      *
      * @param definition the attribute definition. Cannot be {@code null}
      * @param readHandler the handler for attribute reads. May be {@code null}
@@ -376,135 +371,4 @@ public interface ManagementResourceRegistration extends ImmutableManagementResou
      */
     void registerCapability(Capability capability);
 
-    /**
-     * A factory for creating a new, root model node registration.
-     */
-    class Factory {
-
-        private Factory() {
-        }
-
-        /**
-         * Create a new root model node registration.
-         *
-         * @param rootModelDescriptionProvider the model description provider for the root model node
-         * @return the new root model node registration
-         *
-         * @throws SecurityException if the caller does not have {@link ImmutableManagementResourceRegistration#ACCESS_PERMISSION}
-         * @deprecated DescriptionProvider shouldn't be used anymore, use ResourceDefinition variant
-         */
-        @Deprecated
-        public static ManagementResourceRegistration create(final DescriptionProvider rootModelDescriptionProvider) {
-            return create(rootModelDescriptionProvider, null);
-        }
-
-        /**
-         * Create a new root model node registration.
-         *
-         * @param rootModelDescriptionProvider the model description provider for the root model node
-         * @param constraintUtilizationRegistry registry for recording access constraints. Can be {@code null} if
-         *                                      tracking access constraint usage is not supported
-         * @return the new root model node registration
-         *
-         * @throws SecurityException if the caller does not have {@link ImmutableManagementResourceRegistration#ACCESS_PERMISSION}
-         * @deprecated DescriptionProvider shouldn't be used anymore, use ResourceDefinition variant
-         */
-        @Deprecated
-        public static ManagementResourceRegistration create(final DescriptionProvider rootModelDescriptionProvider,
-                                                            AccessConstraintUtilizationRegistry constraintUtilizationRegistry) {
-            if (rootModelDescriptionProvider == null) {
-                throw ControllerLogger.ROOT_LOGGER.nullVar("rootModelDescriptionProvider");
-            }
-            ResourceDefinition rootResourceDefinition = new ResourceDefinition() {
-
-                @Override
-                public PathElement getPathElement() {
-                    return null;
-                }
-
-                @Override
-                public DescriptionProvider getDescriptionProvider(ImmutableManagementResourceRegistration resourceRegistration) {
-                    return rootModelDescriptionProvider;
-                }
-
-                @Override
-                public void registerOperations(ManagementResourceRegistration resourceRegistration) {
-                    //  no-op
-                }
-
-                @Override
-                public void registerAttributes(ManagementResourceRegistration resourceRegistration) {
-                    //  no-op
-                }
-
-                @Override
-                public void registerChildren(ManagementResourceRegistration resourceRegistration) {
-                    //  no-op
-                }
-
-                @Override
-                public void registerNotifications(ManagementResourceRegistration resourceRegistration) {
-                    //  no-op
-                }
-
-                @Override
-                public void registerCapabilities(ManagementResourceRegistration resourceRegistration) {
-                    // no-op
-                }
-
-                @Override
-                public List<AccessConstraintDefinition> getAccessConstraints() {
-                    return Collections.emptyList();
-                }
-
-                @Override
-                public boolean isRuntime() {
-                    return false;
-                }
-
-                @Override
-                public boolean isOrderedChild() {
-                    return false;
-                }
-            };
-            return new ConcreteResourceRegistration(null, null, rootResourceDefinition, constraintUtilizationRegistry, rootResourceDefinition.isRuntime(), false);
-        }
-
-        /**
-         * Create a new root model node registration.
-         *
-         * @param resourceDefinition the facotry for the model description provider for the root model node
-         * @return the new root model node registration
-         *
-         * @throws SecurityException if the caller does not have {@link ImmutableManagementResourceRegistration#ACCESS_PERMISSION}
-         */
-        public static ManagementResourceRegistration create(final ResourceDefinition resourceDefinition) {
-            return create(resourceDefinition, null);
-        }
-
-        /**
-         * Create a new root model node registration.
-         *
-         * @param resourceDefinition the facotry for the model description provider for the root model node
-         * @param constraintUtilizationRegistry registry for recording access constraints. Can be {@code null} if
-         *                                      tracking access constraint usage is not supported
-         * @return the new root model node registration
-         *
-         * @throws SecurityException if the caller does not have {@link ImmutableManagementResourceRegistration#ACCESS_PERMISSION}
-         */
-        public static ManagementResourceRegistration create(final ResourceDefinition resourceDefinition,
-                                                            AccessConstraintUtilizationRegistry constraintUtilizationRegistry) {
-            if (resourceDefinition == null) {
-                throw ControllerLogger.ROOT_LOGGER.nullVar("rootModelDescriptionProviderFactory");
-            }
-            ConcreteResourceRegistration resourceRegistration =
-                    new ConcreteResourceRegistration(null, null, resourceDefinition,
-                            constraintUtilizationRegistry, resourceDefinition.isRuntime(), false);
-            resourceDefinition.registerAttributes(resourceRegistration);
-            resourceDefinition.registerOperations(resourceRegistration);
-            resourceDefinition.registerChildren(resourceRegistration);
-            resourceDefinition.registerNotifications(resourceRegistration);
-            return resourceRegistration;
-        }
-    }
 }

@@ -20,7 +20,7 @@ package org.jboss.as.domain.controller.operations;
 
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
-import org.jboss.as.controller.operations.common.AbstractSocketBindingGroupAddHandler;
+import org.jboss.as.controller.interfaces.AbstractSocketBindingGroupAddHandler;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.dmr.ModelNode;
 

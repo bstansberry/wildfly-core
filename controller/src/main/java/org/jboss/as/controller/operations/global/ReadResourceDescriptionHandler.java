@@ -77,7 +77,6 @@ import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.controller.operations.common.Util;
 import org.jboss.as.controller.operations.validation.EnumValidator;
 import org.jboss.as.controller.registry.AliasEntry;
-import org.jboss.as.controller.registry.AliasStepHandler;
 import org.jboss.as.controller.registry.AttributeAccess;
 import org.jboss.as.controller.registry.AttributeAccess.Storage;
 import org.jboss.as.controller.registry.ImmutableManagementResourceRegistration;
@@ -368,8 +367,8 @@ public class ReadResourceDescriptionHandler implements OperationStepHandler {
     }
 
     private OperationStepHandler getRecursiveStepHandler(ImmutableManagementResourceRegistration childReg, String opName, ReadResourceDescriptionAccessControlContext accessControlContext, PathAddress address) {
-        OperationStepHandler overrideHandler = childReg.getOperationHandler(PathAddress.EMPTY_ADDRESS, opName);
-        if (overrideHandler != null && (overrideHandler.getClass() == ReadResourceDescriptionHandler.class || overrideHandler.getClass() == AliasStepHandler.class)) {
+        OperationStepHandler overrideHandler = childReg.isAlias() ? null : childReg.getOperationHandler(PathAddress.EMPTY_ADDRESS, opName);
+        if (overrideHandler != null && overrideHandler.getClass() == ReadResourceDescriptionHandler.class) {
             // not an override
             overrideHandler = null;
         }

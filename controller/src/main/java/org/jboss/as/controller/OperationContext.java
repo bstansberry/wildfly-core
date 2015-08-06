@@ -1018,21 +1018,6 @@ public interface OperationContext extends ExpressionResolver {
 
         Stage() {
         }
-
-        boolean hasNext() {
-            return this != DONE;
-        }
-
-        Stage next() {
-            switch (this) {
-                case MODEL: return RUNTIME;
-                case RUNTIME: return VERIFY;
-                case VERIFY: return DOMAIN;
-                case DOMAIN: return DONE;
-                case DONE:
-                default: throw new IllegalStateException();
-            }
-        }
     }
 
     /**

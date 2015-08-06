@@ -1,6 +1,6 @@
 /*
  * JBoss, Home of Professional Open Source.
- * Copyright 2011, Red Hat, Inc., and individual contributors
+ * Copyright 2015, Red Hat, Inc., and individual contributors
  * as indicated by the @author tags. See the copyright.txt file in the
  * distribution for a full listing of individual contributors.
  *
@@ -22,7 +22,6 @@
 
 package org.jboss.as.controller.registry;
 
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 
@@ -35,13 +34,18 @@ import org.jboss.as.controller.descriptions.DescriptionProvider;
  *
  * @author Emanuel Muckenhuber
  */
-public final class OperationEntry {
-    public enum EntryType {
-        PUBLIC, PRIVATE
+public interface OperationEntry {
+
+    /** Types of operation entries */
+    enum EntryType {
+        /** An entry for an operation that is part of the publicly accessible management interface */
+        PUBLIC,
+        /** An entry for an operation this is meant for internal use only, not for use by end users */
+        PRIVATE
     }
 
     /** Flags to indicate special characteristics of an operation */
-    public enum Flag {
+    enum Flag {
         /** Operation only reads, does not modify */
         READ_ONLY,
         /** The operation modifies the configuration and can be applied to the runtime without requiring a restart */
@@ -68,49 +72,39 @@ public final class OperationEntry {
         RUNTIME_ONLY
     }
 
-    private final OperationStepHandler operationHandler;
-    private final DescriptionProvider descriptionProvider;
-    private final EntryType type;
-    private final EnumSet<Flag> flags;
-    private final boolean inherited;
-    private final List<AccessConstraintDefinition> accessConstraints;
+    /**
+     * Gets the handler for the operation.
+     * @return the handler. Will not be {@code null}
+     */
+    OperationStepHandler getOperationHandler();
 
-    OperationEntry(final OperationStepHandler operationHandler, final DescriptionProvider descriptionProvider,
-                   final boolean inherited, final EntryType type, final EnumSet<Flag> flags, final List<AccessConstraintDefinition> accessConstraints) {
-        this.operationHandler = operationHandler;
-        this.descriptionProvider = descriptionProvider;
-        this.inherited = inherited;
-        this.type = type;
-        this.flags = flags == null ? EnumSet.noneOf(Flag.class) : flags;
-        this.accessConstraints = accessConstraints == null ? Collections.<AccessConstraintDefinition>emptyList() : accessConstraints;
-    }
+    /**
+     * Gets the provider of the description of the operation.
+     * @return the description provider. Will not be {@code null}
+     */
+    DescriptionProvider getDescriptionProvider();
 
-    OperationEntry(final OperationStepHandler operationHandler, final DescriptionProvider descriptionProvider, final boolean inherited, final EntryType type) {
-       this(operationHandler, descriptionProvider, inherited, type, EnumSet.noneOf(Flag.class), null);
-    }
+    /**
+     * Gets whether this entry will be inherited by child resource registrations
+     * @return {@code true} if the entry will be inherited
+     */
+    boolean isInherited();
 
-    public OperationStepHandler getOperationHandler() {
-        return operationHandler;
-    }
+    /**
+     * Gets the type of the entry.
+     * @return the type. Will not be {@code null}
+     */
+    EntryType getType();
 
-    public DescriptionProvider getDescriptionProvider() {
-        return descriptionProvider;
-    }
+    /**
+     * Gets any flags associated with the entry.
+     * @return the flags. Will not be {@code null}
+     */
+    EnumSet<Flag> getFlags();
 
-    public boolean isInherited() {
-        return inherited;
-    }
-
-    public EntryType getType() {
-        return type;
-    }
-
-    public EnumSet<Flag> getFlags() {
-        return flags == null ? EnumSet.noneOf(Flag.class) : flags.clone();
-    }
-
-    public List<AccessConstraintDefinition> getAccessConstraints() {
-        return accessConstraints;
-    }
-
+    /**
+     * Gets the definitions of any access contraints associated with operation
+     * @return the access constraint definitions. Will not be {@code null} but may be empty
+     */
+    List<AccessConstraintDefinition> getAccessConstraints();
 }

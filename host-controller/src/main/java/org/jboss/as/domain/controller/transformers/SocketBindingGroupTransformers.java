@@ -23,7 +23,7 @@
 package org.jboss.as.domain.controller.transformers;
 
 import org.jboss.as.controller.ModelVersion;
-import org.jboss.as.controller.resource.AbstractSocketBindingGroupResourceDefinition;
+import org.jboss.as.controller.interfaces.AbstractSocketBindingGroupResourceDefinition;
 import org.jboss.as.controller.transform.description.ChainedTransformationDescriptionBuilder;
 import org.jboss.as.controller.transform.description.DiscardAttributeChecker;
 import org.jboss.as.controller.transform.description.RejectAttributeChecker;

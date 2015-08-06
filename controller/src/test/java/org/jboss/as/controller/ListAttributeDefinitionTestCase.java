@@ -23,6 +23,7 @@ import org.jboss.as.controller.descriptions.DescriptionProvider;
 import org.jboss.as.controller.descriptions.StandardResourceDescriptionResolver;
 import org.jboss.as.controller.registry.ImmutableManagementResourceRegistration;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
+import org.jboss.as.controller.registry.ManagementResourceRegistrationFactory;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 import org.junit.Assert;
@@ -90,7 +91,7 @@ public class ListAttributeDefinitionTestCase {
             }
         };
 
-        ImmutableManagementResourceRegistration registration = ManagementResourceRegistration.Factory.create(resource);
+        ImmutableManagementResourceRegistration registration = ManagementResourceRegistrationFactory.create(resource);
         ModelNode modelDescription = resource.getDescriptionProvider(registration).getModelDescription(Locale.ENGLISH);
         assertEquals("incorrect type for description " + modelDescription, LIST, modelDescription.get(ATTRIBUTES, MY_LIST_OF_STRINGS, TYPE).asType());
         assertEquals("incorrect value-type for description " + modelDescription, STRING, modelDescription.get(ATTRIBUTES, MY_LIST_OF_STRINGS, VALUE_TYPE).asType());
@@ -157,7 +158,7 @@ public class ListAttributeDefinitionTestCase {
             }
         };
 
-        ImmutableManagementResourceRegistration registration = ManagementResourceRegistration.Factory.create(resource);
+        ImmutableManagementResourceRegistration registration = ManagementResourceRegistrationFactory.create(resource);
         ModelNode modelDescription = resource.getDescriptionProvider(registration).getModelDescription(Locale.ENGLISH);
         assertEquals("incorrect type for description " + modelDescription, LIST, modelDescription.get(ATTRIBUTES, MY_LIST_OF_OBJECTS, TYPE).asType());
         assertEquals("incorrect value-type for description " + modelDescription, OBJECT, modelDescription.get(ATTRIBUTES, MY_LIST_OF_OBJECTS, VALUE_TYPE).getType());

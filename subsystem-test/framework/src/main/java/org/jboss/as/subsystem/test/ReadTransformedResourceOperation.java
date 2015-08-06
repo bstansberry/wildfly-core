@@ -51,6 +51,7 @@ import org.jboss.as.controller.transform.TransformationTargetImpl;
 import org.jboss.as.controller.transform.TransformerRegistry;
 import org.jboss.as.controller.transform.Transformers;
 import org.jboss.dmr.ModelNode;
+import org.jboss.as.controller.transform.TransformationUtils;
 
 /**
  * @author <a href="mailto:tomaz.cerar@redhat.com">Tomaz Cerar</a>
@@ -79,7 +80,7 @@ class ReadTransformedResourceOperation implements OperationStepHandler {
         final Transformers transformers = Transformers.Factory.create(target);
 
         final ImmutableManagementResourceRegistration rr = context.getRootResourceRegistration();
-        Resource root = TransformerRegistry.modelToResource(rr, rootData, true);
+        Resource root = TransformationUtils.modelToResource(PathAddress.EMPTY_ADDRESS, rr, rootData, true);
         Resource transformed = transformers.transformRootResource(context, root);
 
         return Resource.Tools.readModel(transformed);

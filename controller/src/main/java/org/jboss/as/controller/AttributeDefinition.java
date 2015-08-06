@@ -30,6 +30,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.Set;
+
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
 
@@ -358,7 +359,7 @@ public abstract class AttributeDefinition {
     }
 
     /**
-     * Gets any {@link org.jboss.as.controller.registry.AttributeAccess.Flag flags} used to indicate special
+     * Gets any {@link AttributeAccess.Flag flags} used to indicate special
      * characteristics of the attribute
      *
      * @return the flags. Will not be {@code null} but may be empty.

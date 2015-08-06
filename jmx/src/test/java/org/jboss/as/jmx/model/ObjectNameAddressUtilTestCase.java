@@ -37,6 +37,7 @@ import org.jboss.as.controller.ResourceDefinition;
 import org.jboss.as.controller.SimpleResourceDefinition;
 import org.jboss.as.controller.descriptions.NonResolvingResourceDescriptionResolver;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
+import org.jboss.as.controller.registry.ManagementResourceRegistrationFactory;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.dmr.ModelNode;
 import org.junit.Assert;
@@ -101,7 +102,7 @@ public class ObjectNameAddressUtilTestCase {
 
         NonResolvingResourceDescriptionResolver resolver = new NonResolvingResourceDescriptionResolver();
 
-        ManagementResourceRegistration rootRegistration = ManagementResourceRegistration.Factory.create(rootResourceDef);
+        ManagementResourceRegistration rootRegistration = ManagementResourceRegistrationFactory.create(rootResourceDef);
         ManagementResourceRegistration subsystemRegistration = rootRegistration.registerSubModel(new SimpleResourceDefinition(pathElement("subsystem", "foo"), resolver));
         ManagementResourceRegistration resourceRegistration = subsystemRegistration.registerSubModel(new SimpleResourceDefinition(pathElement("resource", "resourceA"), resolver));
         ManagementResourceRegistration subresourceRegistration = resourceRegistration.registerSubModel(new SimpleResourceDefinition(pathElement("subresource", "resourceB"), resolver));

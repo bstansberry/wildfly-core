@@ -21,9 +21,9 @@
  */
 package org.jboss.as.controller;
 
-import org.jboss.dmr.ModelNode;
-
 import java.util.Collection;
+
+import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 
 /**

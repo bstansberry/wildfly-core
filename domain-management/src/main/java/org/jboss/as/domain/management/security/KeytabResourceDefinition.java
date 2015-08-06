@@ -40,7 +40,7 @@ import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 
 /**
- * A {@link ResourceDefinition} for a single Keytab representing a single Kerberos Principal / identity.
+ * A {@link org.jboss.as.controller.ResourceDefinition} for a single Keytab representing a single Kerberos Principal / identity.
  *
  * @author <a href="mailto:darran.lofthouse@jboss.com">Darran Lofthouse</a>
  */

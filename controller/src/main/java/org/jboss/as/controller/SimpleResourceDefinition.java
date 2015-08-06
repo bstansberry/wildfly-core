@@ -355,7 +355,7 @@ public class SimpleResourceDefinition implements ResourceDefinition {
      * @param registration resource on which to register
      * @param handler      operation handler to register
      * @param flags        with flags
-     * @deprecated use {@link #registerAddOperation(org.jboss.as.controller.registry.ManagementResourceRegistration, AbstractAddStepHandler, org.jboss.as.controller.registry.OperationEntry.Flag...)}
+     * @deprecated use {@link #registerAddOperation(org.jboss.as.controller.registry.ManagementResourceRegistration, AbstractAddStepHandler, OperationEntry.Flag...)}
      */
     @Deprecated
     @SuppressWarnings("deprecation")

@@ -30,8 +30,7 @@ import java.util.Map;
 import org.jboss.as.controller.ModelVersion;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
-import org.jboss.as.controller.registry.OperationTransformerRegistry;
-import org.jboss.as.controller.registry.OperationTransformerRegistry.PlaceholderResolver;
+import org.jboss.as.controller.transform.OperationTransformerRegistry.PlaceholderResolver;
 
 
 /**

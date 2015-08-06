@@ -38,8 +38,8 @@ import org.jboss.as.controller.registry.AttributeAccess;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.OperationEntry;
 import org.jboss.as.controller.registry.Resource;
-import org.jboss.as.domain.management.security.LdapCacheResourceDefinition.CacheFor;
 import org.jboss.as.domain.management.logging.DomainManagementLogger;
+import org.jboss.as.domain.management.security.LdapCacheResourceDefinition.CacheFor;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 
