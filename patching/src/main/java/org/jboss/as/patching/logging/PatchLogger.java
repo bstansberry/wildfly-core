@@ -223,4 +223,7 @@ public interface PatchLogger extends BasicLogger {
 
     @Message(id = 42, value = "Patch bundle is empty")
     String patchBundleIsEmpty();
+
+    @Message(id = 43, value = "No patch was found in the content repository with hash %s")
+    OperationFailedException noPatchFoundWithHash(String hash);
 }

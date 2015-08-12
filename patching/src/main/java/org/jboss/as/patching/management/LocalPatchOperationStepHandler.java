@@ -22,12 +22,13 @@
 
 package org.jboss.as.patching.management;
 
+import java.io.IOException;
 import java.io.InputStream;
 
+import org.jboss.as.controller.HashUtil;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.OperationStepHandler;
-import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.as.patching.PatchingException;
 import org.jboss.as.patching.installation.InstallationManager;
 import org.jboss.as.patching.installation.InstallationManagerService;
@@ -36,6 +37,8 @@ import org.jboss.as.patching.tool.ContentVerificationPolicy;
 import org.jboss.as.patching.tool.PatchOperationTarget;
 import org.jboss.as.patching.tool.PatchTool;
 import org.jboss.as.patching.tool.PatchingResult;
+import org.jboss.as.repository.ContentReference;
+import org.jboss.as.repository.ContentRepository;
 import org.jboss.dmr.ModelNode;
 import org.jboss.msc.service.ServiceRegistry;
 
@@ -56,14 +59,43 @@ public final class LocalPatchOperationStepHandler implements OperationStepHandle
             throw PatchLogger.ROOT_LOGGER.serverRequiresRestart();
         }
 
+        ContentRepository contentRepository = null;
+        ContentReference contentReference = null;
         try {
             final PatchTool runner = PatchTool.Factory.create(installationManager);
             final ContentVerificationPolicy policy = PatchTool.Factory.create(operation);
 
-            final int index = operation.get(ModelDescriptionConstants.INPUT_STREAM_INDEX).asInt(0);
-            final InputStream is = context.getAttachmentStream(index);
+            final InputStream is;
+            if (operation.hasDefined(PatchResourceDefinition.CONTENT_HASH.getName())) {
+                byte[] hash = PatchResourceDefinition.CONTENT_HASH.resolveModelAttribute(context, operation).asBytes();
+                contentRepository = (ContentRepository) registry.getRequiredService(ContentRepository.SERVICE_NAME).getValue();
+                contentReference = new ContentReference("_patch_" + System.currentTimeMillis(), hash);
+                if (!contentRepository.syncContent(contentReference)) {
+                    throw PatchLogger.ROOT_LOGGER.noPatchFoundWithHash(HashUtil.bytesToHexString(hash));
+                }
+                contentRepository.addContentReference(contentReference);
+                try {
+                    is = contentRepository.getContent(hash).openStream();
+                } catch (IOException e) {
+                    throw new PatchingException(e);
+                }
+            } else {
+                final int index = operation.get(PatchResourceDefinition.INPUT_STREAM_IDX_DEF.getName()).asInt(0);
+                is = context.getAttachmentStream(index);
+            }
             installationManager.restartRequired();
-            final PatchingResult result = runner.applyPatch(is, policy);
+            final PatchingResult result;
+            try {
+                result = runner.applyPatch(is, policy);
+            } finally {
+                if (contentReference != null) {
+                    try {
+                        is.close();
+                    } catch (IOException ignored) {
+                        // TODO log a WARN
+                    }
+                }
+            }
             context.restartRequired();
             context.completeStep(new OperationContext.ResultHandler() {
 
@@ -83,6 +115,12 @@ public final class LocalPatchOperationStepHandler implements OperationStepHandle
             final ModelNode failureDescription = context.getFailureDescription();
             PatchOperationTarget.formatFailedResponse(e, failureDescription);
             installationManager.clearRestartRequired();
+        } finally {
+            if (contentReference != null && contentRepository != null) {
+                // No matter what the result was (which we don't even know at this point),
+                // we only leave the content in the repo for a single invocation of this op.
+                contentRepository.removeContent(contentReference);
+            }
         }
     }
 

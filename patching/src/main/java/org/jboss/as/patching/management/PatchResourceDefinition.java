@@ -33,6 +33,7 @@ import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.PrimitiveListAttributeDefinition;
 import org.jboss.as.controller.ResourceDefinition;
+import org.jboss.as.controller.SimpleAttributeDefinition;
 import org.jboss.as.controller.SimpleAttributeDefinitionBuilder;
 import org.jboss.as.controller.SimpleOperationDefinitionBuilder;
 import org.jboss.as.controller.SimpleResourceDefinition;
@@ -41,6 +42,8 @@ import org.jboss.as.controller.access.management.SensitiveTargetAccessConstraint
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.as.controller.descriptions.ResourceDescriptionResolver;
 import org.jboss.as.controller.descriptions.StandardResourceDescriptionResolver;
+import org.jboss.as.controller.operations.validation.MinMaxValidator;
+import org.jboss.as.controller.operations.validation.ModelTypeValidator;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.patching.Constants;
 import org.jboss.as.patching.installation.Identity;
@@ -76,6 +79,11 @@ class PatchResourceDefinition extends SimpleResourceDefinition {
     static final AttributeDefinition INPUT_STREAM_IDX_DEF = SimpleAttributeDefinitionBuilder.create(ModelDescriptionConstants.INPUT_STREAM_INDEX, ModelType.INT)
             .setDefaultValue(new ModelNode(0))
             .setAllowNull(true)
+            .setAlternatives(ModelDescriptionConstants.HASH)
+            .build();
+    static final SimpleAttributeDefinition CONTENT_HASH = SimpleAttributeDefinitionBuilder.create(ModelDescriptionConstants.HASH, ModelType.BYTES)
+            .setValidator(new HashValidator(true))
+            .setAlternatives(ModelDescriptionConstants.INPUT_STREAM_INDEX)
             .build();
     static final AttributeDefinition OVERRIDE_MODULES = SimpleAttributeDefinitionBuilder.create(Constants.OVERRIDE_MODULES, ModelType.BOOLEAN)
             .setDefaultValue(new ModelNode(false))
@@ -94,6 +102,7 @@ class PatchResourceDefinition extends SimpleResourceDefinition {
 
     static final OperationDefinition PATCH = new SimpleOperationDefinitionBuilder(Constants.PATCH, getResourceDescriptionResolver(PatchResourceDefinition.NAME))
             .addParameter(INPUT_STREAM_IDX_DEF)
+            .addParameter(CONTENT_HASH)
             .addParameter(OVERRIDE_ALL)
             .addParameter(OVERRIDE_MODULES)
             .addParameter(OVERRIDE)
@@ -317,6 +326,22 @@ class PatchResourceDefinition extends SimpleResourceDefinition {
                 return sensitivity;
             }
         });
+    }
+
+    private static class HashValidator extends ModelTypeValidator implements MinMaxValidator {
+        public HashValidator(boolean nillable) {
+            super(ModelType.BYTES, nillable);
+        }
+
+        @Override
+        public Long getMin() {
+            return 20L;
+        }
+
+        @Override
+        public Long getMax() {
+            return 20L;
+        }
     }
 }
 
