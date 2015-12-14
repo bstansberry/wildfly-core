@@ -362,17 +362,55 @@ public abstract class AbstractMessageHandler extends ActiveOperationSupport impl
                     try {
                         task.execute(context);
                     } catch (Throwable t) {
-                        if(support.getResultHandler().failed(t)) {
-                            ManagementProtocolHeader requestHeader;
-                            if (task instanceof MultipleResponseAsyncTask) {
-                                requestHeader = ((MultipleResponseAsyncTask) task).getCurrentRequestHeader();
-                                requestHeader = requestHeader == null ? header : requestHeader;
-                            } else {
-                                requestHeader = header;
+                        try {
+                            if (support.getResultHandler().failed(t)) {
+                                ManagementProtocolHeader requestHeader;
+                                if (task instanceof MultipleResponseAsyncTask) {
+                                    requestHeader = ((MultipleResponseAsyncTask) task).getCurrentRequestHeader();
+                                    requestHeader = requestHeader == null ? header : requestHeader;
+                                } else {
+                                    requestHeader = header;
+                                }
+                                safeWriteErrorResponse(channel, requestHeader, t);
                             }
-                            safeWriteErrorResponse(channel, requestHeader, t);
+                            ProtocolLogger.ROOT_LOGGER.asyncRequestTaskFailure(t, task, channel);
+                        } catch (Error e) {
+                            // If we get to this point, the task has already failed to handle a
+                            // problem and now we can't notify the remote side either. Most likely
+                            // this is an OOME situation, although any Error here means a major issue.
+                            // Try and close the channel to disconnect this process from the remote
+                            // end so it doesn't disrupt the remote end. If this is an intra-HC or
+                            // HC-server connection a successful close will remove this process
+                            // from normal domain control. If this is a server the HC still has some
+                            // control over the server via the ProcessController, e.g. to handle a
+                            // 'kill' or 'destroy' management op. If this is a slave HC, the slave
+                            // is disconnected from the domain. Either a server or a slave HC may try
+                            // to reconnect, although it's likely better if that fails and the user
+                            // just restarts the process.
+                            //
+                            // If the remote side is an end user client (e.g. CLI) then a successful close
+                            // will be noticed by the client. The user can reconnect or take action
+                            // to terminate this process.
+                            //
+                            // An alternative here is to call SystemExiter.exit(1) but I'm not certain
+                            // complete termination of the process is how we want to deal with
+                            // problems with management requests. Probably some sort of configurable
+                            // policy would be better.
+                            //
+                            //noinspection finally
+                            try {
+                                channel.close();
+                            } catch (IOException e1) {
+                                // ignore it at this point other than trying to log which will probably fail too
+                                ProtocolLogger.ROOT_LOGGER.asyncRequestTaskFailure(t, task, channel);
+                                ProtocolLogger.ROOT_LOGGER.asyncRequestTaskCleanupFailure(e1, channel, e, task);
+                            } finally {
+                                // IDE complains about throwing from 'finally' but we're throwing the more
+                                // significant error here; ensuring we do this is the reason for the finally block
+                                //noinspection ThrowFromFinallyBlock
+                                throw e;
+                            }
                         }
-                        ProtocolLogger.ROOT_LOGGER.debugf(t, " failed to process async request for %s on channel %s", task, channel);
                     }
                 }
             };

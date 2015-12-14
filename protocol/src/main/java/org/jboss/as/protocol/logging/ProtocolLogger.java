@@ -348,4 +348,12 @@ public interface ProtocolLogger extends BasicLogger {
     @LogMessage(level = INFO)
     @Message(id = 59, value = "You are using a deprecated way to set the client bind address. Please use the \"--bind\" parameter on the CLI instead of the %s system property.")
     void deprecatedCLIConfiguration(String systemPropName);
+
+    @LogMessage(level = ERROR)
+    @Message(id = 60, value = "Failed to process async request for %s on channel %s")
+    void asyncRequestTaskFailure(@Cause Throwable cause, Object task, Channel channel);
+
+    @LogMessage(level = ERROR)
+    @Message(id = 61, value = "Failed to close channel %s following async request failure %s executing %s")
+    void asyncRequestTaskCleanupFailure(@Cause Throwable cause, Channel channel, Throwable initialFailure, Object task);
 }
