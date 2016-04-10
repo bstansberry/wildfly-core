@@ -131,6 +131,8 @@ import org.jboss.as.host.controller.RemoteDomainConnectionService.RemoteFileRepo
 import org.jboss.as.host.controller.discovery.DiscoveryOption;
 import org.jboss.as.host.controller.discovery.DomainControllerManagementInterface;
 import org.jboss.as.host.controller.ignored.IgnoredDomainResourceRegistry;
+import org.jboss.as.host.controller.jgroups.DomainServerService;
+import org.jboss.as.host.controller.jgroups.JGroupsExperimentService;
 import org.jboss.as.host.controller.logging.HostControllerLogger;
 import org.jboss.as.host.controller.mgmt.DomainHostExcludeRegistry;
 import org.jboss.as.host.controller.mgmt.HostControllerRegistrationHandler;
@@ -746,6 +748,24 @@ public class DomainModelControllerService extends AbstractControllerService impl
                         .addDependency(ServiceBuilder.DependencyType.OPTIONAL, UndertowHttpManagementService.SERVICE_NAME)
                         .setInitialMode(ServiceController.Mode.ACTIVE)
                         .install();
+
+                // JGroups experimental POC
+                // TODO we should be able to support all open interfaces, but we don't
+                // want to cluster with ourself across the different interfaces
+                // So for now I just pick one based on an arbitrary preference
+                // that wasn't really thought through at all
+                String groupCommProtocol = null;
+                if (hostControllerInfo.getHttpManagementInterface() != null) {
+                    groupCommProtocol = "http-remoting";
+                } else if (hostControllerInfo.getNativeManagementInterface() != null) {
+                    groupCommProtocol = "remote";
+                } else if (hostControllerInfo.getHttpManagementSecureInterface() != null) {
+                    groupCommProtocol = "https-remoting";
+                }
+                if (groupCommProtocol != null) {
+                    DomainServerService.install(serviceTarget, hostControllerInfo, groupCommProtocol);
+                    JGroupsExperimentService.install(serviceTarget, hostControllerInfo);
+                }
 
                 reachedServers = true;
                 if (currentRunningMode == RunningMode.NORMAL) {

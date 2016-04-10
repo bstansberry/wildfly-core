@@ -53,6 +53,7 @@ import org.jboss.logging.annotations.Message;
 import org.jboss.logging.annotations.MessageLogger;
 import org.jboss.logging.annotations.Param;
 import org.jboss.remoting3.Channel;
+import org.jboss.remoting3.Connection;
 
 /**
  * @author <a href="mailto:jperkins@redhat.com">James R. Perkins</a>
@@ -1265,4 +1266,7 @@ public interface HostControllerLogger extends BasicLogger {
     @LogMessage(level = Level.ERROR)
     @Message( id = 172, value = "Failed executing the suspend operation for server: %s")
     void suspendExecutionFailed(@Cause IOException cause, String serverName);
+
+    @Message(id = 173, value = "Packet from %s has different version (%s) from ours (%s); discarding it\"")
+    IOException incompatibleJGroupsVersion(Connection connection, String theirVersion, String ourVersion);
 }

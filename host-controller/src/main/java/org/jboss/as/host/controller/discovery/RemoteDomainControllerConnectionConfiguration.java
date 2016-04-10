@@ -26,7 +26,7 @@ import io.undertow.util.NetworkUtils;
  * Simple class to hold the connection parameters to a remote domain controller.
  * @author <a href="mailto:ehugonne@redhat.com">Emmanuel Hugonnet</a> (c) 2015 Red Hat, inc.
  */
-public class RemoteDomainControllerConnectionConfiguration {
+public final class RemoteDomainControllerConnectionConfiguration {
     // The host name of the domain controller
     private final String remoteDcHost;
 
@@ -67,5 +67,26 @@ public class RemoteDomainControllerConnectionConfiguration {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{protocol=" + remoteDcProtocol + ",host=" + remoteDcHost + ",port=" + remoteDcPort + '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        RemoteDomainControllerConnectionConfiguration that = (RemoteDomainControllerConnectionConfiguration) o;
+
+        return remoteDcPort == that.remoteDcPort
+                && remoteDcHost.equals(that.remoteDcHost)
+                && remoteDcProtocol.equals(that.remoteDcProtocol);
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = remoteDcHost.hashCode();
+        result = 31 * result + remoteDcPort;
+        result = 31 * result + remoteDcProtocol.hashCode();
+        return result;
     }
 }

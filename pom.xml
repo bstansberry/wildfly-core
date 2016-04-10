@@ -123,6 +123,7 @@
         <version.org.jboss.xnio>3.3.6.Final</version.org.jboss.xnio>
         <version.org.jboss.xnio.xnio-api>${version.org.jboss.xnio}</version.org.jboss.xnio.xnio-api>
         <version.org.jboss.xnio.xnio-nio>${version.org.jboss.xnio}</version.org.jboss.xnio.xnio-nio>
+        <version.org.jgroups>3.6.8.Final</version.org.jgroups>
         <version.org.mockito>1.9.5</version.org.mockito>
         <version.org.picketbox>4.9.5.Final</version.org.picketbox>
         <version.org.slf4j>1.7.7.jbossorg-1</version.org.slf4j>
@@ -1280,6 +1281,12 @@
                 <groupId>org.jboss.xnio</groupId>
                 <artifactId>xnio-nio</artifactId>
                 <version>${version.org.jboss.xnio.xnio-nio}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.jgroups</groupId>
+                <artifactId>jgroups</artifactId>
+                <version>${version.org.jgroups}</version>
             </dependency>
 
             <dependency>
