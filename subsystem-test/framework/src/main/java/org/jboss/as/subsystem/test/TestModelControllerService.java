@@ -26,6 +26,7 @@ import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SUB
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -212,6 +213,15 @@ class TestModelControllerService extends ModelTestModelControllerService impleme
         @Override
         public Map<String, Set<String>> cleanObsoleteContent() {
             return null;
+        }
+
+        @Override
+        public byte[] explodeContent(byte[] unexploded) {
+            return null;
+        }
+
+        @Override
+        public void copyExplodedContent(byte[] hash, Path target) {
         }
     }
 }

@@ -21,11 +21,11 @@ package org.jboss.as.server.deployment;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.ADD;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.DEPLOYMENT;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP_ADDR;
-import static org.jboss.as.server.controller.resources.DeploymentAttributes.CONTENT_ALL;
 import static org.jboss.as.server.controller.resources.DeploymentAttributes.CONTENT_ARCHIVE;
 import static org.jboss.as.server.controller.resources.DeploymentAttributes.CONTENT_HASH;
 import static org.jboss.as.server.controller.resources.DeploymentAttributes.CONTENT_PATH;
 import static org.jboss.as.server.controller.resources.DeploymentAttributes.CONTENT_RELATIVE_TO;
+import static org.jboss.as.server.controller.resources.DeploymentAttributes.CONTENT_RESOURCE;
 import static org.jboss.as.server.controller.resources.DeploymentAttributes.ENABLED;
 import static org.jboss.as.server.controller.resources.DeploymentAttributes.OWNER;
 import static org.jboss.as.server.controller.resources.DeploymentAttributes.PERSISTENT;
@@ -103,7 +103,7 @@ public class DeploymentAddHandler implements OperationStepHandler {
         }
 
         // TODO: JBAS-9020: for the moment overlays are not supported, so there is a single content item
-        ModelNode content = newModel.require(CONTENT_ALL.getName());
+        ModelNode content = newModel.require(CONTENT_RESOURCE.getName());
         ModelNode contentItemNode = content.require(0);
 
         final ModelNode opAddr = operation.get(OP_ADDR);
@@ -115,7 +115,7 @@ public class DeploymentAddHandler implements OperationStepHandler {
         final DeploymentHandlerUtil.ContentItem contentItem;
         if (contentItemNode.hasDefined(CONTENT_HASH.getName())) {
             byte[] hash = contentItemNode.require(CONTENT_HASH.getName()).asBytes();
-            contentItem = addFromHash(hash, name, address, context);
+            contentItem = addFromHash(hash, name, DeploymentHandlerUtil.isArchive(contentItemNode), address, context);
         } else if (hasValidContentAdditionParameterDefined(contentItemNode)) {
             contentItem = addFromContentAdditionParameter(context, contentItemNode);
             // Store a hash-based contentItemNode back to the model
@@ -123,7 +123,7 @@ public class DeploymentAddHandler implements OperationStepHandler {
             contentItemNode.get(CONTENT_HASH.getName()).set(contentItem.getHash());
             content = new ModelNode();
             content.add(contentItemNode);
-            newModel.get(CONTENT_ALL.getName()).set(content);
+            newModel.get(CONTENT_RESOURCE.getName()).set(content);
         } else {
             contentItem = addUnmanaged(contentItemNode);
         }
@@ -182,7 +182,7 @@ public class DeploymentAddHandler implements OperationStepHandler {
                 ? deployment.get(ModelDescriptionConstants.RUNTIME_NAME).asString() : name;
     }
 
-    DeploymentHandlerUtil.ContentItem addFromHash(byte[] hash, String deploymentName, PathAddress address, OperationContext context) throws OperationFailedException {
+    DeploymentHandlerUtil.ContentItem addFromHash(byte[] hash, String deploymentName, boolean archive, PathAddress address, OperationContext context) throws OperationFailedException {
         ContentReference reference = ModelContentReference.fromModelAddress(address, hash);
         if (!contentRepository.syncContent(reference)) {
             if (context.isBooting()) {
@@ -198,7 +198,7 @@ public class DeploymentAddHandler implements OperationStepHandler {
                 throw ServerLogger.ROOT_LOGGER.noSuchDeploymentContent(reference.getHexHash());
             }
         }
-        return new DeploymentHandlerUtil.ContentItem(hash);
+        return new DeploymentHandlerUtil.ContentItem(hash, archive);
     }
 
     DeploymentHandlerUtil.ContentItem addFromContentAdditionParameter(OperationContext context, ModelNode contentItemNode) throws OperationFailedException {

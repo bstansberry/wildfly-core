@@ -35,6 +35,7 @@ import org.jboss.vfs.VirtualFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -104,6 +105,18 @@ public class SelfContainedContentRepository implements ContentRepository, Servic
         result.put( ContentRepository.MARKED_CONTENT, Collections.<String>emptySet());
         result.put( ContentRepository.DELETED_CONTENT, Collections.<String>emptySet());
         return result;
+    }
+
+    @Override
+    public byte[] explodeContent(byte[] unexploded) {
+        // The management layer should not be supporting exploded managed content on a self-contained server.
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void copyExplodedContent(byte[] hash, Path target) {
+        // The management layer should not be supporting exploded managed content on a self-contained server.
+        throw new UnsupportedOperationException();
     }
 
     @Override

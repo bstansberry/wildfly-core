@@ -24,12 +24,14 @@ package org.jboss.as.server.mgmt.domain;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.Set;
 
 import org.jboss.as.repository.ContentReference;
 import org.jboss.as.repository.ContentRepository;
 import org.jboss.as.repository.DeploymentFileRepository;
+import org.jboss.as.repository.ExplodedContentException;
 import org.jboss.as.repository.LocalDeploymentFileRepository;
 import org.jboss.as.server.logging.ServerLogger;
 import org.jboss.msc.service.Service;
@@ -158,6 +160,16 @@ public class RemoteFileRepositoryService implements CompositeContentRepository, 
     @Override
     public Map<String, Set<String>> cleanObsoleteContent() {
         return contentRepository.cleanObsoleteContent();
+    }
+
+    @Override
+    public byte[] explodeContent(byte[] unexploded) throws IOException, ExplodedContentException {
+        return contentRepository.explodeContent(unexploded);
+    }
+
+    @Override
+    public void copyExplodedContent(byte[] hash, Path target) throws IOException {
+        contentRepository.copyExplodedContent(hash, target);
     }
 
 }

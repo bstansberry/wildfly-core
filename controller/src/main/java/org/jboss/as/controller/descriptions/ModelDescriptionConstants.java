@@ -168,6 +168,7 @@ public class ModelDescriptionConstants {
     public static final String EXCLUSIVE_RUNNING_TIME = "exclusive-running-time";
     public static final String EXECUTE_FOR_COORDINATOR = "execute-for-coordinator";
     public static final String EXECUTION_STATUS = "execution-status";
+    public static final String EXPLODE = "explode";
     public static final String EXPRESSIONS_ALLOWED = "expressions-allowed";
     public static final String EXTENSION = "extension";
     public static final String FACILITY = "facility";

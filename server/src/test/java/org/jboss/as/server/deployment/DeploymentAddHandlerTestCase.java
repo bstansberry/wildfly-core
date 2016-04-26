@@ -23,6 +23,7 @@ package org.jboss.as.server.deployment;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.Set;
 
@@ -106,6 +107,15 @@ public class DeploymentAddHandlerTestCase {
         @Override
         public Map<String, Set<String>> cleanObsoleteContent() {
             return null;
+        }
+
+        @Override
+        public byte[] explodeContent(byte[] unexploded) {
+            return null;
+        }
+
+        @Override
+        public void copyExplodedContent(byte[] hash, Path target) {
         }
     };
 }

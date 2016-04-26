@@ -26,11 +26,11 @@ import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.DEP
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.DEPLOYMENT_UNDEPLOYED_NOTIFICATION;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.WEB_URL;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
@@ -143,21 +143,44 @@ public class DeploymentAttributes {
 
     //Managed content value attributes
     public static final SimpleAttributeDefinition CONTENT_INPUT_STREAM_INDEX =
-            createContentValueTypeAttribute(ModelDescriptionConstants.INPUT_STREAM_INDEX, ModelType.INT, new StringLengthValidator(1, true), false);
+            createContentValueTypeAttribute(ModelDescriptionConstants.INPUT_STREAM_INDEX, ModelType.INT, new StringLengthValidator(1, true), false,
+                    ModelDescriptionConstants.HASH, ModelDescriptionConstants.BYTES, ModelDescriptionConstants.URL,
+                    ModelDescriptionConstants.PATH, ModelDescriptionConstants.RELATIVE_TO)
+            .build();
     public static final SimpleAttributeDefinition CONTENT_HASH =
-            createContentValueTypeAttribute(ModelDescriptionConstants.HASH, ModelType.BYTES, new HashValidator(true), false);
+            createContentValueTypeAttribute(ModelDescriptionConstants.HASH, ModelType.BYTES, new HashValidator(true), false,
+                    ModelDescriptionConstants.INPUT_STREAM_INDEX, ModelDescriptionConstants.BYTES, ModelDescriptionConstants.URL,
+                    ModelDescriptionConstants.PATH, ModelDescriptionConstants.RELATIVE_TO)
+                    .build();
     public static final SimpleAttributeDefinition CONTENT_BYTES =
-            createContentValueTypeAttribute(ModelDescriptionConstants.BYTES, ModelType.BYTES, new ModelTypeValidator(ModelType.BYTES, true), false);
+            createContentValueTypeAttribute(ModelDescriptionConstants.BYTES, ModelType.BYTES, new ModelTypeValidator(ModelType.BYTES, true), false,
+                    ModelDescriptionConstants.INPUT_STREAM_INDEX, ModelDescriptionConstants.HASH, ModelDescriptionConstants.URL,
+                    ModelDescriptionConstants.PATH, ModelDescriptionConstants.RELATIVE_TO)
+                    .build();
     public static final SimpleAttributeDefinition CONTENT_URL =
-            createContentValueTypeAttribute(ModelDescriptionConstants.URL, ModelType.STRING, new StringLengthValidator(1, true), false);
+            createContentValueTypeAttribute(ModelDescriptionConstants.URL, ModelType.STRING, new StringLengthValidator(1, true), false,
+                    ModelDescriptionConstants.INPUT_STREAM_INDEX, ModelDescriptionConstants.HASH, ModelDescriptionConstants.BYTES,
+                    ModelDescriptionConstants.PATH, ModelDescriptionConstants.RELATIVE_TO)
+                    .build();
 
     //Unmanaged content value attributes
     public static final AttributeDefinition CONTENT_PATH =
-            createContentValueTypeAttribute(ModelDescriptionConstants.PATH, ModelType.STRING, new StringLengthValidator(1, true), false);
+            createContentValueTypeAttribute(ModelDescriptionConstants.PATH, ModelType.STRING, new StringLengthValidator(1, true), false,
+                    ModelDescriptionConstants.INPUT_STREAM_INDEX, ModelDescriptionConstants.HASH, ModelDescriptionConstants.BYTES,
+                    ModelDescriptionConstants.URL)
+                    .setRequires(ModelDescriptionConstants.ARCHIVE)
+                    .build();
     public static final AttributeDefinition CONTENT_RELATIVE_TO =
-            createContentValueTypeAttribute(ModelDescriptionConstants.RELATIVE_TO, ModelType.STRING, new StringLengthValidator(1, true), false);
+            createContentValueTypeAttribute(ModelDescriptionConstants.RELATIVE_TO, ModelType.STRING, new StringLengthValidator(1, true), false,
+                    ModelDescriptionConstants.INPUT_STREAM_INDEX, ModelDescriptionConstants.HASH, ModelDescriptionConstants.BYTES,
+                    ModelDescriptionConstants.URL)
+                    .setRequires(ModelDescriptionConstants.PATH)
+                    .build();
     public static final AttributeDefinition CONTENT_ARCHIVE =
-            createContentValueTypeAttribute(ModelDescriptionConstants.ARCHIVE, ModelType.BOOLEAN, new ModelTypeValidator(ModelType.BOOLEAN), false);
+            createContentValueTypeAttribute(ModelDescriptionConstants.ARCHIVE, ModelType.BOOLEAN, new ModelTypeValidator(ModelType.BOOLEAN), false,
+                    ModelDescriptionConstants.INPUT_STREAM_INDEX, ModelDescriptionConstants.BYTES, ModelDescriptionConstants.URL)
+                    .setRequires(ModelDescriptionConstants.PATH, ModelDescriptionConstants.HASH)
+                    .build();
 
     /** The content complex attribute */
     public static final ObjectListAttributeDefinition CONTENT_ALL =
@@ -200,7 +223,7 @@ public class DeploymentAttributes {
                             CONTENT_PATH,
                             CONTENT_RELATIVE_TO,
                             CONTENT_ARCHIVE)
-                            .setValidator(new ContentTypeValidator())
+                            //.setValidator(new ContentTypeValidator())
                             .build())
                     .setMinSize(1)
                     .setMaxSize(1)
@@ -238,6 +261,7 @@ public class DeploymentAttributes {
     public static final OperationDefinition DEPLOY_DEFINITION = new SimpleOperationDefinition(ModelDescriptionConstants.DEPLOY, DEPLOYMENT_RESOLVER);
     public static final OperationDefinition UNDEPLOY_DEFINITION = new SimpleOperationDefinition(ModelDescriptionConstants.UNDEPLOY, DEPLOYMENT_RESOLVER);
     public static final OperationDefinition REDEPLOY_DEFINITION = new SimpleOperationDefinition(ModelDescriptionConstants.REDEPLOY, DEPLOYMENT_RESOLVER);
+    public static final OperationDefinition EXPLODE_DEFINITION = new SimpleOperationDefinitionBuilder(ModelDescriptionConstants.EXPLODE, DEPLOYMENT_RESOLVER).build();
 
     /** Server add deployment definition */
     public static final OperationDefinition SERVER_DEPLOYMENT_ADD_DEFINITION = new SimpleOperationDefinitionBuilder(ModelDescriptionConstants.ADD, DEPLOYMENT_RESOLVER)
@@ -336,13 +360,19 @@ public class DeploymentAttributes {
     public static final NotificationDefinition NOTIFICATION_DEPLOYMENT_DEPLOYED = NotificationDefinition.Builder.create(DEPLOYMENT_DEPLOYED_NOTIFICATION, DEPLOYMENT_RESOLVER).build();
     public static final NotificationDefinition NOTIFICATION_DEPLOYMENT_UNDEPLOYED = NotificationDefinition.Builder.create(DEPLOYMENT_UNDEPLOYED_NOTIFICATION, DEPLOYMENT_RESOLVER).build();
 
-    private static SimpleAttributeDefinition createContentValueTypeAttribute(String name, ModelType type, ParameterValidator validator, boolean allowExpression) {
+    private static SimpleAttributeDefinitionBuilder createContentValueTypeAttribute(String name, ModelType type,
+                                                                                    ParameterValidator validator,
+                                                                                    boolean allowExpression,
+                                                                                    String... alternatives) {
         SimpleAttributeDefinitionBuilder builder = SimpleAttributeDefinitionBuilder.create(name, type, true);
         if (validator != null) {
             builder.setValidator(validator);
         }
         builder.setAllowExpression(allowExpression);
-        return builder.build();
+        if (alternatives != null && alternatives.length > 0) {
+            builder.setAlternatives(alternatives);
+        }
+        return builder;
     }
 
     private static class HashValidator extends ModelTypeValidator implements MinMaxValidator {
@@ -382,42 +412,78 @@ public class DeploymentAttributes {
         @Override
         public void validateParameter(String parameterName, ModelNode contentItemNode) throws OperationFailedException {
 
-            Set<String> managedNames = new HashSet<String>();
-            Set<String> unmanagedNames = new HashSet<String>();
-            for (String name : contentItemNode.keys()) {
-                if (contentItemNode.hasDefined(name)) {
-                    if (MANAGED_CONTENT_ATTRIBUTES.containsKey(name)) {
-                        managedNames.add(name);
-                    } else if (UNMANAGED_CONTENT_ATTRIBUTES.containsKey(name)) {
-                        unmanagedNames.add(name);
-                    } else {
-                        throw ServerLogger.ROOT_LOGGER.unknownContentItemKey(name);
-                    }
-                }
-            }
-            if (managedNames.size() > 1) {
-                throw ServerLogger.ROOT_LOGGER.cannotHaveMoreThanOneManagedContentItem(MANAGED_CONTENT_ATTRIBUTES.keySet());
-            }
-            if (unmanagedNames.size() > 0 && managedNames.size() > 0) {
-                throw ServerLogger.ROOT_LOGGER.cannotMixUnmanagedAndManagedContentItems(managedNames, unmanagedNames);
-            }
-            if (unmanagedNames.size() > 0) {
-                if (!unmanagedNames.contains(CONTENT_ARCHIVE.getName())) {
-                    throw ServerLogger.ROOT_LOGGER.nullParameter(CONTENT_ARCHIVE.getName());
-                }
-                if (!unmanagedNames.contains(CONTENT_PATH.getName())) {
-                    throw ServerLogger.ROOT_LOGGER.nullParameter(CONTENT_PATH.getName());
-                }
-            }
+//            Set<String> managedNames = new HashSet<String>();
+//            Set<String> unmanagedNames = new HashSet<String>();
+//            for (String name : contentItemNode.keys()) {
+//                if (contentItemNode.hasDefined(name)) {
+//                    if (MANAGED_CONTENT_ATTRIBUTES.containsKey(name)) {
+//                        managedNames.add(name);
+//                    } else if (UNMANAGED_CONTENT_ATTRIBUTES.containsKey(name)) {
+//                        unmanagedNames.add(name);
+//                    } else {
+//                        throw ServerLogger.ROOT_LOGGER.unknownContentItemKey(name);
+//                    }
+//                }
+//            }
+//            if (managedNames.size() > 1) {
+//                throw ServerLogger.ROOT_LOGGER.cannotHaveMoreThanOneManagedContentItem(MANAGED_CONTENT_ATTRIBUTES.keySet());
+//            }
+//            if (unmanagedNames.size() > 0 && managedNames.size() > 0) {
+//                throw ServerLogger.ROOT_LOGGER.cannotMixUnmanagedAndManagedContentItems(managedNames, unmanagedNames);
+//            }
+//            if (unmanagedNames.size() > 0) {
+//                if (!unmanagedNames.contains(CONTENT_ARCHIVE.getName())) {
+//                    throw ServerLogger.ROOT_LOGGER.nullParameter(CONTENT_ARCHIVE.getName());
+//                }
+//                if (!unmanagedNames.contains(CONTENT_PATH.getName())) {
+//                    throw ServerLogger.ROOT_LOGGER.nullParameter(CONTENT_PATH.getName());
+//                }
+//            }
 
             for (String key : contentItemNode.keys()){
-
+                boolean managedAttr = true;
                 AttributeDefinition def = MANAGED_CONTENT_ATTRIBUTES.get(key);
                 if (def == null) {
                     def = UNMANAGED_CONTENT_ATTRIBUTES.get(key);
+                    managedAttr = false;
                 }
                 if (def != null) {
                     def.validateOperation(contentItemNode);
+                    if (contentItemNode.hasDefined(key)) {
+                        String[] alts = def.getAlternatives();
+                        if (alts != null && alts.length > 0) {
+                            for (String alt : alts) {
+                                if (contentItemNode.hasDefined(alt)) {
+                                    boolean altIsManaged = MANAGED_CONTENT_ATTRIBUTES.containsKey(alt);
+                                    if (managedAttr == altIsManaged) {
+                                        if (managedAttr) {
+                                            throw ServerLogger.ROOT_LOGGER.cannotHaveMoreThanOneManagedContentItem(MANAGED_CONTENT_ATTRIBUTES.keySet());
+                                        } else {
+                                            // won't happen as the unmanaged attributes don't have unmanaged alternatives
+                                            throw new IllegalStateException();
+                                        }
+                                    } else {
+                                        throw ServerLogger.ROOT_LOGGER.cannotMixUnmanagedAndManagedContentItems(Collections.singleton(key), new HashSet<>(Arrays.asList(def.getAlternatives())));
+                                    }
+                                }
+                            }
+                        }
+                        String[] reqs = def.getRequires();
+                        if (reqs != null && reqs.length > 0) {
+                            boolean hasReq = false;
+                            for (String req : reqs) {
+                                if (contentItemNode.hasDefined(req)) {
+                                    hasReq = true;
+                                    break;
+                                }
+                            }
+                            if (!hasReq) {
+                                throw ServerLogger.ROOT_LOGGER.nullParameter(reqs[0]);
+                            }
+                        }
+                    }
+                } else {
+                    throw ServerLogger.ROOT_LOGGER.unknownContentItemKey(key);
                 }
             }
         }

@@ -35,8 +35,8 @@ import java.util.List;
 
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
-import org.jboss.as.server.logging.ServerLogger;
 import org.jboss.as.server.controller.resources.DeploymentAttributes;
+import org.jboss.as.server.logging.ServerLogger;
 import org.jboss.dmr.ModelNode;
 
 /**
@@ -62,7 +62,7 @@ public abstract class DeploymentHandlerUtils {
         for(int i = 0; i < contents.length; i++) {
             final ModelNode node = nodes.get(i);
             if (node.has(HASH)) {
-                contents[i] = new DeploymentHandlerUtil.ContentItem(node.require(HASH).asBytes());
+                contents[i] = new DeploymentHandlerUtil.ContentItem(node.require(HASH).asBytes(), DeploymentHandlerUtil.isArchive(node));
             } else {
                 contents[i] = new DeploymentHandlerUtil.ContentItem(node.require(PATH).asString(), asString(node, RELATIVE_TO), node.require(ARCHIVE).asBoolean());
             }

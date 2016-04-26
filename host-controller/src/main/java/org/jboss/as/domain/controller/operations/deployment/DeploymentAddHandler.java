@@ -20,8 +20,8 @@ package org.jboss.as.domain.controller.operations.deployment;
 
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.ADD;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP_ADDR;
-import static org.jboss.as.server.controller.resources.DeploymentAttributes.CONTENT_ALL;
 import static org.jboss.as.server.controller.resources.DeploymentAttributes.CONTENT_HASH;
+import static org.jboss.as.server.controller.resources.DeploymentAttributes.CONTENT_RESOURCE;
 import static org.jboss.as.server.controller.resources.DeploymentAttributes.DOMAIN_ADD_ATTRIBUTES;
 import static org.jboss.as.server.controller.resources.DeploymentAttributes.RUNTIME_NAME;
 
@@ -87,7 +87,7 @@ public class DeploymentAddHandler implements OperationStepHandler {
         }
 
         // TODO: JBAS-9020: for the moment overlays are not supported, so there is a single content item
-        ModelNode content = newModel.require(CONTENT_ALL.getName());
+        ModelNode content = newModel.require(CONTENT_RESOURCE.getName());
         ModelNode contentItemNode = content.require(0);
 
         final ModelNode opAddr = correctedOperation.get(OP_ADDR);
@@ -137,7 +137,7 @@ public class DeploymentAddHandler implements OperationStepHandler {
             // We have altered contentItemNode from what's in the newModel, so store it back to model
             content = new ModelNode();
             content.add(contentItemNode);
-            newModel.get(CONTENT_ALL.getName()).set(content);
+            newModel.get(CONTENT_RESOURCE.getName()).set(content);
 
         } // else would have failed validation
 

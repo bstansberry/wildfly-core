@@ -29,7 +29,10 @@ import static org.jboss.as.server.controller.resources.DeploymentAttributes.OWNE
 import static org.jboss.as.server.deployment.DeploymentHandlerUtils.getContents;
 import static org.jboss.msc.service.ServiceController.Mode.REMOVE;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.OperationStepHandler;
@@ -42,6 +45,7 @@ import org.jboss.as.controller.registry.Resource;
 import org.jboss.as.controller.registry.Resource.ResourceEntry;
 import org.jboss.as.controller.services.path.PathManager;
 import org.jboss.as.controller.services.path.PathManagerService;
+import org.jboss.as.server.ServerEnvironment;
 import org.jboss.as.server.controller.resources.DeploymentAttributes;
 import org.jboss.as.server.deploymentoverlay.DeploymentOverlayIndex;
 import org.jboss.as.server.logging.ServerLogger;
@@ -65,14 +69,21 @@ public class DeploymentHandlerUtil {
 
     static class ContentItem {
         // either hash or <path, relativeTo, isArchive>
-        private byte[] hash;
-        private String path;
-        private String relativeTo;
-        private boolean isArchive;
+        private final byte[] hash;
+        private final String path;
+        private final String relativeTo;
+        private final boolean isArchive;
 
         ContentItem(final byte[] hash) {
+            this(hash, true);
+        }
+
+        ContentItem(final byte[] hash, boolean isArchive) {
             assert hash != null : "hash is null";
             this.hash = hash;
+            this.isArchive = isArchive;
+            this.path = null;
+            this.relativeTo = null;
         }
 
         ContentItem(final String path, final String relativeTo, final boolean isArchive) {
@@ -80,12 +91,15 @@ public class DeploymentHandlerUtil {
             this.path = path;
             this.relativeTo = relativeTo;
             this.isArchive = isArchive;
+            this.hash = null;
         }
 
         byte[] getHash() {
             return hash;
         }
     }
+
+    private static final String MANAGED_CONTENT = "managed-exploded";
 
     private DeploymentHandlerUtil() {
     }
@@ -163,14 +177,20 @@ public class DeploymentHandlerUtil {
     public static void doDeploy(final OperationContext context, final String deploymentUnitName, final String managementName,
                                 final Resource deploymentResource, final ImmutableManagementResourceRegistration registration,
                                 final ManagementResourceRegistration mutableRegistration, final AbstractVaultReader vaultReader, final ContentItem... contents) {
+
         final ServiceName deploymentUnitServiceName = Services.deploymentUnitName(deploymentUnitName);
 
         final ServiceTarget serviceTarget = context.getServiceTarget();
         final ServiceController<?> contentService;
         // TODO: overlay service
         final ServiceName contentsServiceName = deploymentUnitServiceName.append("contents");
-        if (contents[0].hash != null)
-            contentService = ContentServitor.addService(serviceTarget, contentsServiceName, contents[0].hash);
+        if (contents[0].hash != null) {
+            if (contents[0].isArchive) {
+                contentService = ContentServitor.addService(serviceTarget, contentsServiceName, contents[0].hash);
+            } else {
+                contentService = ManagedExplodedContentServitor.addService(serviceTarget, contentsServiceName, managementName, contents[0].hash);
+            }
+        }
         else {
             final String path = contents[0].path;
             final String relativeTo = contents[0].relativeTo;
@@ -355,6 +375,22 @@ public class DeploymentHandlerUtil {
                 }
             }, OperationContext.Stage.RUNTIME);
         }
+    }
+
+    public static boolean isManaged(ModelNode contentItem) {
+        return !contentItem.hasDefined(DeploymentAttributes.CONTENT_PATH.getName());
+    }
+
+    public static boolean isArchive(ModelNode contentItem) {
+        return contentItem.get(DeploymentAttributes.CONTENT_ARCHIVE.getName()).asBoolean(true);
+    }
+
+    public static ModelNode getContentItem(Resource resource) {
+        return resource.getModel().get(DeploymentAttributes.CONTENT_RESOURCE.getName()).get(0);
+    }
+
+    static Path getExplodedDeploymentRoot(ServerEnvironment serverEnvironment, String deploymentManagementName) {
+        return Paths.get(serverEnvironment.getServerDataDir().getAbsolutePath()).resolve(MANAGED_CONTENT).resolve(deploymentManagementName);
     }
 
     private static String getFormattedFailureDescription(OperationContext context) {

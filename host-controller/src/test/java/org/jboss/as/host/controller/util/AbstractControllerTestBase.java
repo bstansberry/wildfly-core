@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -84,6 +85,7 @@ import org.jboss.as.host.controller.operations.LocalHostControllerInfoImpl;
 import org.jboss.as.protocol.mgmt.ManagementChannelHandler;
 import org.jboss.as.repository.ContentReference;
 import org.jboss.as.repository.ContentRepository;
+import org.jboss.as.repository.ExplodedContentException;
 import org.jboss.as.repository.HostFileRepository;
 import org.jboss.as.version.ProductConfig;
 import org.jboss.dmr.ModelNode;
@@ -603,6 +605,15 @@ public abstract class AbstractControllerTestBase {
         @Override
         public Map<String, Set<String>> cleanObsoleteContent() {
             return null;
+        }
+
+        @Override
+        public byte[] explodeContent(byte[] unexploded) throws IOException, ExplodedContentException {
+            return null;
+        }
+
+        @Override
+        public void copyExplodedContent(byte[] hash, Path target) {
         }
 
         @Override
