@@ -25,6 +25,7 @@ package org.jboss.as.controller.extension;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.DEPLOYMENT;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.PROFILE;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SUBSYSTEM;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SYSTEM_DEPLOYMENT;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -275,11 +276,12 @@ public class ExtensionRegistry {
             profileRegistration = rootRegistration;
         }
         ManagementResourceRegistration deploymentsRegistration = processType.isServer() ? rootRegistration.getSubModel(PathAddress.pathAddress(PathElement.pathElement(DEPLOYMENT))) : null;
+        ManagementResourceRegistration systemDeploymentsRegistration = processType.isServer() ? rootRegistration.getSubModel(PathAddress.pathAddress(PathElement.pathElement(SYSTEM_DEPLOYMENT))) : null;
 
         // Hack to restrict extra data to specified extension(s)
         boolean allowSupplement = legallySupplemented.contains(moduleName);
         ManagedAuditLogger al = allowSupplement ? auditLogger : null;
-        return new ExtensionContextImpl(moduleName, profileRegistration, deploymentsRegistration, pathManager, extensionRegistryType, al);
+        return new ExtensionContextImpl(moduleName, profileRegistration, deploymentsRegistration, systemDeploymentsRegistration, pathManager, extensionRegistryType, al);
     }
 
     public Set<ProfileParsingCompletionHandler> getProfileParsingCompletionHandlers() {
@@ -474,10 +476,12 @@ public class ExtensionRegistry {
         private final boolean allowSupplement;
         private final ManagementResourceRegistration profileRegistration;
         private final ManagementResourceRegistration deploymentsRegistration;
+        private final ManagementResourceRegistration systemDeploymentsRegistration;
         private final ExtensionRegistryType extensionRegistryType;
 
         private ExtensionContextImpl(String extensionName, ManagementResourceRegistration profileResourceRegistration,
-                                     ManagementResourceRegistration deploymentsResourceRegistration, PathManager pathManager,
+                                     ManagementResourceRegistration deploymentsResourceRegistration,
+                                     ManagementResourceRegistration systemDeploymentsResourceRegistration, PathManager pathManager,
                                      ExtensionRegistryType extensionRegistryType, ManagedAuditLogger auditLogger) {
             assert pathManager != null || !processType.isServer() : "pathManager is null";
             this.pathManager = pathManager;
@@ -494,6 +498,15 @@ public class ExtensionRegistry {
                         : new DeploymentManagementResourceRegistration(deploymentsResourceRegistration, subdeployments);
             } else {
                 this.deploymentsRegistration = null;
+            }
+
+            if (systemDeploymentsResourceRegistration != null) {
+                PathAddress subdepAddress = PathAddress.pathAddress(PathElement.pathElement(ModelDescriptionConstants.SUBDEPLOYMENT));
+                final ManagementResourceRegistration subdeployments = systemDeploymentsResourceRegistration.getSubModel(subdepAddress);
+                this.systemDeploymentsRegistration = subdeployments == null ? systemDeploymentsResourceRegistration
+                        : new DeploymentManagementResourceRegistration(systemDeploymentsResourceRegistration, subdeployments);
+            } else {
+                this.systemDeploymentsRegistration = null;
             }
             this.extensionRegistryType = extensionRegistryType;
         }

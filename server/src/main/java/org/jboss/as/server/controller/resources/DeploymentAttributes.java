@@ -334,15 +334,15 @@ public class DeploymentAttributes {
     @SuppressWarnings("unchecked")
     public static final Map<String, AttributeDefinition> ALL_CONTENT_ATTRIBUTES = createAttributeMap(MANAGED_CONTENT_ATTRIBUTES, UNMANAGED_CONTENT_ATTRIBUTES);
 
-    public static final OperationDefinition DEPLOY_DEFINITION = new SimpleOperationDefinition(ModelDescriptionConstants.DEPLOY, DEPLOYMENT_RESOLVER);
-    public static final OperationDefinition UNDEPLOY_DEFINITION = new SimpleOperationDefinition(ModelDescriptionConstants.UNDEPLOY, DEPLOYMENT_RESOLVER);
-    public static final OperationDefinition REDEPLOY_DEFINITION = new SimpleOperationDefinition(ModelDescriptionConstants.REDEPLOY, DEPLOYMENT_RESOLVER);
+    public static final SimpleOperationDefinition DEPLOY_DEFINITION = new SimpleOperationDefinition(ModelDescriptionConstants.DEPLOY, DEPLOYMENT_RESOLVER);
+    public static final SimpleOperationDefinition UNDEPLOY_DEFINITION = new SimpleOperationDefinition(ModelDescriptionConstants.UNDEPLOY, DEPLOYMENT_RESOLVER);
+    public static final SimpleOperationDefinition REDEPLOY_DEFINITION = new SimpleOperationDefinition(ModelDescriptionConstants.REDEPLOY, DEPLOYMENT_RESOLVER);
     public static final OperationDefinition EXPLODE_DEFINITION = new SimpleOperationDefinitionBuilder(ModelDescriptionConstants.EXPLODE, DEPLOYMENT_RESOLVER)
             .addParameter(DEPLOYMENT_CONTENT_PATH)
             .withFlag(Flag.DOMAIN_PUSH_TO_SERVERS).build();
 
     /** Server add deployment definition */
-    public static final OperationDefinition SERVER_DEPLOYMENT_ADD_DEFINITION = new SimpleOperationDefinitionBuilder(ModelDescriptionConstants.ADD, DEPLOYMENT_RESOLVER)
+    public static final SimpleOperationDefinition SERVER_DEPLOYMENT_ADD_DEFINITION = new SimpleOperationDefinitionBuilder(ModelDescriptionConstants.ADD, DEPLOYMENT_RESOLVER)
             .setParameters(SERVER_ADD_ATTRIBUTES)
             .build();
     public static final OperationDefinition DEPLOYMENT_ADD_CONTENT_DEFINITION = new SimpleOperationDefinitionBuilder(ModelDescriptionConstants.ADD_CONTENT, DEPLOYMENT_RESOLVER)

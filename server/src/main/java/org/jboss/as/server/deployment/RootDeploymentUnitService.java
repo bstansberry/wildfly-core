@@ -22,6 +22,8 @@
 
 package org.jboss.as.server.deployment;
 
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SYSTEM_DEPLOYMENT;
+
 import org.jboss.as.controller.ServiceVerificationHandler;
 import org.jboss.as.controller.capability.CapabilityServiceSupport;
 import org.jboss.as.controller.registry.ImmutableManagementResourceRegistration;
@@ -89,6 +91,7 @@ final class RootDeploymentUnitService extends AbstractDeploymentUnitService {
         deploymentUnit.putAttachment(Attachments.VAULT_READER_ATTACHMENT_KEY, vaultReader);
         deploymentUnit.putAttachment(Attachments.DEPLOYMENT_OVERLAY_INDEX, deploymentOverlays);
         deploymentUnit.putAttachment(Attachments.PATH_MANAGER, pathManagerInjector.getValue());
+        deploymentUnit.putAttachment(Attachments.SYSTEM_DEPLOYMENT, SYSTEM_DEPLOYMENT.equals(registration.getPathAddress().getLastElement().getKey()));
         if(this.isExplodedContent) {
             MountExplodedMarker.setMountExploded(deploymentUnit);
         }

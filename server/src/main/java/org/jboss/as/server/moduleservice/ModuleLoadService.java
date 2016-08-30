@@ -54,11 +54,13 @@ public class ModuleLoadService implements Service<Module> {
     private final InjectedValue<ServiceModuleLoader> serviceModuleLoader = new InjectedValue<ServiceModuleLoader>();
     private final InjectedValue<ModuleDefinition> moduleDefinitionInjectedValue = new InjectedValue<ModuleDefinition>();
     private final List<ModuleDependency> dependencies;
+    private final boolean checkPublicApi;
 
     private volatile Module module;
 
-    private ModuleLoadService(final List<ModuleDependency> dependencies) {
+    private ModuleLoadService(final List<ModuleDependency> dependencies, final boolean checkPublicApi) {
         this.dependencies = dependencies;
+        this.checkPublicApi = checkPublicApi;
     }
 
     @Override
@@ -67,22 +69,24 @@ public class ModuleLoadService implements Service<Module> {
             final ServiceModuleLoader moduleLoader = serviceModuleLoader.getValue();
             final Module module = moduleLoader.loadModule(moduleDefinitionInjectedValue.getValue().getModuleIdentifier());
             moduleLoader.relinkModule(module);
-            for (ModuleDependency dependency : dependencies) {
-                if (dependency.isUserSpecified()) {
-                    final ModuleIdentifier id = dependency.getIdentifier();
-                    try {
-                        String val = moduleLoader.loadModule(id).getProperty("jboss.api");
-                        if (val != null) {
-                            if (val.equals("private")) {
-                                ServerLogger.PRIVATE_DEP_LOGGER.privateApiUsed(moduleDefinitionInjectedValue.getValue().getModuleIdentifier().getName(), id);
-                            } else if (val.equals("unsupported")) {
-                                ServerLogger.UNSUPPORTED_DEP_LOGGER.unsupportedApiUsed(moduleDefinitionInjectedValue.getValue().getModuleIdentifier().getName(), id);
-                            } else if (val.equals("deprecated")) {
-                                ServerLogger.DEPRECATED_DEP_LOGGER.deprecatedApiUsed(moduleDefinitionInjectedValue.getValue().getModuleIdentifier().getName(), id);
+            if (checkPublicApi) {
+                for (ModuleDependency dependency : dependencies) {
+                    if (dependency.isUserSpecified()) {
+                        final ModuleIdentifier id = dependency.getIdentifier();
+                        try {
+                            String val = moduleLoader.loadModule(id).getProperty("jboss.api");
+                            if (val != null) {
+                                if (val.equals("private")) {
+                                    ServerLogger.PRIVATE_DEP_LOGGER.privateApiUsed(moduleDefinitionInjectedValue.getValue().getModuleIdentifier().getName(), id);
+                                } else if (val.equals("unsupported")) {
+                                    ServerLogger.UNSUPPORTED_DEP_LOGGER.unsupportedApiUsed(moduleDefinitionInjectedValue.getValue().getModuleIdentifier().getName(), id);
+                                } else if (val.equals("deprecated")) {
+                                    ServerLogger.DEPRECATED_DEP_LOGGER.deprecatedApiUsed(moduleDefinitionInjectedValue.getValue().getModuleIdentifier().getName(), id);
+                                }
                             }
+                        } catch (ModuleNotFoundException ignore) {
+                            //can happen with optional dependencies
                         }
-                    } catch (ModuleNotFoundException ignore) {
-                        //can happen with optional dependencies
                     }
                 }
             }
@@ -103,8 +107,20 @@ public class ModuleLoadService implements Service<Module> {
         return module;
     }
 
-    public static ServiceName install(final ServiceTarget target, final ModuleIdentifier identifier, final List<ModuleDependency> dependencies) {
-        final ModuleLoadService service = new ModuleLoadService(dependencies);
+    /**
+     * Installs a {@code ModuleLoadService}.
+     *
+     * @param target  the target to which the service should be installed. Cannot be {@code null}.
+     * @param identifier identifier of the module. Cannot be {@code null}.
+     * @param dependencies modules that this module should depend on. Cannot be {@code null} but may be empty.
+     * @param checkPublicApi {@code true} if the {@code jboss.api} module property for any user-specified dependencies
+     *                                   in the dependencies list should be checked and a log warning issued for
+     *                                   use of private, unsupported or deprecated dependencies
+     * @return the {@code ServiceName} of the installed service
+     */
+    public static ServiceName install(final ServiceTarget target, final ModuleIdentifier identifier, final List<ModuleDependency> dependencies,
+                                      final boolean checkPublicApi) {
+        final ModuleLoadService service = new ModuleLoadService(dependencies, checkPublicApi);
         final ServiceName serviceName = ServiceModuleLoader.moduleServiceName(identifier);
         final ServiceBuilder<Module> builder = target.addService(serviceName, service);
         builder.addDependency(Services.JBOSS_SERVICE_MODULE_LOADER, ServiceModuleLoader.class, service.getServiceModuleLoader());
@@ -122,12 +138,22 @@ public class ModuleLoadService implements Service<Module> {
         return serviceName;
     }
 
-    public static ServiceName installService(final ServiceTarget target, final ModuleIdentifier identifier, final List<ModuleIdentifier> identifiers) {
-        final ArrayList<ModuleDependency> dependencies = new ArrayList<ModuleDependency>(identifiers.size());
-        for (final ModuleIdentifier i : identifiers) {
+    /**
+     * Installs a {@code ModuleLoadService} with the given set of non-user-specified dependencies.
+     *
+     * @param target  the target to which the service should be installed. Cannot be {@code null}.
+     * @param identifier identifier of the module. Cannot be {@code null}.
+     * @param depIdentifiers identifiers of modules that this module should depend on. Cannot be {@code null} but may be empty.
+     * @return  the {@code ServiceName} of the installed service
+     */
+    public static ServiceName installService(final ServiceTarget target, final ModuleIdentifier identifier,
+                                             final List<ModuleIdentifier> depIdentifiers) {
+        final ArrayList<ModuleDependency> dependencies = new ArrayList<ModuleDependency>(depIdentifiers.size());
+        for (final ModuleIdentifier i : depIdentifiers) {
             dependencies.add(new ModuleDependency(null, i, false, false, false, false));
         }
-        return install(target, identifier, dependencies);
+        // all dependencies we added are not user-specified so no public API check is needed
+        return install(target, identifier, dependencies, false);
     }
 
     public InjectedValue<ServiceModuleLoader> getServiceModuleLoader() {

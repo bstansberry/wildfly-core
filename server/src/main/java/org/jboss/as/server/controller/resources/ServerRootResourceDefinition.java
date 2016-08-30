@@ -471,12 +471,15 @@ public class ServerRootResourceDefinition extends SimpleResourceDefinition {
 
         // Deployments
         ManagementResourceRegistration deployments = resourceRegistration.registerSubModel(ServerDeploymentResourceDefinition.create(contentRepository, vaultReader, serverEnvironment));
+        // System Deployments
+        ManagementResourceRegistration systemDeployments = resourceRegistration.registerSubModel(SystemDeploymentResourceDefinition.create(contentRepository, vaultReader, serverEnvironment));
 
         //deployment overlays
         resourceRegistration.registerSubModel(new DeploymentOverlayDefinition(false, contentRepository, null));
 
         // The sub-deployments registry
         deployments.registerSubModel(new SimpleResourceDefinition(PathElement.pathElement(SUBDEPLOYMENT), DeploymentAttributes.DEPLOYMENT_RESOLVER));
+        systemDeployments.registerSubModel(new SimpleResourceDefinition(PathElement.pathElement(SUBDEPLOYMENT), DeploymentAttributes.DEPLOYMENT_RESOLVER));
 
         // Extensions
         resourceRegistration.registerSubModel(new ExtensionResourceDefinition(extensionRegistry, parallelBoot, ExtensionRegistryType.SLAVE, rootResourceRegistrationProvider));

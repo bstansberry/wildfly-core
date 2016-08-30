@@ -22,6 +22,8 @@
 
 package org.jboss.as.server.deployment;
 
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SYSTEM_DEPLOYMENT;
+
 import org.jboss.as.controller.ServiceVerificationHandler;
 import org.jboss.as.controller.capability.CapabilityServiceSupport;
 import org.jboss.as.controller.registry.ImmutableManagementResourceRegistration;
@@ -66,6 +68,7 @@ public class SubDeploymentUnitService extends AbstractDeploymentUnitService {
         deploymentUnit.putAttachment(Attachments.VAULT_READER_ATTACHMENT_KEY, vaultReader);
         deploymentUnit.putAttachment(Attachments.DEPLOYMENT_OVERLAY_INDEX, parent.getAttachment(Attachments.DEPLOYMENT_OVERLAY_INDEX));
         deploymentUnit.putAttachment(Attachments.PATH_MANAGER, pathManager);
+        deploymentUnit.putAttachment(Attachments.SYSTEM_DEPLOYMENT, SYSTEM_DEPLOYMENT.equals(registration.getPathAddress().getLastElement().getKey()));
 
         // For compatibility only
         addSVH(deploymentUnit);

@@ -106,6 +106,14 @@ public final class Attachments {
     public static final AttachmentKey<Boolean> ALLOW_PHASE_RESTART = AttachmentKey.create(Boolean.class);
 
     /**
+     * Indicates the deployment is a system deployment, not a traditional user-controlled deployment.
+     *
+     * @deprecated experimental, may be replaced
+     */
+    @Deprecated
+    public static final AttachmentKey<Boolean> SYSTEM_DEPLOYMENT = AttachmentKey.create(Boolean.class);
+
+    /**
      * A builder used to install a deployment phase
      */
     public static final AttachmentKey<DeploymentUnitPhaseBuilder> DEPLOYMENT_UNIT_PHASE_BUILDER = AttachmentKey.create(DeploymentUnitPhaseBuilder.class);

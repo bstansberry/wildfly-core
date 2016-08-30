@@ -269,10 +269,13 @@ public class ModuleSpecProcessor implements DeploymentUnitProcessor {
 
         ModuleResolvePhaseService.installService(phaseContext.getServiceTarget(), moduleDefinition);
 
-        return ModuleLoadService.install(phaseContext.getServiceTarget(), moduleIdentifier, allDependencies);
+        @SuppressWarnings("deprecation")
+        final boolean checkPublicApi = !Boolean.TRUE.equals(deploymentUnit.getAttachment(Attachments.SYSTEM_DEPLOYMENT));
+        return ModuleLoadService.install(phaseContext.getServiceTarget(), moduleIdentifier, allDependencies, checkPublicApi);
     }
 
-    private void installAliases(final ModuleSpecification moduleSpecification, final ModuleIdentifier moduleIdentifier, final DeploymentUnit deploymentUnit, final DeploymentPhaseContext phaseContext) {
+    private void installAliases(final ModuleSpecification moduleSpecification, final ModuleIdentifier moduleIdentifier,
+                                final DeploymentUnit deploymentUnit, final DeploymentPhaseContext phaseContext) {
 
         for (final ModuleIdentifier alias : moduleSpecification.getAliases()) {
             final ServiceName moduleSpecServiceName = ServiceModuleLoader.moduleSpecServiceName(alias);

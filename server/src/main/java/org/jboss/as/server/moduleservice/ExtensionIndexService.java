@@ -122,7 +122,7 @@ public final class ExtensionIndexService implements Service<ExtensionIndex>, Ext
                                     .setInitialMode(Mode.ON_DEMAND).install();
 
                             ModuleLoadService.install(serviceContainer, moduleIdentifier, Collections
-                                    .<ModuleDependency> emptyList());
+                                    .<ModuleDependency> emptyList(), false);
 
                             extensionJarSet.add(extensionJar);
 

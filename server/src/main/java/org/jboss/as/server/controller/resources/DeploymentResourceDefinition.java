@@ -60,6 +60,11 @@ public abstract class DeploymentResourceDefinition extends SimpleResourceDefinit
         this.parent = parent;
     }
 
+    protected DeploymentResourceDefinition(DeploymentResourceParent parent, Parameters parameters) {
+        super(parameters);
+        this.parent = parent;
+    }
+
     @Override
     public void registerAttributes(ManagementResourceRegistration resourceRegistration) {
 
@@ -99,11 +104,13 @@ public abstract class DeploymentResourceDefinition extends SimpleResourceDefinit
     protected abstract void registerAddOperation(final ManagementResourceRegistration registration, final OperationStepHandler handler,
             OperationEntry.Flag... flags);
 
-    public static enum DeploymentResourceParent {
+    public enum DeploymentResourceParent {
         DOMAIN (DeploymentAttributes.DOMAIN_RESOURCE_ATTRIBUTES, DeploymentAttributes.DOMAIN_ADD_ATTRIBUTES),
         SERVER_GROUP (DeploymentAttributes.SERVER_GROUP_RESOURCE_ATTRIBUTES, DeploymentAttributes.SERVER_GROUP_ADD_ATTRIBUTES),
         SERVER (DeploymentAttributes.SERVER_RESOURCE_ATTRIBUTES, DeploymentAttributes.SERVER_ADD_ATTRIBUTES,
-            new NotificationDefinition[] {DeploymentAttributes.NOTIFICATION_DEPLOYMENT_DEPLOYED, DeploymentAttributes.NOTIFICATION_DEPLOYMENT_UNDEPLOYED});
+            DeploymentAttributes.NOTIFICATION_DEPLOYMENT_DEPLOYED, DeploymentAttributes.NOTIFICATION_DEPLOYMENT_UNDEPLOYED),
+        SYSTEM (DeploymentAttributes.SERVER_RESOURCE_ATTRIBUTES, DeploymentAttributes.SERVER_ADD_ATTRIBUTES,
+                DeploymentAttributes.NOTIFICATION_DEPLOYMENT_DEPLOYED, DeploymentAttributes.NOTIFICATION_DEPLOYMENT_UNDEPLOYED);
 
         final AttributeDefinition[] resourceAttributes;
         final AttributeDefinition[] addAttributes;

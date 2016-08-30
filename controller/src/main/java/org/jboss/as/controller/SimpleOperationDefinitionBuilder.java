@@ -59,6 +59,33 @@ public class SimpleOperationDefinitionBuilder {
         this.resolver = resolver;
     }
 
+    public SimpleOperationDefinitionBuilder(SimpleOperationDefinition template) {
+        this.name = template.name;
+        this.resolver = template.resolver;
+        this.attributeResolver = template.attributeResolver;
+        this.entryType = template.entryType;
+        this.flags = EnumSet.copyOf(template.flags);
+        if (template.parameters == null || template.parameters.length == 0) {
+            this.parameters = new AttributeDefinition[0];
+        } else {
+            this.parameters = new AttributeDefinition[template.parameters.length];
+            System.arraycopy(template.parameters, 0, this.parameters, 0, template.parameters.length);
+        }
+        this.replyType = template.replyType;
+        this.replyValueType = template.replyValueType;
+        this.replyAllowNull = template.replyAllowNull;
+        this.deprecationData = template.deprecationData;
+        if (template.replyParameters == null || template.replyParameters.length == 0) {
+            this.replyParameters = new AttributeDefinition[0];
+        } else {
+            this.replyParameters = new AttributeDefinition[template.replyParameters.length];
+            System.arraycopy(template.replyParameters, 0, this.replyParameters, 0, template.replyParameters.length);
+        }
+        AccessConstraintDefinition[] acds = new AccessConstraintDefinition[template.accessConstraints.size()];
+        this.accessConstraints = template.accessConstraints.toArray(acds);
+        this.descriptionProvider = template.descriptionProvider;
+    }
+
 
     public SimpleOperationDefinition build() {
         if (attributeResolver == null) {

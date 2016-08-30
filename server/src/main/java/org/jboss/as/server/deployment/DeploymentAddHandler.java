@@ -21,18 +21,20 @@ package org.jboss.as.server.deployment;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.ADD;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.DEPLOYMENT;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP_ADDR;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SYSTEM_DEPLOYMENT;
 import static org.jboss.as.server.controller.resources.DeploymentAttributes.CONTENT_ARCHIVE;
 import static org.jboss.as.server.controller.resources.DeploymentAttributes.CONTENT_HASH;
 import static org.jboss.as.server.controller.resources.DeploymentAttributes.CONTENT_PATH;
 import static org.jboss.as.server.controller.resources.DeploymentAttributes.CONTENT_RELATIVE_TO;
 import static org.jboss.as.server.controller.resources.DeploymentAttributes.CONTENT_RESOURCE;
-import static org.jboss.as.server.controller.resources.DeploymentAttributes.ENABLED;
 import static org.jboss.as.server.controller.resources.DeploymentAttributes.EMPTY;
+import static org.jboss.as.server.controller.resources.DeploymentAttributes.ENABLED;
 import static org.jboss.as.server.controller.resources.DeploymentAttributes.OWNER;
 import static org.jboss.as.server.controller.resources.DeploymentAttributes.PERSISTENT;
 import static org.jboss.as.server.controller.resources.DeploymentAttributes.RUNTIME_NAME;
 import static org.jboss.as.server.controller.resources.DeploymentAttributes.SERVER_ADD_ATTRIBUTES;
 import static org.jboss.as.server.deployment.DeploymentHandlerUtils.asString;
+import static org.jboss.as.server.deployment.DeploymentHandlerUtils.createFailureException;
 import static org.jboss.as.server.deployment.DeploymentHandlerUtils.getInputStream;
 import static org.jboss.as.server.deployment.DeploymentHandlerUtils.hasValidContentAdditionParameterDefined;
 
@@ -54,8 +56,6 @@ import org.jboss.as.server.logging.ServerLogger;
 import org.jboss.as.server.services.security.AbstractVaultReader;
 import org.jboss.dmr.ModelNode;
 
-import static org.jboss.as.server.deployment.DeploymentHandlerUtils.createFailureException;
-
 /**
  * Handles addition of a deployment to the model.
  *
@@ -69,7 +69,7 @@ public class DeploymentAddHandler implements OperationStepHandler {
 
     private final AbstractVaultReader vaultReader;
 
-    protected DeploymentAddHandler(final ContentRepository contentRepository, final AbstractVaultReader vaultReader) {
+    private DeploymentAddHandler(final ContentRepository contentRepository, final AbstractVaultReader vaultReader) {
         assert contentRepository != null : "Null contentRepository";
         this.contentRepository = contentRepository;
         this.vaultReader = vaultReader;
@@ -167,14 +167,17 @@ public class DeploymentAddHandler implements OperationStepHandler {
         if (ENABLED.resolveModelAttribute(context, deployment).asBoolean()) {
             String runtimeName = getRuntimeName(deploymentName, deployment);
             Resource root = context.readResourceFromRoot(PathAddress.EMPTY_ADDRESS);
-            for (Resource.ResourceEntry re : root.getChildren(DEPLOYMENT)) {
-                String reName = re.getName();
-                if (!deploymentName.equals(reName)) {
-                    ModelNode otherDepl = re.getModel();
-                    if (ENABLED.resolveModelAttribute(context, otherDepl).asBoolean()) {
-                        String otherRuntimeName = getRuntimeName(reName, otherDepl);
-                        if (runtimeName.equals(otherRuntimeName)) {
-                            throw ServerLogger.ROOT_LOGGER.runtimeNameMustBeUnique(reName, runtimeName);
+            String[] types = {DEPLOYMENT, SYSTEM_DEPLOYMENT};
+            for (String type : types) {
+                for (Resource.ResourceEntry re : root.getChildren(type)) {
+                    String reName = re.getName();
+                    if (!deploymentName.equals(reName)) {
+                        ModelNode otherDepl = re.getModel();
+                        if (ENABLED.resolveModelAttribute(context, otherDepl).asBoolean()) {
+                            String otherRuntimeName = getRuntimeName(reName, otherDepl);
+                            if (runtimeName.equals(otherRuntimeName)) {
+                                throw ServerLogger.ROOT_LOGGER.runtimeNameMustBeUnique(reName, runtimeName);
+                            }
                         }
                     }
                 }
