@@ -122,20 +122,19 @@ public class HostModelUtil {
         // Add of the host itself
         ManagementResourceRegistration hostRegistration = root.registerSubModel(
                 new HostResourceDefinition(hostName, configurationPersister,
-                        environment, runningModeControl, localFileRepository,
-                        hostControllerInfo, serverInventory, remoteFileRepository,
+                        environment, runningModeControl,
+                        hostControllerInfo, serverInventory,
                         contentRepository, domainController, hostExtensionRegistry,
                         vaultReader, ignoredRegistry, processState, pathManager, authorizer, auditLogger, bootErrorCollector));
         hostRegistration.registerReadWriteAttribute(HostResourceDefinition.DOMAIN_CONTROLLER, null,
                 DomainControllerWriteAttributeHandler.getInstance(root, hostControllerInfo, configurationPersister,
-                        localFileRepository, remoteFileRepository, contentRepository, domainController, extensionRegistry, ignoredRegistry, pathManager));
-        //TODO See if some of all these parameters can come from domain controller
+                        localFileRepository, remoteFileRepository, contentRepository, domainController, extensionRegistry, ignoredRegistry));
         LocalDomainControllerAddHandler localDcAddHandler = LocalDomainControllerAddHandler.getInstance(root, hostControllerInfo,
-                configurationPersister, localFileRepository, contentRepository, domainController, extensionRegistry, pathManager);
+                configurationPersister, localFileRepository, contentRepository, domainController, extensionRegistry);
         hostRegistration.registerOperationHandler(LocalDomainControllerAddHandler.DEFINITION, localDcAddHandler);
         hostRegistration.registerOperationHandler(LocalDomainControllerRemoveHandler.DEFINITION, LocalDomainControllerRemoveHandler.INSTANCE);
         RemoteDomainControllerAddHandler remoteDcAddHandler = new RemoteDomainControllerAddHandler(root, hostControllerInfo, domainController,
-                configurationPersister, contentRepository, remoteFileRepository, extensionRegistry, ignoredRegistry, pathManager);
+                configurationPersister, contentRepository, remoteFileRepository, extensionRegistry, ignoredRegistry);
         hostRegistration.registerOperationHandler(RemoteDomainControllerAddHandler.DEFINITION, remoteDcAddHandler);
         hostRegistration.registerOperationHandler(RemoteDomainControllerRemoveHandler.DEFINITION, RemoteDomainControllerRemoveHandler.INSTANCE);
         return hostRegistration;

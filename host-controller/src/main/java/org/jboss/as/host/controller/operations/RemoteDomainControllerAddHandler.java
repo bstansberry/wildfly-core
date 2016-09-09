@@ -42,7 +42,6 @@ import org.jboss.as.controller.operations.validation.StringLengthValidator;
 import org.jboss.as.controller.registry.AttributeAccess;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.Resource;
-import org.jboss.as.controller.services.path.PathManagerService;
 import org.jboss.as.domain.controller.DomainController;
 import org.jboss.as.host.controller.HostControllerConfigurationPersister;
 import org.jboss.as.host.controller.descriptions.HostResolver;
@@ -124,7 +123,6 @@ public class RemoteDomainControllerAddHandler implements OperationStepHandler {
     private final LocalHostControllerInfoImpl hostControllerInfo;
     private final ExtensionRegistry extensionRegistry;
     private final IgnoredDomainResourceRegistry ignoredDomainResourceRegistry;
-    private final PathManagerService pathManager;
 
     public RemoteDomainControllerAddHandler(final ManagementResourceRegistration rootRegistration,
                                                final LocalHostControllerInfoImpl hostControllerInfo,
@@ -133,8 +131,7 @@ public class RemoteDomainControllerAddHandler implements OperationStepHandler {
                                                final ContentRepository contentRepository,
                                                final HostFileRepository fileRepository,
                                                final ExtensionRegistry extensionRegistry,
-                                               final IgnoredDomainResourceRegistry ignoredDomainResourceRegistry,
-                                               final PathManagerService pathManager) {
+                                               final IgnoredDomainResourceRegistry ignoredDomainResourceRegistry) {
         this.rootRegistration = rootRegistration;
         this.domainController = domainController;
         this.overallConfigPersister = overallConfigPersister;
@@ -143,7 +140,6 @@ public class RemoteDomainControllerAddHandler implements OperationStepHandler {
         this.hostControllerInfo = hostControllerInfo;
         this.extensionRegistry = extensionRegistry;
         this.ignoredDomainResourceRegistry = ignoredDomainResourceRegistry;
-        this.pathManager = pathManager;
     }
 
     @Override
@@ -221,6 +217,6 @@ public class RemoteDomainControllerAddHandler implements OperationStepHandler {
         overallConfigPersister.initializeDomainConfigurationPersister(true);
 
         domainController.initializeSlaveDomainRegistry(rootRegistration, overallConfigPersister.getDomainPersister(), contentRepository, fileRepository,
-                hostControllerInfo, extensionRegistry, ignoredDomainResourceRegistry, pathManager);
+                hostControllerInfo, extensionRegistry, ignoredDomainResourceRegistry);
     }
 }
