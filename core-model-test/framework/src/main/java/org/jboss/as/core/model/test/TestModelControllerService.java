@@ -366,11 +366,6 @@ class TestModelControllerService extends ModelTestModelControllerService {
             }
 
             @Override
-            public RunningMode getCurrentRunningMode() {
-                return null;
-            }
-
-            @Override
             public ExpressionResolver getExpressionResolver() {
                 return null;
             }
@@ -642,11 +637,6 @@ class TestModelControllerService extends ModelTestModelControllerService {
 
 
     private static class MockDomainController implements DomainController {
-
-        @Override
-        public RunningMode getCurrentRunningMode() {
-            return null;
-        }
 
         @Override
         public LocalHostControllerInfo getLocalHostInfo() {
