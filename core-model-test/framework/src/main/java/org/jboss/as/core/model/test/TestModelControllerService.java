@@ -371,7 +371,7 @@ class TestModelControllerService extends ModelTestModelControllerService {
 
             @Override
             public void registerRemoteHost(String hostName, ManagementChannelHandler handler, Transformers transformers,
-                    Long remoteConnectionId, boolean registerProxyController) throws SlaveRegistrationException {
+                                           Long remoteConnectionId, boolean registerProxyController) throws SlaveRegistrationException {
             }
 
             @Override
@@ -421,15 +421,14 @@ class TestModelControllerService extends ModelTestModelControllerService {
             @Override
             public void initializeMasterDomainRegistry(ManagementResourceRegistration root,
                     ExtensibleConfigurationPersister configurationPersister, ContentRepository contentRepository,
-                    HostFileRepository fileRepository, ExtensionRegistry extensionRegistry, PathManagerService pathManager) {
+                    HostFileRepository fileRepository, ExtensionRegistry extensionRegistry) {
             }
 
             @Override
             public void initializeSlaveDomainRegistry(ManagementResourceRegistration root,
                     ExtensibleConfigurationPersister configurationPersister, ContentRepository contentRepository,
                     HostFileRepository fileRepository, LocalHostControllerInfo hostControllerInfo,
-                    ExtensionRegistry extensionRegistry, IgnoredDomainResourceRegistry ignoredDomainResourceRegistry,
-                    PathManagerService pathManager) {
+                    ExtensionRegistry extensionRegistry, IgnoredDomainResourceRegistry ignoredDomainResourceRegistry) {
             }
         };
     }
@@ -502,10 +501,8 @@ class TestModelControllerService extends ModelTestModelControllerService {
                             persister,
                             env,
                             (HostRunningModeControl) runningModeControl,
-                            hostFileRepository,
                             info,
                             null /*serverInventory*/,
-                            null /*remoteFileRepository*/,
                             injectedContentRepository.getValue(),
                             domainController,
                             extensionRegistry,
@@ -580,12 +577,11 @@ class TestModelControllerService extends ModelTestModelControllerService {
             final DomainHostExcludeRegistry domainHostExcludeRegistry = new DomainHostExcludeRegistry();
             final ExtensibleConfigurationPersister persister = new NullConfigurationPersister();
             final HostFileRepository hostFileRepository = createHostFileRepository();
-            final DomainController domainController = new MockDomainController();
-            DomainRootDefinition domainDefinition = null;
+            DomainRootDefinition domainDefinition;
             Constructor<?>[] constructors = DomainRootDefinition.class.getConstructors();
             if(constructors.length == 1 && constructors[0].getParameterTypes().length == 10) { // For EAP 6.2 compatibility
                 try {
-                    domainDefinition = (DomainRootDefinition) constructors[0].newInstance(domainController, env, persister, injectedContentRepository.getValue(),
+                    domainDefinition = (DomainRootDefinition) constructors[0].newInstance(null, env, persister, injectedContentRepository.getValue(),
                             hostFileRepository, true, info, extensionRegistry, null, pathManagerService);
                 } catch (InstantiationException ex) {
                     throw new RuntimeException(ex);
@@ -598,8 +594,8 @@ class TestModelControllerService extends ModelTestModelControllerService {
                 }
             } else {
 
-            domainDefinition = new DomainRootDefinition(domainController, env, persister, injectedContentRepository.getValue(),
-                    hostFileRepository, true, info, extensionRegistry, null, pathManagerService, authorizer, null,
+                domainDefinition = new DomainRootDefinition(env, persister, injectedContentRepository.getValue(),
+                    hostFileRepository, true, info, extensionRegistry, null, authorizer, null,
                     domainHostExcludeRegistry, getMutableRootResourceRegistrationProvider());
             }
             domainDefinition.initialize(rootRegistration);
@@ -672,92 +668,6 @@ class TestModelControllerService extends ModelTestModelControllerService {
         }
     }
 
-
-    private static class MockDomainController implements DomainController {
-
-        @Override
-        public LocalHostControllerInfo getLocalHostInfo() {
-            return null;
-        }
-
-        @Override
-        public void registerRemoteHost(String hostName, ManagementChannelHandler handler, Transformers transformers,
-                Long remoteConnectionId, boolean registerProxyController) throws SlaveRegistrationException {
-        }
-
-        @Override
-        public boolean isHostRegistered(String id) {
-            return false;
-        }
-
-        @Override
-        public void unregisterRemoteHost(String id, Long remoteConnectionId, boolean cleanShutdown) {
-        }
-
-        @Override
-        public void pingRemoteHost(String hostName) {
-        }
-
-        @Override
-        public void registerRunningServer(ProxyController serverControllerClient) {
-        }
-
-        @Override
-        public void unregisterRunningServer(String serverName) {
-        }
-
-        @Override
-        public ModelNode getProfileOperations(String profileName) {
-            return null;
-        }
-
-        @Override
-        public HostFileRepository getLocalFileRepository() {
-            return null;
-        }
-
-        @Override
-        public HostFileRepository getRemoteFileRepository() {
-            return null;
-        }
-
-        @Override
-        public void stopLocalHost() {
-        }
-
-        @Override
-        public void stopLocalHost(int exitCode) {
-        }
-
-        @Override
-        public ExtensionRegistry getExtensionRegistry() {
-            return null;
-        }
-
-        @Override
-        public ImmutableCapabilityRegistry getCapabilityRegistry() {
-            return null;
-        }
-
-        @Override
-        public ExpressionResolver getExpressionResolver() {
-            return null;
-        }
-
-        @Override
-        public void initializeMasterDomainRegistry(ManagementResourceRegistration root,
-                ExtensibleConfigurationPersister configurationPersister, ContentRepository contentRepository,
-                HostFileRepository fileRepository, ExtensionRegistry extensionRegistry, PathManagerService pathManager) {
-        }
-
-        @Override
-        public void initializeSlaveDomainRegistry(ManagementResourceRegistration root,
-                ExtensibleConfigurationPersister configurationPersister, ContentRepository contentRepository,
-                HostFileRepository fileRepository, LocalHostControllerInfo hostControllerInfo,
-                ExtensionRegistry extensionRegistry, IgnoredDomainResourceRegistry ignoredDomainResourceRegistry,
-                PathManagerService pathManager) {
-        }
-    }
 
     private static class AddMissingHostSchemaLocationsAttributeForValidationHandler implements OperationStepHandler {
         static final OperationStepHandler INSTANCE = new AddMissingHostSchemaLocationsAttributeForValidationHandler();

@@ -90,7 +90,6 @@ import org.jboss.as.host.controller.mgmt.HostInfo;
 import org.jboss.as.host.controller.model.host.HostResourceDefinition;
 import org.jboss.as.host.controller.util.AbstractControllerTestBase;
 import org.jboss.as.repository.ContentReference;
-import org.jboss.as.repository.HostFileRepository;
 import org.jboss.as.server.operations.ServerProcessStateHandler;
 import org.jboss.as.server.services.security.AbstractVaultReader;
 import org.jboss.as.version.ProductConfig;
@@ -660,9 +659,9 @@ public class SyncModelServerStateTestCase extends AbstractControllerTestBase  {
                     return managementModel.getRootResourceRegistration();
                 }
             };
-            DomainRootDefinition domain = new DomainRootDefinition(domainController, hostControllerEnvironment, configurationPersister,
+            DomainRootDefinition domain = new DomainRootDefinition(hostControllerEnvironment, configurationPersister,
                     repository, repository, isMaster, hostControllerInfo, extensionRegistry, ignoredDomainResourceRegistry,
-                    pathManager, authorizer, hostRegistrations, domainHostExcludeRegistry, rootResourceRegistrationProvider);
+                    authorizer, hostRegistrations, domainHostExcludeRegistry, rootResourceRegistrationProvider);
             getDelegatingResourceDefiniton().setDelegate(domain);
 
             final String hostName = hostControllerEnvironment.getHostName();
@@ -671,14 +670,13 @@ public class SyncModelServerStateTestCase extends AbstractControllerTestBase  {
                             hostControllerInfo, Executors.newCachedThreadPool(), extensionRegistry, extensionRegistry);
             final HostRunningModeControl runningModeControl = new HostRunningModeControl(RunningMode.NORMAL, RestartMode.SERVERS);
             final ServerInventory serverInventory = null;
-            final HostFileRepository remoteFileRepository = repository;
             final AbstractVaultReader vaultReader = null;
             final ControlledProcessState processState = null;
             final ManagedAuditLogger auditLogger = null;
             final BootErrorCollector bootErrorCollector = null;
             //Save this for later since setDelegate() gets called before initModel....
             hostResourceDefinition = new HostResourceDefinition(hostName, hostControllerConfigurationPersister,
-                    hostControllerEnvironment, runningModeControl, repository, hostControllerInfo, serverInventory, remoteFileRepository,
+                    hostControllerEnvironment, runningModeControl, hostControllerInfo, serverInventory,
                     repository, domainController, extensionRegistry, vaultReader, ignoredDomainResourceRegistry, processState,
                     pathManager, authorizer, auditLogger, bootErrorCollector);
         }

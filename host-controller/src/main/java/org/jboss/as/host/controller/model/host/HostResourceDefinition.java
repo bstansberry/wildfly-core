@@ -98,7 +98,6 @@ import org.jboss.as.host.controller.resources.ServerConfigResourceDefinition;
 import org.jboss.as.host.controller.resources.StoppedServerResource;
 import org.jboss.as.platform.mbean.PlatformMBeanResourceRegistrar;
 import org.jboss.as.repository.ContentRepository;
-import org.jboss.as.repository.HostFileRepository;
 import org.jboss.as.server.controller.resources.CapabilityRegistryResourceDefinition;
 import org.jboss.as.server.controller.resources.ModuleLoadingResourceDefinition;
 import org.jboss.as.server.controller.resources.ServerRootResourceDefinition;
@@ -225,10 +224,8 @@ public class HostResourceDefinition extends SimpleResourceDefinition {
     private final HostControllerConfigurationPersister configurationPersister;
     private final HostControllerEnvironment environment;
     private final HostRunningModeControl runningModeControl;
-    private final HostFileRepository localFileRepository;
     private final LocalHostControllerInfoImpl hostControllerInfo;
     private final ServerInventory serverInventory;
-    private final HostFileRepository remoteFileRepository;
     private final ContentRepository contentRepository;
     private final DomainController domainController;
     private final ExtensionRegistry hostExtensionRegistry;
@@ -244,10 +241,8 @@ public class HostResourceDefinition extends SimpleResourceDefinition {
                                   final HostControllerConfigurationPersister configurationPersister,
                                   final HostControllerEnvironment environment,
                                   final HostRunningModeControl runningModeControl,
-                                  final HostFileRepository localFileRepository,
                                   final LocalHostControllerInfoImpl hostControllerInfo,
                                   final ServerInventory serverInventory,
-                                  final HostFileRepository remoteFileRepository,
                                   final ContentRepository contentRepository,
                                   final DomainController domainController,
                                   final ExtensionRegistry hostExtensionRegistry,
@@ -262,10 +257,8 @@ public class HostResourceDefinition extends SimpleResourceDefinition {
         this.configurationPersister = configurationPersister;
         this.environment = environment;
         this.runningModeControl = runningModeControl;
-        this.localFileRepository = localFileRepository;
         this.hostControllerInfo = hostControllerInfo;
         this.serverInventory = serverInventory;
-        this.remoteFileRepository = remoteFileRepository;
         this.contentRepository = contentRepository;
         this.domainController = domainController;
         this.hostExtensionRegistry = hostExtensionRegistry;
@@ -437,7 +430,7 @@ public class HostResourceDefinition extends SimpleResourceDefinition {
         discoveryOptions.registerSubModel(new DiscoveryOptionResourceDefinition(hostControllerInfo));
 
         // Jvms
-        final ManagementResourceRegistration jvms = hostRegistration.registerSubModel(JvmResourceDefinition.GLOBAL);
+        hostRegistration.registerSubModel(JvmResourceDefinition.GLOBAL);
 
         //Paths
         // TODO why resolvable?

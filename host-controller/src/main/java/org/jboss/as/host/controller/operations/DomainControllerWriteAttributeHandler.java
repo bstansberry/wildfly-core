@@ -38,7 +38,6 @@ import org.jboss.as.controller.operations.validation.IntRangeValidator;
 import org.jboss.as.controller.operations.validation.StringLengthValidator;
 import org.jboss.as.controller.registry.AttributeAccess;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
-import org.jboss.as.controller.services.path.PathManagerService;
 import org.jboss.as.domain.controller.DomainController;
 import org.jboss.as.host.controller.HostControllerConfigurationPersister;
 import org.jboss.as.host.controller.discovery.StaticDiscovery;
@@ -49,6 +48,8 @@ import org.jboss.as.repository.ContentRepository;
 import org.jboss.as.repository.HostFileRepository;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
+
+
 
 /**
  *
@@ -99,7 +100,7 @@ public abstract class DomainControllerWriteAttributeHandler extends ReloadRequir
             new SimpleAttributeDefinitionBuilder(ModelDescriptionConstants.PROTOCOL, ModelType.STRING)
                     .setAllowNull(true)
                     .setAllowExpression(true)
-                    .setValidator(new EnumValidator(Protocol.class, true, true))
+                    .setValidator(EnumValidator.create(Protocol.class, true, true))
                     .setDefaultValue(org.jboss.as.remoting.Protocol.REMOTE.toModelNode())
                     .setFlags(AttributeAccess.Flag.RESTART_ALL_SERVICES)
                     .setRequires(ModelDescriptionConstants.HOST, ModelDescriptionConstants.PORT)
@@ -113,11 +114,10 @@ public abstract class DomainControllerWriteAttributeHandler extends ReloadRequir
                 final ContentRepository contentRepository,
                 final DomainController domainController,
                 final ExtensionRegistry extensionRegistry,
-                final IgnoredDomainResourceRegistry ignoredDomainResourceRegistry,
-                final PathManagerService pathManager) {
+                final IgnoredDomainResourceRegistry ignoredDomainResourceRegistry) {
         return new RealLocalDomainControllerAddHandler(rootRegistration, hostControllerInfo, overallConfigPersister,
                 localFileRepository, remoteFileRepository, contentRepository, domainController, extensionRegistry,
-                ignoredDomainResourceRegistry, pathManager);
+                ignoredDomainResourceRegistry);
     }
 
     public static DomainControllerWriteAttributeHandler getTestInstance() {
@@ -172,7 +172,6 @@ public abstract class DomainControllerWriteAttributeHandler extends ReloadRequir
         private final ContentRepository contentRepository;
         private final DomainController domainController;
         private final ExtensionRegistry extensionRegistry;
-        private final PathManagerService pathManager;
         private final IgnoredDomainResourceRegistry ignoredDomainResourceRegistry;
         private final HostFileRepository localFileRepository;
         private final HostFileRepository remoteFileRepository;
@@ -185,8 +184,7 @@ public abstract class DomainControllerWriteAttributeHandler extends ReloadRequir
                 final ContentRepository contentRepository,
                 final DomainController domainController,
                 final ExtensionRegistry extensionRegistry,
-                final IgnoredDomainResourceRegistry ignoredDomainResourceRegistry,
-                final PathManagerService pathManager) {
+                final IgnoredDomainResourceRegistry ignoredDomainResourceRegistry) {
             this.rootRegistration = rootRegistration;
             this.overallConfigPersister = overallConfigPersister;
             this.localFileRepository = localFileRepository;
@@ -196,7 +194,6 @@ public abstract class DomainControllerWriteAttributeHandler extends ReloadRequir
             this.domainController = domainController;
             this.extensionRegistry = extensionRegistry;
             this.ignoredDomainResourceRegistry = ignoredDomainResourceRegistry;
-            this.pathManager = pathManager;
         }
 
         @Override
@@ -204,7 +201,7 @@ public abstract class DomainControllerWriteAttributeHandler extends ReloadRequir
             hostControllerInfo.setMasterDomainController(true);
             overallConfigPersister.initializeDomainConfigurationPersister(false);
             domainController.initializeMasterDomainRegistry(rootRegistration, overallConfigPersister.getDomainPersister(),
-                    contentRepository, localFileRepository, extensionRegistry, pathManager);
+                    contentRepository, localFileRepository, extensionRegistry);
         }
 
         @Override
@@ -242,7 +239,7 @@ public abstract class DomainControllerWriteAttributeHandler extends ReloadRequir
             overallConfigPersister.initializeDomainConfigurationPersister(true);
 
             domainController.initializeSlaveDomainRegistry(rootRegistration, overallConfigPersister.getDomainPersister(), contentRepository, remoteFileRepository,
-                    hostControllerInfo, extensionRegistry, ignoredDomainResourceRegistry, pathManager);
+                    hostControllerInfo, extensionRegistry, ignoredDomainResourceRegistry);
         }
 
         @Override
