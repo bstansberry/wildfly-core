@@ -161,11 +161,11 @@ public interface DomainController {
     void initializeMasterDomainRegistry(final ManagementResourceRegistration root,
             final ExtensibleConfigurationPersister configurationPersister, final ContentRepository contentRepository,
             final HostFileRepository fileRepository,
-            final ExtensionRegistry extensionRegistry, final PathManagerService pathManager);
+            final ExtensionRegistry extensionRegistry);
 
     void initializeSlaveDomainRegistry(final ManagementResourceRegistration root,
             final ExtensibleConfigurationPersister configurationPersister, final ContentRepository contentRepository,
             final HostFileRepository fileRepository, final LocalHostControllerInfo hostControllerInfo,
             final ExtensionRegistry extensionRegistry,
-            final IgnoredDomainResourceRegistry ignoredDomainResourceRegistry, final PathManagerService pathManager);
+            final IgnoredDomainResourceRegistry ignoredDomainResourceRegistry);
 }

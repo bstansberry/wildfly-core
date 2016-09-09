@@ -230,8 +230,6 @@ public class DomainModelControllerService extends AbstractControllerService impl
         }
     };
 
-    // @GuardedBy(this)
-    private Future<ServerInventory> inventoryFuture;
     private final AtomicBoolean serverInventoryLock = new AtomicBoolean();
     // @GuardedBy(serverInventoryLock), after the HC started reads just use the volatile value
     private volatile ServerInventory serverInventory;
@@ -934,7 +932,6 @@ public class DomainModelControllerService extends AbstractControllerService impl
     }
 
     private void establishServerInventory(Future<ServerInventory> future) {
-        DelegatingServerInventory dse = new DelegatingServerInventory();
         synchronized (serverInventoryLock) {
             try {
                 serverInventory = getFuture(future);
@@ -1014,28 +1011,27 @@ public class DomainModelControllerService extends AbstractControllerService impl
     public void initializeMasterDomainRegistry(final ManagementResourceRegistration root,
             final ExtensibleConfigurationPersister configurationPersister, final ContentRepository contentRepository,
             final HostFileRepository fileRepository,
-            final ExtensionRegistry extensionRegistry, final PathManagerService pathManager) {
+            final ExtensionRegistry extensionRegistry) {
         initializeDomainResource(root, configurationPersister, contentRepository, fileRepository, true,
-                hostControllerInfo, extensionRegistry, null, pathManager);
+                hostControllerInfo, extensionRegistry, null);
     }
 
     public void initializeSlaveDomainRegistry(final ManagementResourceRegistration root,
             final ExtensibleConfigurationPersister configurationPersister, final ContentRepository contentRepository,
             final HostFileRepository fileRepository, final LocalHostControllerInfo hostControllerInfo,
             final ExtensionRegistry extensionRegistry,
-            final IgnoredDomainResourceRegistry ignoredDomainResourceRegistry, final PathManagerService pathManagery) {
+            final IgnoredDomainResourceRegistry ignoredDomainResourceRegistry) {
         initializeDomainResource(root, configurationPersister, contentRepository, fileRepository, false, hostControllerInfo,
-                extensionRegistry, ignoredDomainResourceRegistry, pathManager);
+                extensionRegistry, ignoredDomainResourceRegistry);
     }
 
     private void initializeDomainResource(final ManagementResourceRegistration root, final ExtensibleConfigurationPersister configurationPersister,
             final ContentRepository contentRepo, final HostFileRepository fileRepository, final boolean isMaster,
             final LocalHostControllerInfo hostControllerInfo,
-            final ExtensionRegistry extensionRegistry, final IgnoredDomainResourceRegistry ignoredDomainResourceRegistry,
-            final PathManagerService pathManager) {
+            final ExtensionRegistry extensionRegistry, final IgnoredDomainResourceRegistry ignoredDomainResourceRegistry) {
 
-        DomainRootDefinition domainRootDefinition = new DomainRootDefinition(this, environment, configurationPersister, contentRepo, fileRepository, isMaster, hostControllerInfo,
-                extensionRegistry, ignoredDomainResourceRegistry, pathManager, authorizer, securityIdentitySupplier, this, domainHostExcludeRegistry, getMutableRootResourceRegistrationProvider());
+        DomainRootDefinition domainRootDefinition = new DomainRootDefinition(environment, configurationPersister, contentRepo, fileRepository, isMaster, hostControllerInfo,
+                extensionRegistry, ignoredDomainResourceRegistry, authorizer, securityIdentitySupplier, this, domainHostExcludeRegistry, getMutableRootResourceRegistrationProvider());
         rootResourceDefinition.setDelegate(domainRootDefinition, root);
     }
 
@@ -1385,10 +1381,6 @@ public class DomainModelControllerService extends AbstractControllerService impl
         private void setInventory(ServerInventory inventory) {
             super.setResult(inventory);
         }
-
-        private void setFailure(final Throwable t) {
-            super.setFailed(t);
-        }
     }
 
     // this is a placeholder object used in certain cases where the live inventory is not available
@@ -1483,12 +1475,11 @@ public class DomainModelControllerService extends AbstractControllerService impl
 
             @Override
             public CallbackHandler getServerCallbackHandler() {
-                CallbackHandler callback = new CallbackHandler() {
+                return new CallbackHandler() {
                     @Override
                     public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
                     }
                 };
-                return callback;
             }
 
             @Override

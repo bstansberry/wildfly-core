@@ -124,16 +124,15 @@ public class HostModelUtil {
         // Add of the host itself
         ManagementResourceRegistration hostRegistration = root.registerSubModel(
                 new HostResourceDefinition(hostName, configurationPersister,
-                        environment, runningModeControl, localFileRepository,
-                        hostControllerInfo, serverInventory, remoteFileRepository,
+                        environment, runningModeControl,
+                        hostControllerInfo, serverInventory,
                         contentRepository, domainController, hostExtensionRegistry,
                         vaultReader, ignoredRegistry, processState, pathManager, authorizer, securityIdentitySupplier, auditLogger, bootErrorCollector));
 
         final DomainControllerWriteAttributeHandler dcWAH =
                 DomainControllerWriteAttributeHandler.getInstance(root, hostControllerInfo, configurationPersister,
-                    localFileRepository, remoteFileRepository, contentRepository, domainController, extensionRegistry, ignoredRegistry, pathManager);
+        localFileRepository, remoteFileRepository, contentRepository, domainController, extensionRegistry, ignoredRegistry);
         hostRegistration.registerReadWriteAttribute(HostResourceDefinition.DOMAIN_CONTROLLER, null, dcWAH);
-        //TODO See if some of all these parameters can come from domain controller
         LocalDomainControllerAddHandler localDcAddHandler = LocalDomainControllerAddHandler.getInstance(dcWAH);
         hostRegistration.registerOperationHandler(LocalDomainControllerAddHandler.DEFINITION, localDcAddHandler);
         hostRegistration.registerOperationHandler(LocalDomainControllerRemoveHandler.DEFINITION, LocalDomainControllerRemoveHandler.INSTANCE);

@@ -74,10 +74,8 @@ import org.jboss.as.controller.operations.validation.ParameterValidator;
 import org.jboss.as.controller.operations.validation.StringLengthValidator;
 import org.jboss.as.controller.persistence.ExtensibleConfigurationPersister;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
-import org.jboss.as.controller.services.path.PathManagerService;
 import org.jboss.as.controller.services.path.PathResourceDefinition;
 import org.jboss.as.controller.transform.SubsystemDescriptionDump;
-import org.jboss.as.domain.controller.DomainController;
 import org.jboss.as.domain.controller.HostRegistrations;
 import org.jboss.as.domain.controller.LocalHostControllerInfo;
 import org.jboss.as.domain.controller.logging.DomainControllerLogger;
@@ -177,7 +175,6 @@ public class DomainRootDefinition extends SimpleResourceDefinition {
             .setValidator(new StringLengthValidator(1, true))
             .build();
 
-    private final DomainController domainController;
     private final LocalHostControllerInfo hostControllerInfo;
     private final HostControllerEnvironment environment;
     private final ExtensibleConfigurationPersister configurationPersister;
@@ -186,7 +183,6 @@ public class DomainRootDefinition extends SimpleResourceDefinition {
     private final boolean isMaster;
     private final ExtensionRegistry extensionRegistry;
     private final IgnoredDomainResourceRegistry ignoredDomainResourceRegistry;
-    private final PathManagerService pathManager;
     private final DelegatingConfigurableAuthorizer authorizer;
     private final ManagementSecurityIdentitySupplier securityIdentitySupplier;
     private final HostRegistrations hostRegistrations;
@@ -194,20 +190,17 @@ public class DomainRootDefinition extends SimpleResourceDefinition {
     private final MutableRootResourceRegistrationProvider rootResourceRegistrationProvider;
 
     public DomainRootDefinition(
-            final DomainController domainController,
             final HostControllerEnvironment environment,
             final ExtensibleConfigurationPersister configurationPersister, final ContentRepository contentRepo,
             final HostFileRepository fileRepository, final boolean isMaster,
             final LocalHostControllerInfo hostControllerInfo,
             final ExtensionRegistry extensionRegistry, final IgnoredDomainResourceRegistry ignoredDomainResourceRegistry,
-            final PathManagerService pathManager,
             final DelegatingConfigurableAuthorizer authorizer,
             final ManagementSecurityIdentitySupplier securityIdentitySupplier,
             final HostRegistrations hostRegistrations,
             final DomainHostExcludeRegistry domainHostExcludeRegistry,
             final MutableRootResourceRegistrationProvider rootResourceRegistrationProvider) {
         super(null, DomainResolver.getResolver(DOMAIN, false));
-        this.domainController = domainController;
         this.isMaster = isMaster;
         this.environment = environment;
         this.hostControllerInfo = hostControllerInfo;
@@ -216,7 +209,6 @@ public class DomainRootDefinition extends SimpleResourceDefinition {
         this.fileRepository = fileRepository;
         this.extensionRegistry = extensionRegistry;
         this.ignoredDomainResourceRegistry = ignoredDomainResourceRegistry;
-        this.pathManager = pathManager;
         this.authorizer = authorizer;
         this.securityIdentitySupplier = securityIdentitySupplier;
         this.hostRegistrations = hostRegistrations;
