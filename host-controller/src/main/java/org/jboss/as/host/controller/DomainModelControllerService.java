@@ -729,7 +729,7 @@ public class DomainModelControllerService extends AbstractControllerService impl
                         ok = true;
                     }
 
-                    if (ok && processType != ProcessType.EMBEDDED_HOST_CONTROLLER) {
+                    if (ok && processType != ProcessType.EMBEDDED_HOST_CONTROLLER && hostControllerInfo.isMasterDomainController()) {
                         InternalExecutor executor = new InternalExecutor();
                         ManagementRemotingServices.installManagementChannelServices(serviceTarget, ManagementRemotingServices.MANAGEMENT_ENDPOINT,
                                 new MasterDomainControllerOperationHandlerService(this, executor, executor, environment.getDomainTempDir(), this, domainHostExcludeRegistry),
