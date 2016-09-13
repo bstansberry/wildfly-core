@@ -43,7 +43,7 @@ public class DomainSlaveHostRegistrations {
 
     private final Map<String, DomainHostConnection> registrations = new ConcurrentHashMap<>();
 
-    protected void registerHost(final String hostName, SlaveHostPinger pinger, String address) {
+    protected void recordLocalHostRegistration(final String hostName, SlaveHostPinger pinger, String address) {
         synchronized (this) {
             DomainHostConnection registration = registrations.get(hostName);
             final List<HostConnectionInfo.Event> events;
@@ -58,7 +58,7 @@ public class DomainSlaveHostRegistrations {
         }
     }
 
-    protected boolean unregisterHost(final String hostName, HostConnectionInfo.Event event) {
+    protected boolean recordLocalHostUnregistration(final String hostName, HostConnectionInfo.Event event) {
         synchronized (this) {
             DomainHostConnection registration = registrations.get(hostName);
             final List<HostConnectionInfo.Event> events;

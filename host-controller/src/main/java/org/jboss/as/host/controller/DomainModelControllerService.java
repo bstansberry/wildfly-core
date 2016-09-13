@@ -120,7 +120,6 @@ import org.jboss.as.controller.transform.Transformers;
 import org.jboss.as.domain.controller.DomainController;
 import org.jboss.as.domain.controller.HostConnectionInfo;
 import org.jboss.as.domain.controller.HostConnectionInfo.Event;
-import org.jboss.as.domain.controller.HostRegistrations;
 import org.jboss.as.domain.controller.LocalHostControllerInfo;
 import org.jboss.as.domain.controller.SlaveRegistrationException;
 import org.jboss.as.domain.controller.logging.DomainControllerLogger;
@@ -137,7 +136,6 @@ import org.jboss.as.host.controller.logging.HostControllerLogger;
 import org.jboss.as.host.controller.mgmt.DomainHostExcludeRegistry;
 import org.jboss.as.host.controller.mgmt.HostControllerOperationExecutor;
 import org.jboss.as.host.controller.mgmt.MasterDomainControllerOperationHandlerService;
-import org.jboss.as.host.controller.mgmt.RejectSlavesOperationHandlerService;
 import org.jboss.as.host.controller.mgmt.ServerToHostOperationHandlerFactoryService;
 import org.jboss.as.host.controller.mgmt.ServerToHostProtocolHandler;
 import org.jboss.as.host.controller.mgmt.SlaveHostPinger;
@@ -163,6 +161,7 @@ import org.jboss.as.server.services.security.AbstractVaultReader;
 import org.jboss.dmr.ModelNode;
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
@@ -180,7 +179,8 @@ import org.wildfly.security.manager.WildFlySecurityManager;
  *
  * @author Brian Stansberry (c) 2011 Red Hat Inc.
  */
-public class DomainModelControllerService extends AbstractControllerService implements HostController, DomainController, HostModelUtil.HostModelRegistrar, HostRegistrations {
+public class DomainModelControllerService extends AbstractControllerService implements HostController, DomainController,
+        HostModelUtil.HostModelRegistrar {
 
     public static final ServiceName SERVICE_NAME = HostControllerService.HC_SERVICE_NAME.append("model", "controller");
 
@@ -349,7 +349,7 @@ public class DomainModelControllerService extends AbstractControllerService impl
 
         final SlaveHostPinger pinger = remoteConnectionId == null ? null : new SlaveHostPinger(hostName, handler, pingScheduler, remoteConnectionId);
         final String address = handler.getRemoteAddress().getHostAddress();
-        slaveHostRegistrations.registerHost(hostName, pinger, address);
+        slaveHostRegistrations.recordLocalHostRegistration(hostName, pinger, address);
 
         if (registerProxyController) {
             // Create the proxy controller
@@ -381,7 +381,7 @@ public class DomainModelControllerService extends AbstractControllerService impl
                 if (registered) {
                     final String address = hostRegistration.getAddress();
                     final Event event = cleanShutdown ? create(HostConnectionInfo.EventType.UNREGISTERED, address) : create(HostConnectionInfo.EventType.UNCLEAN_UNREGISTRATION, address);
-                    slaveHostRegistrations.unregisterHost(id, event);
+                    slaveHostRegistrations.recordLocalHostUnregistration(id, event);
                     if (!cleanShutdown) {
                         DOMAIN_LOGGER.lostConnectionToRemoteHost(id);
                     } else {
@@ -623,132 +623,21 @@ public class DomainModelControllerService extends AbstractControllerService impl
                     installDiscoveryService(serviceTarget, discoveryOptions);
                 }
 
-                boolean useLocalDomainXml = hostControllerInfo.isMasterDomainController();
-                boolean isCachedDc = environment.isUseCachedDc();
+                // Block for the ServerInventory
+                establishServerInventory(inventoryFuture);
 
-                if (!useLocalDomainXml) {
-                    // Block for the ServerInventory
-                    establishServerInventory(inventoryFuture);
-
-                    boolean discoveryConfigured = (discoveryOptions != null) && !discoveryOptions.isEmpty();
-                    if (currentRunningMode != RunningMode.ADMIN_ONLY) {
-                        if (discoveryConfigured) {
-                            // Try and connect.
-                            // If can't connect && !environment.isUseCachedDc(), abort
-                            // Otherwise if can't connect, use local domain.xml and start trying to reconnect later
-                            DomainConnectResult connectResult = connectToDomainMaster(serviceTarget, currentRunningMode, isCachedDc, false);
-                            if (connectResult == DomainConnectResult.ABORT) {
-                                ok = false;
-                            } else if (connectResult == DomainConnectResult.FAILED) {
-                                useLocalDomainXml = true;
-                            }
-                        } else {
-                            // Invalid configuration; no way to get the domain config
-                            ROOT_LOGGER.noDomainControllerConfigurationProvided(currentRunningMode,
-                                    CommandLineConstants.ADMIN_ONLY, RunningMode.ADMIN_ONLY);
-                            SystemExiter.abort(ExitCodes.HOST_CONTROLLER_ABORT_EXIT_CODE);
-                        }
-                    } else {
-                        // We're in admin-only mode. See how we handle access control config
-                        // if cached-dc is specified, we try and use the last configuration we have before failing.
-                        if (isCachedDc) {
-                            useLocalDomainXml = true;
-                        }
-                        switch (hostControllerInfo.getAdminOnlyDomainConfigPolicy()) {
-                            case ALLOW_NO_CONFIG:
-                                // our current setup is good, if we're using --cached-dc, we'll try and load the config below
-                                // if not, we'll start empty.
-                                break;
-                            case FETCH_FROM_MASTER:
-                                if (discoveryConfigured) {
-                                    // Try and connect.
-                                    // If can't connect && !environment.isUseCachedDc(), abort
-                                    // Otherwise if can't connect, use local domain.xml but DON'T start trying to reconnect later
-                                    DomainConnectResult connectResult = connectToDomainMaster(serviceTarget, currentRunningMode, isCachedDc, true);
-                                    ok = connectResult != DomainConnectResult.ABORT;
-                                } else {
-                                    // try and use a local cached version below before failing
-                                    if (isCachedDc) {
-                                        break;
-                                    }
-                                    // otherwise, this is an invalid configuration; no way to get the domain config
-                                    ROOT_LOGGER.noDomainControllerConfigurationProvidedForAdminOnly(
-                                            ModelDescriptionConstants.ADMIN_ONLY_POLICY,
-                                            AdminOnlyDomainConfigPolicy.REQUIRE_LOCAL_CONFIG,
-                                            CommandLineConstants.CACHED_DC, RunningMode.ADMIN_ONLY);
-                                    SystemExiter.abort(ExitCodes.HOST_CONTROLLER_ABORT_EXIT_CODE);
-                                    break;
-                                }
-                                break;
-                            case REQUIRE_LOCAL_CONFIG:
-                                // if we have a cached copy, and --cached-dc we can try to use that below
-                                if (isCachedDc) {
-                                    break;
-                                }
-
-                                // otherwise, this is an invalid configuration; no way to get the domain config
-                                ROOT_LOGGER.noAccessControlConfigurationAvailable(currentRunningMode,
-                                        ModelDescriptionConstants.ADMIN_ONLY_POLICY,
-                                        AdminOnlyDomainConfigPolicy.REQUIRE_LOCAL_CONFIG,
-                                        CommandLineConstants.CACHED_DC, currentRunningMode);
-                                SystemExiter.abort(ExitCodes.HOST_CONTROLLER_ABORT_EXIT_CODE);
-                                break;
-                            default:
-                                throw new IllegalStateException(hostControllerInfo.getAdminOnlyDomainConfigPolicy().toString());
-                        }
-                    }
-
+                // Kick off a service to parse the domain-wide model or register with the master and acquire it,
+                // plus set up appropriate handling for slave registration requests
+                Future<Boolean> domainInitFuture;
+                if (hostControllerInfo.isMasterDomainController()) {
+                    InternalExecutor internalExecutor = new InternalExecutor();
+                    domainInitFuture = MasterDomainInitialization.install(serviceTarget, this, processState, processType,
+                            currentRunningMode, environment, internalExecutor, internalExecutor, domainHostExcludeRegistry);
+                } else {
+                    domainInitFuture = SlaveDomainInitialization.install(serviceTarget, this, processState,
+                            currentRunningMode, environment);
                 }
-
-                boolean remoteDC = hostControllerInfo.isMasterDomainController()
-                        && runningModeControl.getRunningMode().equals(RunningMode.NORMAL)
-                        && processType != ProcessType.EMBEDDED_HOST_CONTROLLER;
-
-                if (useLocalDomainXml) {
-                    if (!hostControllerInfo.isMasterDomainController() && isCachedDc) {
-                        ROOT_LOGGER.usingCachedDC(CommandLineConstants.CACHED_DC, ConfigurationPersisterFactory.CACHED_DOMAIN_XML);
-                    }
-
-                    // parse the domain.xml and load the steps
-                    // TODO look at having LocalDomainControllerAdd do this, using Stage.IMMEDIATE for the steps
-                    ConfigurationPersister domainPersister = hostControllerConfigurationPersister.getDomainPersister();
-
-                    // if we're using --cached-dc, we have to have had a persisted copy of the domain config for this to work
-                    // otherwise we fail and can't continue.
-                    List<ModelNode> domainBootOps = domainPersister.load();
-
-                    HostControllerLogger.ROOT_LOGGER.debug("Invoking domain.xml ops");
-                    ok = boot(domainBootOps, false);
-                    domainModelComplete.set(ok);
-
-                    if (!ok && runningModeControl.getRunningMode().equals(RunningMode.ADMIN_ONLY)) {
-                        ROOT_LOGGER.reportAdminOnlyDomainXmlFailure();
-                        ok = true;
-                    }
-
-                    if (ok && remoteDC) {
-                        InternalExecutor executor = new InternalExecutor();
-                        ManagementRemotingServices.installManagementChannelServices(serviceTarget, ManagementRemotingServices.MANAGEMENT_ENDPOINT,
-                                new MasterDomainControllerOperationHandlerService(this, executor, executor, environment.getDomainTempDir(), domainHostExcludeRegistry),
-                                DomainModelControllerService.SERVICE_NAME, ManagementRemotingServices.DOMAIN_CHANNEL,
-                                HostControllerService.HC_EXECUTOR_SERVICE_NAME, HostControllerService.HC_SCHEDULED_EXECUTOR_SERVICE_NAME);
-
-                        // Block for the ServerInventory
-                        establishServerInventory(inventoryFuture);
-                    }
-
-                    // register local host controller
-                    final String hostName = hostControllerInfo.getLocalHostName();
-                    slaveHostRegistrations.registerHost(hostName, null, "local");
-                }
-
-                if (ok && !remoteDC) {
-                    // Install a handler factory to reject slave registration requests
-                    ManagementRemotingServices.installManagementChannelServices(serviceTarget, ManagementRemotingServices.MANAGEMENT_ENDPOINT,
-                            new RejectSlavesOperationHandlerService(hostControllerInfo.isMasterDomainController(), environment.getDomainTempDir()),
-                            DomainModelControllerService.SERVICE_NAME, ManagementRemotingServices.DOMAIN_CHANNEL,
-                            HostControllerService.HC_EXECUTOR_SERVICE_NAME, HostControllerService.HC_SCHEDULED_EXECUTOR_SERVICE_NAME);
-                }
+                ok = getFuture(domainInitFuture);
             }
 
             if (ok && hostControllerInfo.getAdminOnlyDomainConfigPolicy() != AdminOnlyDomainConfigPolicy.ALLOW_NO_CONFIG) {
@@ -818,6 +707,41 @@ public class DomainModelControllerService extends AbstractControllerService impl
         }
     }
 
+    boolean loadDomainWideConfig() throws ConfigurationPersistenceException {
+        if (!hostControllerInfo.isMasterDomainController() && environment.isUseCachedDc()) {
+            ROOT_LOGGER.usingCachedDC(CommandLineConstants.CACHED_DC, ConfigurationPersisterFactory.CACHED_DOMAIN_XML);
+        }
+
+        // parse the domain.xml and load the steps
+        // TODO look at having LocalDomainControllerAdd do this, using Stage.IMMEDIATE for the steps
+        ConfigurationPersister domainPersister = hostControllerConfigurationPersister.getDomainPersister();
+
+        // if we're using --cached-dc, we have to have had a persisted copy of the domain config for this to work
+        // otherwise we fail and can't continue.
+        List<ModelNode> domainBootOps = domainPersister.load();
+
+        HostControllerLogger.ROOT_LOGGER.debug("Invoking domain.xml ops");
+        boolean ok = boot(domainBootOps, false);
+        domainModelComplete.set(ok);
+
+        if (!ok && runningModeControl.getRunningMode().equals(RunningMode.ADMIN_ONLY)) {
+            ROOT_LOGGER.reportAdminOnlyDomainXmlFailure();
+            ok = true;
+        }
+        return ok;
+    }
+
+    /** Callback from {@link MasterDomainInitialization} telling us to record an event for ourselves integrating with the domain*/
+    void registerLocalHost() {
+        slaveHostRegistrations.recordLocalHostRegistration(hostControllerInfo.getLocalHostName(), null, "local");
+    }
+
+    /** Callback from {@link MasterDomainInitialization} telling us to record an event for ourselves becoming un-integrated with the domain*/
+    void unregisterLocalHost() {
+        slaveHostRegistrations.recordLocalHostUnregistration(hostControllerInfo.getLocalHostName(),
+                HostConnectionInfo.Events.create(HostConnectionInfo.EventType.UNREGISTERED, "local"));
+    }
+
     @Override
     protected final PartialModelIndicator getPartialModelIndicator() {
         return partialModelIndicator;
@@ -861,14 +785,14 @@ public class DomainModelControllerService extends AbstractControllerService impl
         DiscoveryService.install(serviceTarget, discoveryOptions, interfaces, hostControllerInfo.isMasterDomainController());
     }
 
-    private enum DomainConnectResult {
+    enum DomainConnectResult {
         CONNECTED,
         FAILED,
         ABORT
     }
 
-    private DomainConnectResult connectToDomainMaster(ServiceTarget serviceTarget, RunningMode currentRunningMode,
-                                                      boolean usingCachedDC, boolean adminOnly) {
+    DomainConnectResult connectToDomainMaster(ServiceTarget serviceTarget) {
+        RunningMode currentRunningMode = runningModeControl.getRunningMode();
         Future<MasterDomainControllerClient> clientFuture = RemoteDomainConnectionService.install(serviceTarget,
                 getValue(),
                 extensionRegistry,
@@ -895,7 +819,7 @@ public class DomainModelControllerService extends AbstractControllerService impl
         } catch (Exception e) {
             //We could not connect to the host
             ROOT_LOGGER.cannotConnectToMaster(e);
-            if (!usingCachedDC) {
+            if (!environment.isUseCachedDc()) {
                 if (currentRunningMode == RunningMode.ADMIN_ONLY) {
                     ROOT_LOGGER.fetchConfigFromDomainMasterFailed(currentRunningMode,
                             ModelDescriptionConstants.ADMIN_ONLY_POLICY,
@@ -907,12 +831,17 @@ public class DomainModelControllerService extends AbstractControllerService impl
                 // If we got here, the Exiter didn't really exit. Must be embedded.
                 // Inform the caller so it knows not to proceed with boot.
                 return DomainConnectResult.ABORT;
-            } else if (!adminOnly) {
+            } else if (currentRunningMode != RunningMode.ADMIN_ONLY) {
                 // Register a service that will try again once we reach RUNNING state
                 DeferredDomainConnectService.install(serviceTarget, masterDomainControllerClient);
             }
             return DomainConnectResult.FAILED;
         }
+    }
+
+    void disconnectFromMaster(ServiceContainer serviceContainer) {
+        RemoteDomainConnectionService.uninstall(serviceContainer);
+        DeferredDomainConnectService.uninstall(serviceContainer);
     }
 
     @Override
@@ -1560,9 +1489,20 @@ public class DomainModelControllerService extends AbstractControllerService impl
 
         private static void install(ServiceTarget target, MasterDomainControllerClient domainControllerClient) {
             DeferredDomainConnectService service = new DeferredDomainConnectService(domainControllerClient);
-            target.addService(DomainModelControllerService.SERVICE_NAME.append("deferred-domain-connect"), service)
+            target.addService(serviceName(), service)
                     .addDependency(ControlledProcessStateService.SERVICE_NAME, ControlledProcessStateService.class, service.injectedValue)
                     .install();
+        }
+
+        private static void uninstall(ServiceContainer serviceContainer) {
+            ServiceController<?> controller = serviceContainer.getService(serviceName());
+            if (controller != null) {
+                controller.setMode(ServiceController.Mode.REMOVE);
+            }
+        }
+
+        private static ServiceName serviceName() {
+            return DomainModelControllerService.SERVICE_NAME.append("deferred-domain-connect");
         }
 
         private DeferredDomainConnectService(MasterDomainControllerClient domainControllerClient) {
