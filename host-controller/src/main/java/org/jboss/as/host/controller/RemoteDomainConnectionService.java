@@ -108,6 +108,7 @@ import org.jboss.as.version.ProductConfig;
 import org.jboss.dmr.ModelNode;
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
@@ -251,6 +252,13 @@ public class RemoteDomainConnectionService implements MasterDomainControllerClie
 
         builder.install();
         return service.futureClient;
+    }
+
+    static void uninstall(ServiceContainer serviceContainer) {
+        ServiceController<?> controller = serviceContainer.getService(MasterDomainControllerClient.SERVICE_NAME);
+        if (controller != null) {
+            controller.setMode(ServiceController.Mode.REMOVE);
+        }
     }
 
     /** {@inheritDoc} */
