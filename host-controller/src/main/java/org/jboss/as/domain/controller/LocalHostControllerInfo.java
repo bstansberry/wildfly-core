@@ -26,6 +26,7 @@ import java.util.List;
 
 import org.jboss.as.controller.ControlledProcessState;
 import org.jboss.as.host.controller.discovery.DiscoveryOption;
+import org.jboss.as.host.controller.model.host.AdminOnlyDomainConfigPolicy;
 
 /**
  * Core information about the local host controller.
@@ -135,5 +136,13 @@ public interface LocalHostControllerInfo {
      * @return the state
      */
     ControlledProcessState.State getProcessState();
+
+    /**
+     * Gets the policy for how a slave host controller started in
+     * {@link org.jboss.as.controller.RunningMode#ADMIN_ONLY admin-only mode} should
+     * deal with the absence of a local copy of the domain-wide configuration.
+     * @return the policy
+     */
+    AdminOnlyDomainConfigPolicy getAdminOnlyDomainConfigPolicy();
 
 }
