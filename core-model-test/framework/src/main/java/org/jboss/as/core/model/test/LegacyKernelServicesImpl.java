@@ -54,6 +54,7 @@ import org.jboss.as.domain.controller.LocalHostControllerInfo;
 import org.jboss.as.host.controller.discovery.DiscoveryOption;
 import org.jboss.as.host.controller.ignored.IgnoreDomainResourceTypeResource;
 import org.jboss.as.host.controller.ignored.IgnoredDomainResourceRegistry;
+import org.jboss.as.host.controller.model.host.AdminOnlyDomainConfigPolicy;
 import org.jboss.as.management.client.content.ManagedDMRContentTypeResource;
 import org.jboss.as.model.test.ModelTestModelControllerService;
 import org.jboss.as.model.test.StringConfigurationPersister;
@@ -222,6 +223,11 @@ public class LegacyKernelServicesImpl extends AbstractKernelServicesImpl {
 
             @Override
             public State getProcessState() {
+                return null;
+            }
+
+            @Override
+            public AdminOnlyDomainConfigPolicy getAdminOnlyDomainConfigPolicy() {
                 return null;
             }
 

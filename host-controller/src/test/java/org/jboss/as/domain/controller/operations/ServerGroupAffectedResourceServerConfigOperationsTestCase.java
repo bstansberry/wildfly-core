@@ -67,6 +67,7 @@ import org.jboss.as.domain.controller.LocalHostControllerInfo;
 import org.jboss.as.host.controller.MasterDomainControllerClient;
 import org.jboss.as.host.controller.ServerInventory;
 import org.jboss.as.host.controller.discovery.DiscoveryOption;
+import org.jboss.as.host.controller.model.host.AdminOnlyDomainConfigPolicy;
 import org.jboss.as.host.controller.operations.ServerAddHandler;
 import org.jboss.as.host.controller.operations.ServerRemoveHandler;
 import org.jboss.as.host.controller.operations.ServerRestartRequiredServerConfigWriteAttributeHandler;
@@ -509,6 +510,11 @@ public class ServerGroupAffectedResourceServerConfigOperationsTestCase extends A
 
         @Override
         public State getProcessState() {
+            return null;
+        }
+
+        @Override
+        public AdminOnlyDomainConfigPolicy getAdminOnlyDomainConfigPolicy() {
             return null;
         }
 
