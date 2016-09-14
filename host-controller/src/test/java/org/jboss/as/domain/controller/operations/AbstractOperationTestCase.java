@@ -95,6 +95,7 @@ import org.jboss.as.domain.controller.LocalHostControllerInfo;
 import org.jboss.as.domain.management.CoreManagementResourceDefinition;
 import org.jboss.as.domain.management.access.AccessAuthorizationResourceDefinition;
 import org.jboss.as.host.controller.discovery.DiscoveryOption;
+import org.jboss.as.host.controller.model.host.AdminOnlyDomainConfigPolicy;
 import org.jboss.dmr.ModelNode;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
@@ -158,6 +159,11 @@ public abstract class AbstractOperationTestCase {
 
         @Override
         public ControlledProcessState.State getProcessState() {
+            return null;
+        }
+
+        @Override
+        public AdminOnlyDomainConfigPolicy getAdminOnlyDomainConfigPolicy() {
             return null;
         }
 
