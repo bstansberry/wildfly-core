@@ -57,7 +57,6 @@ import org.jboss.as.controller.RunningMode;
 import org.jboss.as.controller.RunningModeControl;
 import org.jboss.as.controller.SimpleOperationDefinitionBuilder;
 import org.jboss.as.controller.audit.AuditLogger;
-import org.jboss.as.controller.capability.registry.ImmutableCapabilityRegistry;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.as.controller.descriptions.NonResolvingResourceDescriptionResolver;
 import org.jboss.as.controller.extension.ExtensionRegistry;
@@ -67,13 +66,11 @@ import org.jboss.as.controller.persistence.NullConfigurationPersister;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.as.controller.services.path.PathManagerService;
-import org.jboss.as.controller.transform.Transformers;
-import org.jboss.as.domain.controller.DomainController;
 import org.jboss.as.domain.controller.LocalHostControllerInfo;
-import org.jboss.as.domain.controller.SlaveRegistrationException;
 import org.jboss.as.domain.controller.resources.DomainRootDefinition;
 import org.jboss.as.domain.management.CoreManagementResourceDefinition;
 import org.jboss.as.domain.management.access.AccessAuthorizationResourceDefinition;
+import org.jboss.as.host.controller.HostController;
 import org.jboss.as.host.controller.HostControllerConfigurationPersister;
 import org.jboss.as.host.controller.HostControllerEnvironment;
 import org.jboss.as.host.controller.HostModelUtil;
@@ -91,7 +88,6 @@ import org.jboss.as.host.controller.operations.RemoteDomainControllerAddHandler;
 import org.jboss.as.model.test.ModelTestModelControllerService;
 import org.jboss.as.model.test.ModelTestOperationValidatorFilter;
 import org.jboss.as.model.test.StringConfigurationPersister;
-import org.jboss.as.protocol.mgmt.ManagementChannelHandler;
 import org.jboss.as.repository.ContentReference;
 import org.jboss.as.repository.ContentRepository;
 import org.jboss.as.repository.HostFileRepository;
@@ -346,15 +342,11 @@ class TestModelControllerService extends ModelTestModelControllerService {
         };
     }
 
-    private DomainController createDomainController(final HostControllerEnvironment env, final LocalHostControllerInfoImpl info) {
-        return new DomainController() {
+    private HostController createHostController(final LocalHostControllerInfoImpl info) {
+        return new HostController() {
 
             @Override
             public void unregisterRunningServer(String serverName) {
-            }
-
-            @Override
-            public void unregisterRemoteHost(String id, Long remoteConnectionId, boolean cleanShutdown) {
             }
 
             @Override
@@ -362,25 +354,7 @@ class TestModelControllerService extends ModelTestModelControllerService {
             }
 
             @Override
-            public void stopLocalHost() {
-            }
-
-            @Override
             public void registerRunningServer(ProxyController serverControllerClient) {
-            }
-
-            @Override
-            public void registerRemoteHost(String hostName, ManagementChannelHandler handler, Transformers transformers,
-                                           Long remoteConnectionId, boolean registerProxyController) throws SlaveRegistrationException {
-            }
-
-            @Override
-            public void pingRemoteHost(String hostName) {
-            }
-
-            @Override
-            public boolean isHostRegistered(String id) {
-                return false;
             }
 
             @Override
@@ -401,16 +375,6 @@ class TestModelControllerService extends ModelTestModelControllerService {
             @Override
             public HostFileRepository getLocalFileRepository() {
                 return null;
-            }
-
-            @Override
-            public ExtensionRegistry getExtensionRegistry() {
-                return null;
-            }
-
-            @Override
-            public ImmutableCapabilityRegistry getCapabilityRegistry() {
-                return capabilityRegistry;
             }
 
             @Override
@@ -491,7 +455,7 @@ class TestModelControllerService extends ModelTestModelControllerService {
         final ExtensionRegistry hostExtensionRegistry = extensionRegistry; //Just use the same for the host as for the domain
         final HostControllerConfigurationPersister persister = new HostControllerConfigurationPersister(env, info, Executors.newCachedThreadPool(), hostExtensionRegistry, extensionRegistry);
         final HostFileRepository hostFileRepository = createHostFileRepository();
-        final DomainController domainController = createDomainController(env, info);
+        final HostController hostController = createHostController(info);
 
         @Override
         public void setRootResourceDefinitionDelegate() {
@@ -504,8 +468,9 @@ class TestModelControllerService extends ModelTestModelControllerService {
                             info,
                             null /*serverInventory*/,
                             injectedContentRepository.getValue(),
-                            domainController,
+                            hostController,
                             extensionRegistry,
+                            capabilityRegistry,
                             vaultReader,
                             ignoredRegistry,
                             processState,
@@ -538,9 +503,10 @@ class TestModelControllerService extends ModelTestModelControllerService {
                     null /*serverInventory*/,
                     null /*remoteFileRepository*/,
                     injectedContentRepository.getValue(),
-                    domainController,
+                    hostController,
                     extensionRegistry, //Just use the same for the host as for the domain
                     extensionRegistry,
+                    capabilityRegistry,
                     null /*vaultReader*/,
                     ignoredRegistry,
                     processState,
@@ -667,6 +633,7 @@ class TestModelControllerService extends ModelTestModelControllerService {
             return false;
         }
     }
+
 
 
     private static class AddMissingHostSchemaLocationsAttributeForValidationHandler implements OperationStepHandler {

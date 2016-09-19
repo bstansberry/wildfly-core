@@ -75,7 +75,6 @@ import org.jboss.as.controller.remote.ResponseAttachmentInputStreamSupport;
 import org.jboss.as.controller.remote.TransactionalProtocolClient;
 import org.jboss.as.controller.remote.TransactionalProtocolHandlers;
 import org.jboss.as.controller.remote.TransactionalProtocolOperationHandler;
-import org.jboss.as.domain.controller.DomainController;
 import org.jboss.as.domain.controller.LocalHostControllerInfo;
 import org.jboss.as.domain.controller.SlaveRegistrationException;
 import org.jboss.as.domain.controller.operations.FetchMissingConfigurationHandler;
@@ -90,7 +89,7 @@ import org.jboss.as.host.controller.ignored.IgnoredDomainResourceRegistry;
 import org.jboss.as.host.controller.logging.HostControllerLogger;
 import org.jboss.as.host.controller.mgmt.DomainControllerProtocol;
 import org.jboss.as.host.controller.mgmt.DomainRemoteFileRequestAndHandler;
-import org.jboss.as.host.controller.mgmt.HostControllerRegistrationHandler;
+import org.jboss.as.host.controller.mgmt.HostControllerOperationExecutor;
 import org.jboss.as.host.controller.mgmt.HostInfo;
 import org.jboss.as.protocol.ProtocolConnectionConfiguration;
 import org.jboss.as.protocol.StreamUtils;
@@ -125,8 +124,7 @@ import org.xnio.OptionMap;
 import org.xnio.Options;
 
 /**
- * Establishes the connection from a slave {@link org.jboss.as.domain.controller.DomainController} to the master
- * {@link org.jboss.as.domain.controller.DomainController}
+ * Establishes the connection from a slave host controller to the master host controller
  *
  * @author Kabir Khan
  */
@@ -168,8 +166,8 @@ public class RemoteDomainConnectionService implements MasterDomainControllerClie
     private final RemoteFileRepository remoteFileRepository;
     private final ContentRepository contentRepository;
     private final IgnoredDomainResourceRegistry ignoredDomainResourceRegistry;
-    private final HostControllerRegistrationHandler.OperationExecutor operationExecutor;
-    private final DomainController domainController;
+    private final HostControllerOperationExecutor operationExecutor;
+    private final HostController hostController;
     private final HostControllerEnvironment hostControllerEnvironment;
     private final RunningMode runningMode;
     private final File tempDir;
@@ -197,8 +195,8 @@ public class RemoteDomainConnectionService implements MasterDomainControllerClie
                                           final RemoteFileRepository remoteFileRepository,
                                           final ContentRepository contentRepository,
                                           final IgnoredDomainResourceRegistry ignoredDomainResourceRegistry,
-                                          final HostControllerRegistrationHandler.OperationExecutor operationExecutor,
-                                          final DomainController domainController,
+                                          final HostControllerOperationExecutor operationExecutor,
+                                          final HostController hostController,
                                           final HostControllerEnvironment hostControllerEnvironment,
                                           final ExecutorService executor,
                                           final RunningMode runningMode,
@@ -213,7 +211,7 @@ public class RemoteDomainConnectionService implements MasterDomainControllerClie
         remoteFileRepository.setRemoteFileRepositoryExecutor(remoteFileRepositoryExecutor);
         this.ignoredDomainResourceRegistry = ignoredDomainResourceRegistry;
         this.operationExecutor = operationExecutor;
-        this.domainController = domainController;
+        this.hostController = hostController;
         this.hostControllerEnvironment = hostControllerEnvironment;
         this.executor = executor;
         this.runningMode = runningMode;
@@ -230,8 +228,8 @@ public class RemoteDomainConnectionService implements MasterDomainControllerClie
                                                         final RemoteFileRepository remoteFileRepository,
                                                         final ContentRepository contentRepository,
                                                         final IgnoredDomainResourceRegistry ignoredDomainResourceRegistry,
-                                                        final HostControllerRegistrationHandler.OperationExecutor operationExecutor,
-                                                        final DomainController domainController,
+                                                        final HostControllerOperationExecutor operationExecutor,
+                                                        final HostController hostController,
                                                         final HostControllerEnvironment hostControllerEnvironment,
                                                         final ExecutorService executor,
                                                         final RunningMode currentRunningMode,
@@ -239,7 +237,7 @@ public class RemoteDomainConnectionService implements MasterDomainControllerClie
                                                         final AtomicBoolean domainModelComplete) {
         RemoteDomainConnectionService service = new RemoteDomainConnectionService(controller, extensionRegistry, localHostControllerInfo,
                 remoteFileRepository, contentRepository,
-                ignoredDomainResourceRegistry, operationExecutor, domainController,
+                ignoredDomainResourceRegistry, operationExecutor, hostController,
                 hostControllerEnvironment, executor, currentRunningMode, serverProxies, domainModelComplete);
         ServiceBuilder<MasterDomainControllerClient> builder = serviceTarget.addService(MasterDomainControllerClient.SERVICE_NAME, service)
                 .addDependency(ManagementRemotingServices.MANAGEMENT_ENDPOINT, Endpoint.class, service.endpointInjector)
@@ -441,7 +439,7 @@ public class RemoteDomainConnectionService implements MasterDomainControllerClie
 
                 // Execute the handler to synchronize the model
                 SyncModelParameters parameters =
-                        new SyncModelParameters(domainController, ignoredDomainResourceRegistry,
+                        new SyncModelParameters(hostController, ignoredDomainResourceRegistry,
                                 hostControllerEnvironment, extensionRegistry, operationExecutor, false, serverProxies,
                                 remoteFileRepository, contentRepository);
                 final SyncServerGroupOperationHandler handler =
@@ -497,7 +495,7 @@ public class RemoteDomainConnectionService implements MasterDomainControllerClie
                     localHostInfo.getRemoteDomainControllerDiscoveryOptions(), executor, scheduledExecutorService,
                     new RemoteDomainConnection.HostRegistrationCallback() {
                 /**
-                 * Calculates the metadata required when connecting to the master {@link org.jboss.as.domain.controller.DomainController}
+                 * Calculates the metadata required when connecting to the master host controller.
                  * This value does not require locking during use, as {@link org.jboss.as.host.controller.mgmt.HostInfo createLocalHostHostInfo()} uses
                  * '/domain-controller', which is read-only, and '/core-service=ignored-resources/ignored-resource-type' which has handlers on
                  * add, remove and write-attribute that will place the host into reload-required.
@@ -567,7 +565,7 @@ public class RemoteDomainConnectionService implements MasterDomainControllerClie
         try {
             HostControllerLogger.ROOT_LOGGER.debug("Applying domain level boot operations provided by master");
             SyncModelParameters parameters =
-                    new SyncModelParameters(domainController, ignoredDomainResourceRegistry,
+                    new SyncModelParameters(hostController, ignoredDomainResourceRegistry,
                             hostControllerEnvironment, extensionRegistry, operationExecutor, true, serverProxies, remoteFileRepository, contentRepository);
             final SyncDomainModelOperationHandler handler =
                     new SyncDomainModelOperationHandler(hostInfo, parameters);
@@ -818,7 +816,7 @@ public class RemoteDomainConnectionService implements MasterDomainControllerClie
     private static class ReadRootResourceHandler implements OperationStepHandler {
         private Resource resource;
 
-        static Resource grabDomainResource(HostControllerRegistrationHandler.OperationExecutor executor) {
+        static Resource grabDomainResource(HostControllerOperationExecutor executor) {
             ReadRootResourceHandler handler = new ReadRootResourceHandler();
             executor.execute(GRAB_DOMAIN_RESOURCE, OperationMessageHandler.DISCARD, ModelController.OperationTransactionControl.COMMIT, handler);
             return handler.resource;

@@ -85,7 +85,7 @@ import org.jboss.as.host.controller.RestartMode;
 import org.jboss.as.host.controller.ServerInventory;
 import org.jboss.as.host.controller.ignored.IgnoredDomainResourceRegistry;
 import org.jboss.as.host.controller.mgmt.DomainHostExcludeRegistry;
-import org.jboss.as.host.controller.mgmt.HostControllerRegistrationHandler;
+import org.jboss.as.host.controller.mgmt.HostControllerOperationExecutor;
 import org.jboss.as.host.controller.mgmt.HostInfo;
 import org.jboss.as.host.controller.model.host.HostResourceDefinition;
 import org.jboss.as.host.controller.util.AbstractControllerTestBase;
@@ -677,7 +677,7 @@ public class SyncModelServerStateTestCase extends AbstractControllerTestBase  {
             //Save this for later since setDelegate() gets called before initModel....
             hostResourceDefinition = new HostResourceDefinition(hostName, hostControllerConfigurationPersister,
                     hostControllerEnvironment, runningModeControl, hostControllerInfo, serverInventory,
-                    repository, domainController, extensionRegistry, vaultReader, ignoredDomainResourceRegistry, processState,
+                    repository, hostController, extensionRegistry, capabilityRegistry, vaultReader, ignoredDomainResourceRegistry, processState,
                     pathManager, authorizer, auditLogger, bootErrorCollector);
         }
 
@@ -769,14 +769,14 @@ public class SyncModelServerStateTestCase extends AbstractControllerTestBase  {
 
             Resource original = context.readResourceFromRoot(PathAddress.EMPTY_ADDRESS);
 
-            final HostControllerRegistrationHandler.OperationExecutor internalExecutor = getControllerService().getInternalExecutor();
+            final HostControllerOperationExecutor internalExecutor = getControllerService().getInternalExecutor();
 
             Map<String, ProxyController> serverProxies = new HashMap<>();
             for (Map.Entry<String, MockServerProxy> entry : SyncModelServerStateTestCase.this.serverProxies.entrySet()) {
                 serverProxies.put(entry.getKey(), entry.getValue());
             }
             SyncModelParameters parameters =
-                    new SyncModelParameters(new MockDomainController(), ignoredDomainResourceRegistry,
+                    new SyncModelParameters(new MockHostController(), ignoredDomainResourceRegistry,
                             hostControllerEnvironment, extensionRegistry, internalExecutor, true,
                             serverProxies, repository, repository);
             final Resource hostResource =

@@ -70,7 +70,7 @@ import org.jboss.as.domain.controller.operations.deployment.SyncModelParameters;
 import org.jboss.as.domain.controller.resources.ProfileResourceDefinition;
 import org.jboss.as.domain.controller.resources.ServerGroupResourceDefinition;
 import org.jboss.as.host.controller.ignored.IgnoredDomainResourceRegistry;
-import org.jboss.as.host.controller.mgmt.HostControllerRegistrationHandler;
+import org.jboss.as.host.controller.mgmt.HostControllerOperationExecutor;
 import org.jboss.as.host.controller.util.AbstractControllerTestBase;
 import org.jboss.as.repository.ContentReference;
 import org.jboss.as.repository.HostFileRepository;
@@ -357,9 +357,9 @@ public class AbstractOrderedChildResourceSyncModelTestCase extends AbstractContr
             Resource original = context.readResourceFromRoot(PathAddress.EMPTY_ADDRESS);
 
             final TestRepository repo = new TestRepository();
-            final HostControllerRegistrationHandler.OperationExecutor internalExecutor = getControllerService().getInternalExecutor();
+            final HostControllerOperationExecutor internalExecutor = getControllerService().getInternalExecutor();
             SyncModelParameters parameters =
-                    new SyncModelParameters(new MockDomainController(), ignoredDomainResourceRegistry,
+                    new SyncModelParameters(new MockHostController(), ignoredDomainResourceRegistry,
                             hostControllerEnvironment, extensionRegistry, internalExecutor, true,
                             Collections.<String, ProxyController>emptyMap(), repo, repo);
             final SyncServerGroupOperationHandler handler =

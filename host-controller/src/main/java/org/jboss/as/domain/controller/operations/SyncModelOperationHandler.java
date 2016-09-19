@@ -80,7 +80,7 @@ import org.jboss.as.controller.registry.ImmutableManagementResourceRegistration;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.as.domain.controller.logging.DomainControllerLogger;
 import org.jboss.as.domain.controller.operations.deployment.SyncModelParameters;
-import org.jboss.as.host.controller.mgmt.HostControllerRegistrationHandler;
+import org.jboss.as.host.controller.mgmt.HostControllerOperationExecutor;
 import org.jboss.dmr.ModelNode;
 
 /**
@@ -132,7 +132,7 @@ class SyncModelOperationHandler implements OperationStepHandler {
 
         // Describe the operations based on the remote model
         final ReadMasterDomainOperationsHandler readOperationsHandler = new ReadMasterDomainOperationsHandler();
-        final HostControllerRegistrationHandler.OperationExecutor operationExecutor = parameters.getOperationExecutor();
+        final HostControllerOperationExecutor operationExecutor = parameters.getOperationExecutor();
         final ModelNode result = operationExecutor.executeReadOnly(readOp, remoteModel, readOperationsHandler, ModelController.OperationTransactionControl.COMMIT);
         if (result.hasDefined(FAILURE_DESCRIPTION)) {
             context.getFailureDescription().set(result.get(FAILURE_DESCRIPTION));

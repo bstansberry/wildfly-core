@@ -38,7 +38,7 @@ import org.jboss.as.controller.operations.validation.IntRangeValidator;
 import org.jboss.as.controller.operations.validation.StringLengthValidator;
 import org.jboss.as.controller.registry.AttributeAccess;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
-import org.jboss.as.domain.controller.DomainController;
+import org.jboss.as.host.controller.HostController;
 import org.jboss.as.host.controller.HostControllerConfigurationPersister;
 import org.jboss.as.host.controller.discovery.StaticDiscovery;
 import org.jboss.as.host.controller.ignored.IgnoredDomainResourceRegistry;
@@ -112,11 +112,11 @@ public abstract class DomainControllerWriteAttributeHandler extends ReloadRequir
                 final HostFileRepository localFileRepository,
                 final HostFileRepository remoteFileRepository,
                 final ContentRepository contentRepository,
-                final DomainController domainController,
+                final HostController hostController,
                 final ExtensionRegistry extensionRegistry,
                 final IgnoredDomainResourceRegistry ignoredDomainResourceRegistry) {
         return new RealLocalDomainControllerAddHandler(rootRegistration, hostControllerInfo, overallConfigPersister,
-                localFileRepository, remoteFileRepository, contentRepository, domainController, extensionRegistry,
+                localFileRepository, remoteFileRepository, contentRepository, hostController, extensionRegistry,
                 ignoredDomainResourceRegistry);
     }
 
@@ -170,7 +170,7 @@ public abstract class DomainControllerWriteAttributeHandler extends ReloadRequir
         private final HostControllerConfigurationPersister overallConfigPersister;
         private final LocalHostControllerInfoImpl hostControllerInfo;
         private final ContentRepository contentRepository;
-        private final DomainController domainController;
+        private final HostController hostController;
         private final ExtensionRegistry extensionRegistry;
         private final IgnoredDomainResourceRegistry ignoredDomainResourceRegistry;
         private final HostFileRepository localFileRepository;
@@ -182,7 +182,7 @@ public abstract class DomainControllerWriteAttributeHandler extends ReloadRequir
                 final HostFileRepository localFileRepository,
                 final HostFileRepository remoteFileRepository,
                 final ContentRepository contentRepository,
-                final DomainController domainController,
+                final HostController hostController,
                 final ExtensionRegistry extensionRegistry,
                 final IgnoredDomainResourceRegistry ignoredDomainResourceRegistry) {
             this.rootRegistration = rootRegistration;
@@ -191,7 +191,7 @@ public abstract class DomainControllerWriteAttributeHandler extends ReloadRequir
             this.remoteFileRepository = remoteFileRepository;
             this.hostControllerInfo = hostControllerInfo;
             this.contentRepository = contentRepository;
-            this.domainController = domainController;
+            this.hostController = hostController;
             this.extensionRegistry = extensionRegistry;
             this.ignoredDomainResourceRegistry = ignoredDomainResourceRegistry;
         }
@@ -200,7 +200,7 @@ public abstract class DomainControllerWriteAttributeHandler extends ReloadRequir
         protected void initializeLocalDomain() {
             hostControllerInfo.setMasterDomainController(true);
             overallConfigPersister.initializeDomainConfigurationPersister(false);
-            domainController.initializeMasterDomainRegistry(rootRegistration, overallConfigPersister.getDomainPersister(),
+            hostController.initializeMasterDomainRegistry(rootRegistration, overallConfigPersister.getDomainPersister(),
                     contentRepository, localFileRepository, extensionRegistry);
         }
 
@@ -238,7 +238,7 @@ public abstract class DomainControllerWriteAttributeHandler extends ReloadRequir
             hostControllerInfo.setAdminOnlyDomainConfigPolicy(domainConfigPolicy);
             overallConfigPersister.initializeDomainConfigurationPersister(true);
 
-            domainController.initializeSlaveDomainRegistry(rootRegistration, overallConfigPersister.getDomainPersister(), contentRepository, remoteFileRepository,
+            hostController.initializeSlaveDomainRegistry(rootRegistration, overallConfigPersister.getDomainPersister(), contentRepository, remoteFileRepository,
                     hostControllerInfo, extensionRegistry, ignoredDomainResourceRegistry);
         }
 

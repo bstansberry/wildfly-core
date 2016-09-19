@@ -68,7 +68,6 @@ import org.jboss.as.controller.remote.TransactionalProtocolClient;
 import org.jboss.as.controller.transform.TransformationTarget;
 import org.jboss.as.controller.transform.TransformationTargetImpl;
 import org.jboss.as.controller.transform.TransformerRegistry;
-import org.jboss.as.domain.controller.DomainController;
 import org.jboss.as.host.controller.logging.HostControllerLogger;
 import org.jboss.as.process.ProcessController;
 import org.jboss.as.process.ProcessControllerClient;
@@ -98,7 +97,7 @@ public class ServerInventoryImpl implements ServerInventory {
     private final HostControllerEnvironment environment;
     private final ProcessControllerClient processControllerClient;
     private final URI managementURI;
-    private final DomainController domainController;
+    private final HostController hostController;
     private final ExtensionRegistry extensionRegistry;
 
     private volatile boolean shutdown;
@@ -110,9 +109,9 @@ public class ServerInventoryImpl implements ServerInventory {
 
     private final Object shutdownCondition = new Object();
 
-    ServerInventoryImpl(final DomainController domainController, final HostControllerEnvironment environment, final URI managementURI,
+    ServerInventoryImpl(final HostController hostController, final HostControllerEnvironment environment, final URI managementURI,
                         final ProcessControllerClient processControllerClient, final ExtensionRegistry extensionRegistry) {
-        this.domainController = domainController;
+        this.hostController = hostController;
         this.environment = environment;
         this.managementURI = managementURI;
         this.processControllerClient = processControllerClient;
@@ -576,7 +575,7 @@ public class ServerInventoryImpl implements ServerInventory {
                     final boolean shuttingDown = shutdown || connectionFinished;
                     // Unregister right away
                     if(server.callbackUnregistered(client, shuttingDown)) {
-                        domainController.unregisterRunningServer(server.getServerName());
+                        hostController.unregisterRunningServer(server.getServerName());
                     }
                 }
             });
@@ -595,7 +594,7 @@ public class ServerInventoryImpl implements ServerInventory {
         // Mark the server as started
         serverStarted(serverProcessName);
         // Register the server proxy at the domain controller
-        domainController.registerRunningServer(server.getProxyController());
+        hostController.registerRunningServer(server.getProxyController());
         // If the server requires a reload, means we are out of sync
         return server.isRequiresReload() == false;
     }
@@ -609,7 +608,7 @@ public class ServerInventoryImpl implements ServerInventory {
             return;
         }
         // always un-register in case the process exits
-        domainController.unregisterRunningServer(server.getServerName());
+        hostController.unregisterRunningServer(server.getServerName());
         server.processFinished();
         synchronized (shutdownCondition) {
             shutdownCondition.notifyAll();
@@ -732,7 +731,7 @@ public class ServerInventoryImpl implements ServerInventory {
     }
 
     private ManagedServer createManagedServer(final String serverName, final String authKey) {
-        final String hostControllerName = domainController.getLocalHostInfo().getLocalHostName();
+        final String hostControllerName = hostController.getLocalHostInfo().getLocalHostName();
         // final ManagedServerBootConfiguration configuration = combiner.createConfiguration();
         final Map<PathAddress, ModelVersion> subsystems = TransformerRegistry.resolveVersions(extensionRegistry);
         final ModelVersion modelVersion = ModelVersion.create(Version.MANAGEMENT_MAJOR_VERSION, Version.MANAGEMENT_MINOR_VERSION, Version.MANAGEMENT_MICRO_VERSION);
@@ -743,9 +742,9 @@ public class ServerInventoryImpl implements ServerInventory {
     }
 
     private ManagedServerBootCmdFactory createBootFactory(final String serverName, final ModelNode domainModel) {
-        final String hostControllerName = domainController.getLocalHostInfo().getLocalHostName();
+        final String hostControllerName = hostController.getLocalHostInfo().getLocalHostName();
         final ModelNode hostModel = domainModel.require(HOST).require(hostControllerName);
-        return new ManagedServerBootCmdFactory(serverName, domainModel, hostModel, environment, domainController.getExpressionResolver());
+        return new ManagedServerBootCmdFactory(serverName, domainModel, hostModel, environment, hostController.getExpressionResolver());
     }
 
     @Override

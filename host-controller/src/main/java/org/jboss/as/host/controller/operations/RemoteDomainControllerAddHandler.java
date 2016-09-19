@@ -42,7 +42,7 @@ import org.jboss.as.controller.operations.validation.StringLengthValidator;
 import org.jboss.as.controller.registry.AttributeAccess;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.Resource;
-import org.jboss.as.domain.controller.DomainController;
+import org.jboss.as.host.controller.HostController;
 import org.jboss.as.host.controller.HostControllerConfigurationPersister;
 import org.jboss.as.host.controller.descriptions.HostResolver;
 import org.jboss.as.host.controller.discovery.StaticDiscovery;
@@ -81,7 +81,7 @@ public class RemoteDomainControllerAddHandler implements OperationStepHandler {
     public static final SimpleAttributeDefinition PROTOCOL = new SimpleAttributeDefinitionBuilder(ModelDescriptionConstants.PROTOCOL, ModelType.STRING)
             .setAllowNull(true)
             .setAllowExpression(true)
-            .setValidator(new EnumValidator(Protocol.class, true, true))
+            .setValidator(EnumValidator.create(Protocol.class, true, true))
             .setDefaultValue(Protocol.REMOTE.toModelNode())
             .setFlags(AttributeAccess.Flag.RESTART_ALL_SERVICES)
             .setRequires(ModelDescriptionConstants.HOST, ModelDescriptionConstants.PORT)
@@ -116,7 +116,7 @@ public class RemoteDomainControllerAddHandler implements OperationStepHandler {
             .build();
 
     private final ManagementResourceRegistration rootRegistration;
-    private final DomainController domainController;
+    private final HostController hostController;
     private final HostControllerConfigurationPersister overallConfigPersister;
     private final ContentRepository contentRepository;
     private final HostFileRepository fileRepository;
@@ -126,14 +126,14 @@ public class RemoteDomainControllerAddHandler implements OperationStepHandler {
 
     public RemoteDomainControllerAddHandler(final ManagementResourceRegistration rootRegistration,
                                                final LocalHostControllerInfoImpl hostControllerInfo,
-                                               final DomainController domainController,
+                                               final HostController hostController,
                                                final HostControllerConfigurationPersister overallConfigPersister,
                                                final ContentRepository contentRepository,
                                                final HostFileRepository fileRepository,
                                                final ExtensionRegistry extensionRegistry,
                                                final IgnoredDomainResourceRegistry ignoredDomainResourceRegistry) {
         this.rootRegistration = rootRegistration;
-        this.domainController = domainController;
+        this.hostController = hostController;
         this.overallConfigPersister = overallConfigPersister;
         this.contentRepository = contentRepository;
         this.fileRepository = fileRepository;
@@ -216,7 +216,7 @@ public class RemoteDomainControllerAddHandler implements OperationStepHandler {
                         hostControllerInfo.setAdminOnlyDomainConfigPolicy(domainConfigPolicy);
         overallConfigPersister.initializeDomainConfigurationPersister(true);
 
-        domainController.initializeSlaveDomainRegistry(rootRegistration, overallConfigPersister.getDomainPersister(), contentRepository, fileRepository,
+        hostController.initializeSlaveDomainRegistry(rootRegistration, overallConfigPersister.getDomainPersister(), contentRepository, fileRepository,
                 hostControllerInfo, extensionRegistry, ignoredDomainResourceRegistry);
     }
 }
