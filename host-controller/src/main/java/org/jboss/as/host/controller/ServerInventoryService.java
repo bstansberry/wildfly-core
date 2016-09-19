@@ -30,7 +30,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 
 import org.jboss.as.controller.extension.ExtensionRegistry;
-import org.jboss.as.domain.controller.DomainController;
 import org.jboss.as.network.NetworkInterfaceBinding;
 import org.jboss.as.network.NetworkUtils;
 import org.jboss.as.remoting.management.ManagementChannelRegistryService;
@@ -57,7 +56,7 @@ class ServerInventoryService implements Service<ServerInventory> {
     private final InjectedValue<ProcessControllerConnectionService> client = new InjectedValue<ProcessControllerConnectionService>();
     private final InjectedValue<NetworkInterfaceBinding> interfaceBinding = new InjectedValue<NetworkInterfaceBinding>();
     private final InjectedValue<ServerInventoryCallbackService> serverCallback = new InjectedValue<ServerInventoryCallbackService>();
-    private final DomainController domainController;
+    private final HostController hostController;
     private final HostControllerEnvironment environment;
     private final HostRunningModeControl runningModeControl;
     private final ExtensionRegistry extensionRegistry;
@@ -69,22 +68,22 @@ class ServerInventoryService implements Service<ServerInventory> {
 
     private ServerInventoryImpl serverInventory;
 
-    private ServerInventoryService(final DomainController domainController, final HostRunningModeControl runningModeControl,
+    private ServerInventoryService(final HostController hostController, final HostRunningModeControl runningModeControl,
                                    final HostControllerEnvironment environment, final ExtensionRegistry extensionRegistry, final int port,
                                    final String protocol) {
         this.extensionRegistry = extensionRegistry;
-        this.domainController = domainController;
+        this.hostController = hostController;
         this.runningModeControl = runningModeControl;
         this.environment = environment;
         this.port = port;
         this.protocol = protocol;
     }
 
-    static Future<ServerInventory> install(final ServiceTarget serviceTarget, final DomainController domainController, final HostRunningModeControl runningModeControl, final HostControllerEnvironment environment,
+    static Future<ServerInventory> install(final ServiceTarget serviceTarget, final HostController hostController, final HostRunningModeControl runningModeControl, final HostControllerEnvironment environment,
                                            final ExtensionRegistry extensionRegistry,
                                            final String interfaceBinding, final int port, final String protocol){
 
-        final ServerInventoryService inventory = new ServerInventoryService(domainController, runningModeControl, environment, extensionRegistry, port, protocol);
+        final ServerInventoryService inventory = new ServerInventoryService(hostController, runningModeControl, environment, extensionRegistry, port, protocol);
         serviceTarget.addService(ServerInventoryService.SERVICE_NAME, inventory)
                 .addDependency(HostControllerService.HC_EXECUTOR_SERVICE_NAME, ExecutorService.class, inventory.executorService)
                 .addDependency(ProcessControllerConnectionService.SERVICE_NAME, ProcessControllerConnectionService.class, inventory.getClient())
@@ -102,7 +101,7 @@ class ServerInventoryService implements Service<ServerInventory> {
         try {
             final ProcessControllerConnectionService processControllerConnectionService = client.getValue();
             URI managementURI = new URI(protocol, null, NetworkUtils.formatAddress(interfaceBinding.getValue().getAddress()), port, null, null, null);
-            serverInventory = new ServerInventoryImpl(domainController, environment, managementURI, processControllerConnectionService.getClient(), extensionRegistry);
+            serverInventory = new ServerInventoryImpl(hostController, environment, managementURI, processControllerConnectionService.getClient(), extensionRegistry);
             processControllerConnectionService.setServerInventory(serverInventory);
             serverCallback.getValue().setCallbackHandler(serverInventory.getServerCallbackHandler());
             futureInventory.setInventory(serverInventory);

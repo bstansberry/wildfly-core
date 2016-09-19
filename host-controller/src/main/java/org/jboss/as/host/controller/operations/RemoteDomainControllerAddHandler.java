@@ -111,6 +111,7 @@ public class RemoteDomainControllerAddHandler implements OperationStepHandler {
     private final DomainControllerWriteAttributeHandler writeAttributeHandler;
 
     public RemoteDomainControllerAddHandler(final LocalHostControllerInfoImpl hostControllerInfo, DomainControllerWriteAttributeHandler writeAttributeHandler) {
+
         this.hostControllerInfo = hostControllerInfo;
         this.writeAttributeHandler = writeAttributeHandler;
     }

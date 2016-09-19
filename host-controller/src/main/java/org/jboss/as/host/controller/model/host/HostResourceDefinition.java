@@ -41,6 +41,7 @@ import org.jboss.as.controller.access.management.DelegatingConfigurableAuthorize
 import org.jboss.as.controller.access.management.ManagementSecurityIdentitySupplier;
 import org.jboss.as.controller.access.management.SensitiveTargetAccessConstraintDefinition;
 import org.jboss.as.controller.audit.ManagedAuditLogger;
+import org.jboss.as.controller.capability.registry.ImmutableCapabilityRegistry;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.as.controller.extension.ExtensionRegistry;
 import org.jboss.as.controller.extension.ExtensionRegistryType;
@@ -65,12 +66,12 @@ import org.jboss.as.controller.registry.AttributeAccess;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.services.path.PathManagerService;
 import org.jboss.as.controller.services.path.PathResourceDefinition;
-import org.jboss.as.domain.controller.DomainController;
 import org.jboss.as.domain.controller.operations.DomainServerLifecycleHandlers;
 import org.jboss.as.domain.controller.operations.HostProcessReloadHandler;
 import org.jboss.as.domain.management.CoreManagementResourceDefinition;
 import org.jboss.as.domain.management.audit.EnvironmentNameReader;
 import org.jboss.as.host.controller.DirectoryGrouping;
+import org.jboss.as.host.controller.HostController;
 import org.jboss.as.host.controller.HostControllerConfigurationPersister;
 import org.jboss.as.host.controller.HostControllerEnvironment;
 import org.jboss.as.host.controller.HostControllerService;
@@ -228,8 +229,9 @@ public class HostResourceDefinition extends SimpleResourceDefinition {
     private final LocalHostControllerInfoImpl hostControllerInfo;
     private final ServerInventory serverInventory;
     private final ContentRepository contentRepository;
-    private final DomainController domainController;
+    private final HostController hostController;
     private final ExtensionRegistry hostExtensionRegistry;
+    private final ImmutableCapabilityRegistry capabilityRegistry;
     private final AbstractVaultReader vaultReader;
     private final IgnoredDomainResourceRegistry ignoredRegistry;
     private final ControlledProcessState processState;
@@ -246,8 +248,9 @@ public class HostResourceDefinition extends SimpleResourceDefinition {
                                   final LocalHostControllerInfoImpl hostControllerInfo,
                                   final ServerInventory serverInventory,
                                   final ContentRepository contentRepository,
-                                  final DomainController domainController,
+                                  final HostController hostController,
                                   final ExtensionRegistry hostExtensionRegistry,
+                                  final ImmutableCapabilityRegistry capabilityRegistry,
                                   final AbstractVaultReader vaultReader,
                                   final IgnoredDomainResourceRegistry ignoredRegistry,
                                   final ControlledProcessState processState,
@@ -263,8 +266,9 @@ public class HostResourceDefinition extends SimpleResourceDefinition {
         this.hostControllerInfo = hostControllerInfo;
         this.serverInventory = serverInventory;
         this.contentRepository = contentRepository;
-        this.domainController = domainController;
+        this.hostController = hostController;
         this.hostExtensionRegistry = hostExtensionRegistry;
+        this.capabilityRegistry = capabilityRegistry;
         this.vaultReader = vaultReader;
         this.ignoredRegistry = ignoredRegistry;
         this.processState = processState;
@@ -336,7 +340,7 @@ public class HostResourceDefinition extends SimpleResourceDefinition {
         hostRegistration.registerOperationHandler(StartServersHandler.DEFINITION, ssh);
 
         if (environment.getProcessType() != ProcessType.EMBEDDED_HOST_CONTROLLER) {
-            HostShutdownHandler hsh = new HostShutdownHandler(domainController);
+            HostShutdownHandler hsh = new HostShutdownHandler(hostController);
             hostRegistration.registerOperationHandler(HostShutdownHandler.DEFINITION, hsh);
         }
 
@@ -426,7 +430,7 @@ public class HostResourceDefinition extends SimpleResourceDefinition {
 
         // Platform MBeans
         PlatformMBeanResourceRegistrar.registerPlatformMBeanResources(hostRegistration);
-        hostRegistration.registerSubModel(new CapabilityRegistryResourceDefinition(domainController.getCapabilityRegistry()));
+        hostRegistration.registerSubModel(new CapabilityRegistryResourceDefinition(capabilityRegistry));
 
         // discovery options
         ManagementResourceRegistration discoveryOptions = hostRegistration.registerSubModel(DiscoveryOptionsResourceDefinition.INSTANCE);

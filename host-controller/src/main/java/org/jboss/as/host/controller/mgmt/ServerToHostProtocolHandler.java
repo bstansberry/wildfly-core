@@ -48,7 +48,7 @@ import org.jboss.as.controller.client.Operation;
 import org.jboss.as.controller.client.OperationBuilder;
 import org.jboss.as.controller.client.OperationMessageHandler;
 import org.jboss.as.controller.registry.Resource;
-import org.jboss.as.domain.controller.DomainController;
+import org.jboss.as.host.controller.HostController;
 import org.jboss.as.host.controller.ManagedServerOperationsFactory;
 import org.jboss.as.host.controller.ServerInventory;
 import org.jboss.as.host.controller.logging.HostControllerLogger;
@@ -92,7 +92,7 @@ public class ServerToHostProtocolHandler implements ManagementRequestHandlerFact
 
     private final ServerInventory serverInventory;
     private final OperationExecutor operationExecutor;
-    private final DomainController domainController;
+    private final HostController hostController;
     private final ManagementChannelHandler channelHandler;
     private final DeploymentFileRepository deploymentFileRepository;
     private final Executor registrations;
@@ -100,14 +100,14 @@ public class ServerToHostProtocolHandler implements ManagementRequestHandlerFact
 
     private volatile String serverProcessName;
 
-    ServerToHostProtocolHandler(ServerInventory serverInventory, OperationExecutor operationExecutor, DomainController domainController, ManagementChannelHandler channelHandler, Executor registrations,
-            ExpressionResolver expressionResolver) {
+    ServerToHostProtocolHandler(ServerInventory serverInventory, OperationExecutor operationExecutor, HostController hostController, ManagementChannelHandler channelHandler, Executor registrations,
+                                ExpressionResolver expressionResolver) {
         this.serverInventory = serverInventory;
         this.operationExecutor = operationExecutor;
-        this.domainController = domainController;
+        this.hostController = hostController;
         this.channelHandler = channelHandler;
         this.registrations = registrations;
-        this.deploymentFileRepository = domainController.getLocalFileRepository();
+        this.deploymentFileRepository = hostController.getLocalFileRepository();
         this.expressionResolver = expressionResolver;
     }
 
@@ -216,9 +216,9 @@ public class ServerToHostProtocolHandler implements ManagementRequestHandlerFact
             // Read the complete domain model
             final ModelNode domainModel = Resource.Tools.readModel(context.readResourceFromRoot(PathAddress.EMPTY_ADDRESS, true));
             // Create the boot updates
-            final String hostControllerName = domainController.getLocalHostInfo().getLocalHostName();
+            final String hostControllerName = hostController.getLocalHostInfo().getLocalHostName();
             final ModelNode hostModel = domainModel.require(HOST).require(hostControllerName);
-            final ModelNode updates = ManagedServerOperationsFactory.createBootUpdates(serverName, domainModel, hostModel, domainController, expressionResolver);
+            final ModelNode updates = ManagedServerOperationsFactory.createBootUpdates(serverName, domainModel, hostModel, hostController, expressionResolver);
             // Register the remote communication
             final ProxyController controller = serverInventory.serverCommunicationRegistered(serverProcessName, channelHandler);
             try {
@@ -241,7 +241,7 @@ public class ServerToHostProtocolHandler implements ManagementRequestHandlerFact
                 public void handleResult(OperationContext.ResultAction resultAction, OperationContext context, ModelNode operation) {
                     if(resultAction == OperationContext.ResultAction.KEEP) {
                         // Register the server proxy
-                        domainController.registerRunningServer(controller);
+                        hostController.registerRunningServer(controller);
                     }
                 }
             });

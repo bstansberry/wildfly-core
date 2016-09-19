@@ -118,12 +118,10 @@ import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.SimpleAttributeDefinition;
 import org.jboss.as.controller.operations.common.NamespaceAddHandler;
 import org.jboss.as.controller.operations.common.SchemaLocationAddHandler;
-import org.jboss.as.server.services.net.SocketBindingAddHandler;
 import org.jboss.as.controller.operations.common.Util;
 import org.jboss.as.controller.parsing.Attribute;
 import org.jboss.as.controller.resource.InterfaceDefinition;
 import org.jboss.as.controller.services.path.PathAddHandler;
-import org.jboss.as.domain.controller.DomainController;
 import org.jboss.as.domain.controller.LocalHostControllerInfo;
 import org.jboss.as.domain.management.access.SensitivityResourceDefinition;
 import org.jboss.as.domain.management.audit.AuditLogLoggerResourceDefinition;
@@ -143,6 +141,7 @@ import org.jboss.as.server.operations.SystemPropertyAddHandler;
 import org.jboss.as.server.services.net.BindingGroupAddHandler;
 import org.jboss.as.server.services.net.LocalDestinationOutboundSocketBindingResourceDefinition;
 import org.jboss.as.server.services.net.RemoteDestinationOutboundSocketBindingResourceDefinition;
+import org.jboss.as.server.services.net.SocketBindingAddHandler;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.Property;
 
@@ -168,13 +167,13 @@ public final class ManagedServerOperationsFactory {
      * @param serverName the server name
      * @param domainModel the complete domain model
      * @param hostModel the local host model
-     * @param domainController the domain controller
+     * @param hostController the host controller
      * @return the list of boot operations
      */
     public static ModelNode createBootUpdates(final String serverName, final ModelNode domainModel, final ModelNode hostModel,
-                                              final DomainController domainController, final ExpressionResolver expressionResolver) {
+                                              final HostController hostController, final ExpressionResolver expressionResolver) {
         final ManagedServerOperationsFactory factory = new ManagedServerOperationsFactory(serverName, domainModel,
-                hostModel, domainController, expressionResolver);
+                hostModel, hostController, expressionResolver);
 
 
         return factory.getBootUpdates();
@@ -187,14 +186,14 @@ public final class ManagedServerOperationsFactory {
     private final ModelNode serverGroup;
     private final String serverGroupName;
     private final String profileName;
-    private final DomainController domainController;
+    private final HostController hostController;
 
     ManagedServerOperationsFactory(final String serverName, final ModelNode domainModel, final ModelNode hostModel,
-                                   final DomainController domainController, final ExpressionResolver expressionResolver) {
+                                   final HostController hostController, final ExpressionResolver expressionResolver) {
         this.serverName = serverName;
         this.domainModel = domainModel;
         this.hostModel = hostModel;
-        this.domainController = domainController;
+        this.hostController = hostController;
         this.serverModel = resolveExpressions(hostModel.require(SERVER_CONFIG).require(serverName), expressionResolver, true);
 
         this.serverGroupName = serverModel.require(GROUP).asString();
@@ -257,7 +256,7 @@ public final class ManagedServerOperationsFactory {
     private void setServerGroupHost(ModelNodeList updates) {
         ModelNode op = Util.createEmptyOperation(SetServerGroupHostHandler.OPERATION_NAME, null);
         op.get(SERVER_GROUP).set(serverGroupName);
-        LocalHostControllerInfo lhci = domainController.getLocalHostInfo();
+        LocalHostControllerInfo lhci = hostController.getLocalHostInfo();
         op.get(HOST).set(lhci.getLocalHostName());
 
         updates.add(op);
@@ -362,7 +361,7 @@ public final class ManagedServerOperationsFactory {
             for (Property prop : source.get(SYSTEM_PROPERTY).asPropertyList()) {
                 ModelNode propResource = prop.getValue();
                 try {
-                    if (boottimeOnly && !SystemPropertyResourceDefinition.BOOT_TIME.resolveModelAttribute(domainController.getExpressionResolver(), propResource).asBoolean()) {
+                    if (boottimeOnly && !SystemPropertyResourceDefinition.BOOT_TIME.resolveModelAttribute(hostController.getExpressionResolver(), propResource).asBoolean()) {
                         continue;
                     }
                 } catch (OperationFailedException e) {
@@ -762,7 +761,7 @@ public final class ManagedServerOperationsFactory {
         }
 
     private void addSubsystems(List<ModelNode> updates) {
-        ModelNode node = domainController.getProfileOperations(profileName);
+        ModelNode node = hostController.getProfileOperations(profileName);
         updates.addAll(node.asList());
     }
 
@@ -770,8 +769,8 @@ public final class ManagedServerOperationsFactory {
         if (serverGroup.hasDefined(DEPLOYMENT)) {
 
             HostFileRepository remoteRepository = null;
-            if (!domainController.getLocalHostInfo().isMasterDomainController()) {
-                remoteRepository = domainController.getRemoteFileRepository();
+            if (!hostController.getLocalHostInfo().isMasterDomainController()) {
+                remoteRepository = hostController.getRemoteFileRepository();
             }
 
             for (Property deployment : serverGroup.get(DEPLOYMENT).asPropertyList()) {
@@ -787,7 +786,7 @@ public final class ManagedServerOperationsFactory {
                         if ((content.hasDefined(HASH))) {
                             byte[] hash = content.require(HASH).asBytes();
                             ContentReference reference = ModelContentReference.fromModelAddress(addr, hash);
-                            File[] files = domainController.getLocalFileRepository().getDeploymentFiles(reference);
+                            File[] files = hostController.getLocalFileRepository().getDeploymentFiles(reference);
                             if (files == null || files.length == 0) {
                                 remoteRepository.getDeploymentFiles(reference);
                             }
@@ -813,8 +812,8 @@ public final class ManagedServerOperationsFactory {
         if (domainModel.hasDefined(DEPLOYMENT_OVERLAY)) {
 
             HostFileRepository remoteRepository = null;
-            if (!domainController.getLocalHostInfo().isMasterDomainController()) {
-                remoteRepository = domainController.getRemoteFileRepository();
+            if (!hostController.getLocalHostInfo().isMasterDomainController()) {
+                remoteRepository = hostController.getRemoteFileRepository();
             }
 
             for (Property deploymentOverlay : domainModel.get(DEPLOYMENT_OVERLAY).asPropertyList()) {
@@ -833,7 +832,7 @@ public final class ManagedServerOperationsFactory {
                         final ModelNode contentDetails = content.getValue();
                         byte[] hash = contentDetails.require(CONTENT).asBytes();
                         ContentReference reference = ModelContentReference.fromModelAddress(addr, hash);
-                        File[] files = domainController.getLocalFileRepository().getDeploymentFiles(reference);
+                        File[] files = hostController.getLocalFileRepository().getDeploymentFiles(reference);
                         if (files == null || files.length == 0) {
                             if (remoteRepository != null) {
                                 remoteRepository.getDeploymentFiles(reference);

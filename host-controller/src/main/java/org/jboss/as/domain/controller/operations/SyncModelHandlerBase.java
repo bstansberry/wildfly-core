@@ -39,7 +39,7 @@ import org.jboss.as.controller.operations.common.OrderedChildTypesAttachment;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.as.controller.transform.Transformers;
 import org.jboss.as.domain.controller.operations.deployment.SyncModelParameters;
-import org.jboss.as.host.controller.mgmt.HostControllerRegistrationHandler;
+import org.jboss.as.host.controller.mgmt.HostControllerOperationExecutor;
 import org.jboss.dmr.ModelNode;
 
 /**
@@ -74,7 +74,7 @@ abstract class SyncModelHandlerBase implements OperationStepHandler {
 
         // Describe the local model
         final ReadDomainModelHandler readModelHandler = new ReadDomainModelHandler(ignoredTransformationRegistry, TRANSFORMERS, true);
-        final HostControllerRegistrationHandler.OperationExecutor operationExecutor = parameters.getOperationExecutor();
+        final HostControllerOperationExecutor operationExecutor = parameters.getOperationExecutor();
         final ModelNode localModel = operationExecutor.executeReadOnly(OPERATION, readModelHandler, ModelController.OperationTransactionControl.COMMIT);
         if (localModel.hasDefined(FAILURE_DESCRIPTION)) {
             context.getFailureDescription().set(localModel.get(FAILURE_DESCRIPTION));
@@ -102,7 +102,7 @@ abstract class SyncModelHandlerBase implements OperationStepHandler {
         context.addStep(new OperationStepHandler() {
             @Override
             public void execute(OperationContext context, ModelNode operation) throws OperationFailedException {
-                final HostControllerRegistrationHandler.OperationExecutor operationExecutor = parameters.getOperationExecutor();
+                final HostControllerOperationExecutor operationExecutor = parameters.getOperationExecutor();
                 final ModelNode result = localOperations.get(RESULT);
                 final SyncModelOperationHandler handler =
                         new SyncModelOperationHandler(result.asList(), remote, remoteExtensions,

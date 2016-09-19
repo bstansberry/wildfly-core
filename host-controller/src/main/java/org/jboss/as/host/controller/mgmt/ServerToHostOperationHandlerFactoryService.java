@@ -31,7 +31,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
 import org.jboss.as.controller.ExpressionResolver;
-import org.jboss.as.domain.controller.DomainController;
+import org.jboss.as.host.controller.HostController;
 import org.jboss.as.host.controller.ServerInventory;
 import org.jboss.as.protocol.mgmt.ManagementChannelHandler;
 import org.jboss.as.protocol.mgmt.ManagementClientChannelStrategy;
@@ -62,7 +62,7 @@ public class ServerToHostOperationHandlerFactoryService implements ManagementCha
     private final ExecutorService executorService;
     private final InjectedValue<ServerInventory> serverInventory = new InjectedValue<ServerInventory>();
     private final ServerToHostProtocolHandler.OperationExecutor operationExecutor;
-    private final DomainController domainController;
+    private final HostController hostController;
     private final ExpressionResolver expressionResolver;
     private final File tempDir;
 
@@ -73,17 +73,17 @@ public class ServerToHostOperationHandlerFactoryService implements ManagementCha
     });
     private volatile ExecutorService registrations;
 
-    ServerToHostOperationHandlerFactoryService(ExecutorService executorService, ServerToHostProtocolHandler.OperationExecutor operationExecutor, DomainController domainController, ExpressionResolver expressionResolver, File tempDir) {
+    ServerToHostOperationHandlerFactoryService(ExecutorService executorService, ServerToHostProtocolHandler.OperationExecutor operationExecutor, HostController hostController, ExpressionResolver expressionResolver, File tempDir) {
         this.executorService = executorService;
         this.operationExecutor = operationExecutor;
-        this.domainController = domainController;
+        this.hostController = hostController;
         this.expressionResolver = expressionResolver;
         this.tempDir = tempDir;
     }
 
-    public static void install(final ServiceTarget serviceTarget, final ServiceName serverInventoryName, ExecutorService executorService, ServerToHostProtocolHandler.OperationExecutor operationExecutor, DomainController domainController,
+    public static void install(final ServiceTarget serviceTarget, final ServiceName serverInventoryName, ExecutorService executorService, ServerToHostProtocolHandler.OperationExecutor operationExecutor, HostController hostController,
             ExpressionResolver expressionResolver, File tempDir) {
-        final ServerToHostOperationHandlerFactoryService serverToHost = new ServerToHostOperationHandlerFactoryService(executorService, operationExecutor, domainController, expressionResolver, tempDir);
+        final ServerToHostOperationHandlerFactoryService serverToHost = new ServerToHostOperationHandlerFactoryService(executorService, operationExecutor, hostController, expressionResolver, tempDir);
         serviceTarget.addService(ServerToHostOperationHandlerFactoryService.SERVICE_NAME, serverToHost)
             .addDependency(serverInventoryName, ServerInventory.class, serverToHost.serverInventory)
             .install();
@@ -116,7 +116,7 @@ public class ServerToHostOperationHandlerFactoryService implements ManagementCha
         final ManagementClientChannelStrategy strategy = ManagementClientChannelStrategy.create(channel);
         final ManagementChannelHandler channelHandler = new ManagementChannelHandler(strategy, executorService);
         channelHandler.getAttachments().attach(ManagementChannelHandler.TEMP_DIR, tempDir);
-        final ServerToHostProtocolHandler registrationHandler = new ServerToHostProtocolHandler(serverInventory.getValue(), operationExecutor, domainController, channelHandler, registrations, expressionResolver);
+        final ServerToHostProtocolHandler registrationHandler = new ServerToHostProtocolHandler(serverInventory.getValue(), operationExecutor, hostController, channelHandler, registrations, expressionResolver);
         channelHandler.addHandlerFactory(new ManagementPongRequestHandler());
         channelHandler.addHandlerFactory(registrationHandler);
         channel.receiveMessage(channelHandler.getReceiver());
