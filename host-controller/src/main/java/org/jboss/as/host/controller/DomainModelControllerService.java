@@ -96,7 +96,6 @@ import org.jboss.as.controller.TransformingProxyController;
 import org.jboss.as.controller.access.management.DelegatingConfigurableAuthorizer;
 import org.jboss.as.controller.audit.ManagedAuditLogger;
 import org.jboss.as.controller.audit.ManagedAuditLoggerImpl;
-import org.jboss.as.controller.capability.registry.ImmutableCapabilityRegistry;
 import org.jboss.as.controller.client.Operation;
 import org.jboss.as.controller.client.OperationAttachments;
 import org.jboss.as.controller.client.OperationBuilder;
@@ -136,7 +135,7 @@ import org.jboss.as.host.controller.discovery.DomainControllerManagementInterfac
 import org.jboss.as.host.controller.ignored.IgnoredDomainResourceRegistry;
 import org.jboss.as.host.controller.logging.HostControllerLogger;
 import org.jboss.as.host.controller.mgmt.DomainHostExcludeRegistry;
-import org.jboss.as.host.controller.mgmt.HostControllerRegistrationHandler;
+import org.jboss.as.host.controller.mgmt.HostControllerOperationExecutor;
 import org.jboss.as.host.controller.mgmt.MasterDomainControllerOperationHandlerService;
 import org.jboss.as.host.controller.mgmt.RejectSlavesOperationHandlerService;
 import org.jboss.as.host.controller.mgmt.ServerToHostOperationHandlerFactoryService;
@@ -181,7 +180,7 @@ import org.wildfly.security.manager.WildFlySecurityManager;
  *
  * @author Brian Stansberry (c) 2011 Red Hat Inc.
  */
-public class DomainModelControllerService extends AbstractControllerService implements DomainController, HostModelUtil.HostModelRegistrar, HostRegistrations {
+public class DomainModelControllerService extends AbstractControllerService implements HostController, DomainController, HostModelUtil.HostModelRegistrar, HostRegistrations {
 
     public static final ServiceName SERVICE_NAME = HostControllerService.HC_SERVICE_NAME.append("model", "controller");
 
@@ -730,7 +729,7 @@ public class DomainModelControllerService extends AbstractControllerService impl
                     if (ok && remoteDC) {
                         InternalExecutor executor = new InternalExecutor();
                         ManagementRemotingServices.installManagementChannelServices(serviceTarget, ManagementRemotingServices.MANAGEMENT_ENDPOINT,
-                                new MasterDomainControllerOperationHandlerService(this, executor, executor, environment.getDomainTempDir(), this, domainHostExcludeRegistry),
+                                new MasterDomainControllerOperationHandlerService(this, executor, executor, environment.getDomainTempDir(), domainHostExcludeRegistry),
                                 DomainModelControllerService.SERVICE_NAME, ManagementRemotingServices.DOMAIN_CHANNEL,
                                 HostControllerService.HC_EXECUTOR_SERVICE_NAME, HostControllerService.HC_SCHEDULED_EXECUTOR_SERVICE_NAME);
 
@@ -978,12 +977,6 @@ public class DomainModelControllerService extends AbstractControllerService impl
         pingScheduler.shutdownNow();
     }
 
-
-    @Override
-    public void stopLocalHost() {
-        stopLocalHost(0);
-    }
-
     @Override
     public void stopLocalHost(int exitCode) {
         final ProcessControllerClient client = injectedProcessControllerConnection.getValue().getClient();
@@ -1000,11 +993,12 @@ public class DomainModelControllerService extends AbstractControllerService impl
         hostModelRegistration =
                 HostModelUtil.createHostRegistry(hostName, root, hostControllerConfigurationPersister, environment, runningModeControl,
                         localFileRepository, hostControllerInfo, new DelegatingServerInventory(), remoteFileRepository, contentRepository,
-                        this, hostExtensionRegistry, extensionRegistry, vaultReader, ignoredRegistry, processState, pathManager, authorizer,
+                        this, hostExtensionRegistry, extensionRegistry, capabilityRegistry, vaultReader, ignoredRegistry, processState, pathManager, authorizer,
                         getAuditLogger(), getBootErrorCollector());
     }
 
 
+    @Override
     public void initializeMasterDomainRegistry(final ManagementResourceRegistration root,
             final ExtensibleConfigurationPersister configurationPersister, final ContentRepository contentRepository,
             final HostFileRepository fileRepository,
@@ -1013,6 +1007,7 @@ public class DomainModelControllerService extends AbstractControllerService impl
                 hostControllerInfo, extensionRegistry, null);
     }
 
+    @Override
     public void initializeSlaveDomainRegistry(final ManagementResourceRegistration root,
             final ExtensibleConfigurationPersister configurationPersister, final ContentRepository contentRepository,
             final HostFileRepository fileRepository, final LocalHostControllerInfo hostControllerInfo,
@@ -1260,11 +1255,6 @@ public class DomainModelControllerService extends AbstractControllerService impl
     }
 
     @Override
-    public ImmutableCapabilityRegistry getCapabilityRegistry() {
-        return capabilityRegistry;
-    }
-
-    @Override
     public ExpressionResolver getExpressionResolver() {
         return expressionResolver;
     }
@@ -1296,7 +1286,7 @@ public class DomainModelControllerService extends AbstractControllerService impl
         }
     }
 
-    final class InternalExecutor implements HostControllerRegistrationHandler.OperationExecutor, ServerToHostProtocolHandler.OperationExecutor, MasterDomainControllerOperationHandlerService.TransactionalOperationExecutor {
+    final class InternalExecutor implements HostControllerOperationExecutor, ServerToHostProtocolHandler.OperationExecutor, MasterDomainControllerOperationHandlerService.TransactionalOperationExecutor {
 
         @Override
         public ModelNode execute(Operation operation, OperationMessageHandler handler, OperationTransactionControl control,

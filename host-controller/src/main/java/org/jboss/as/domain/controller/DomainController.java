@@ -22,40 +22,17 @@
 
 package org.jboss.as.domain.controller;
 
-import org.jboss.as.controller.ExpressionResolver;
-import org.jboss.as.controller.ProxyController;
-import org.jboss.as.controller.capability.registry.ImmutableCapabilityRegistry;
 import org.jboss.as.controller.extension.ExtensionRegistry;
-import org.jboss.as.controller.persistence.ExtensibleConfigurationPersister;
-import org.jboss.as.controller.registry.ManagementResourceRegistration;
-import org.jboss.as.controller.services.path.PathManagerService;
 import org.jboss.as.controller.transform.Transformers;
-import org.jboss.as.host.controller.ignored.IgnoredDomainResourceRegistry;
 import org.jboss.as.protocol.mgmt.ManagementChannelHandler;
-import org.jboss.as.repository.ContentRepository;
 import org.jboss.as.repository.HostFileRepository;
-import org.jboss.dmr.ModelNode;
-import org.jboss.msc.service.ServiceName;
 
 /**
- * TODO this interface is now a mishmash of not really related stuff.
+ * Internal API for master host controller functionality.
  *
  * @author Brian Stansberry (c) 2011 Red Hat Inc.
  */
-public interface DomainController {
-
-    /**
-     * {@link org.jboss.msc.service.ServiceName} under which a DomainController instance should be registered
-     * with the service container of a Host Controller that is acting as the domain controller.
-     */
-    ServiceName SERVICE_NAME = ServiceName.JBOSS.append("domain", "controller");
-
-    /**
-     * Gets the local host controller info.
-     *
-     * @return the local host info
-     */
-     LocalHostControllerInfo getLocalHostInfo();
+public interface DomainController extends HostRegistrations {
 
     /**
      * Registers a slave Host Controller with this domain controller.
@@ -100,72 +77,16 @@ public interface DomainController {
     void pingRemoteHost(String hostName);
 
     /**
-     * Registers a running server in the domain model
+     * Get the extension registry.
      *
-     * @param serverControllerClient client the controller can use to communicate with the server.
+     * @return the extension registry
      */
-    void registerRunningServer(final ProxyController serverControllerClient);
+    ExtensionRegistry getExtensionRegistry();
 
     /**
-     * Unregisters a running server from the domain model
-     *
-     * @param serverName the name of the server
-     */
-    void unregisterRunningServer(String serverName);
-
-    /**
-     * Get the operations needed to create the given profile.
-     *
-     * @param profileName the name of the profile
-     *
-     * @return the operations
-     */
-    ModelNode getProfileOperations(String profileName);
-
-    /**
-     * Gets the file repository backing this domain controller
+     * Gets the file repository backing this host controller
      *
      * @return the file repository
      */
     HostFileRepository getLocalFileRepository();
-
-    /**
-     * Gets the file repository backing the master domain controller
-     *
-     * @return the file repository
-     *
-     * @throws IllegalStateException if the {@link #getLocalHostInfo() local host info}'s
-     *          {@link LocalHostControllerInfo#isMasterDomainController()} method would return {@code true}
-     *
-     */
-    HostFileRepository getRemoteFileRepository();
-
-    /**
-     * Stops this host controller
-     */
-    void stopLocalHost();
-
-    /**
-     * Stop this host controller with a specific exit code.
-     *
-     * @param exitCode the exit code passed to the ProcessController
-     */
-    void stopLocalHost(int exitCode);
-
-    ExtensionRegistry getExtensionRegistry();
-
-    ImmutableCapabilityRegistry getCapabilityRegistry();
-
-    ExpressionResolver getExpressionResolver();
-
-    void initializeMasterDomainRegistry(final ManagementResourceRegistration root,
-            final ExtensibleConfigurationPersister configurationPersister, final ContentRepository contentRepository,
-            final HostFileRepository fileRepository,
-            final ExtensionRegistry extensionRegistry);
-
-    void initializeSlaveDomainRegistry(final ManagementResourceRegistration root,
-            final ExtensibleConfigurationPersister configurationPersister, final ContentRepository contentRepository,
-            final HostFileRepository fileRepository, final LocalHostControllerInfo hostControllerInfo,
-            final ExtensionRegistry extensionRegistry,
-            final IgnoredDomainResourceRegistry ignoredDomainResourceRegistry);
 }
