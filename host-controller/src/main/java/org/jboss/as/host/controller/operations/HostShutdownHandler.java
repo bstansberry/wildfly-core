@@ -38,7 +38,7 @@ import org.jboss.as.controller.access.AuthorizationResult;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.controller.registry.OperationEntry;
-import org.jboss.as.domain.controller.DomainController;
+import org.jboss.as.host.controller.HostController;
 import org.jboss.as.host.controller.descriptions.HostResolver;
 import org.jboss.as.host.controller.logging.HostControllerLogger;
 import org.jboss.as.process.ExitCodes;
@@ -55,7 +55,7 @@ public class HostShutdownHandler implements OperationStepHandler {
 
     public static final String OPERATION_NAME = "shutdown";
 
-    private final DomainController domainController;
+    private final HostController hostController;
 
     private static final AttributeDefinition RESTART = SimpleAttributeDefinitionBuilder.create(ModelDescriptionConstants.RESTART, ModelType.BOOLEAN, true)
             .setAllowNull(true)
@@ -69,8 +69,8 @@ public class HostShutdownHandler implements OperationStepHandler {
     /**
      * Create the ServerAddHandler
      */
-    public HostShutdownHandler(final DomainController domainController) {
-        this.domainController = domainController;
+    public HostShutdownHandler(final HostController hostController) {
+        this.hostController = hostController;
     }
 
     /**
@@ -103,9 +103,9 @@ public class HostShutdownHandler implements OperationStepHandler {
                 });
                 if (restart) {
                     //Add the exit code so that we get respawned
-                    domainController.stopLocalHost(ExitCodes.RESTART_PROCESS_FROM_STARTUP_SCRIPT);
+                    hostController.stopLocalHost(ExitCodes.RESTART_PROCESS_FROM_STARTUP_SCRIPT);
                 } else {
-                    domainController.stopLocalHost();
+                    hostController.stopLocalHost(ExitCodes.NORMAL);
                 }
                 context.completeStep(OperationContext.RollbackHandler.NOOP_ROLLBACK_HANDLER);
             }

@@ -147,6 +147,7 @@ public class LocalHostControllerInfoImpl implements LocalHostControllerInfo {
         return hostEnvironment == null ? false : hostEnvironment.isUseCachedDc();
     }
 
+    @Override
     public AdminOnlyDomainConfigPolicy getAdminOnlyDomainConfigPolicy() {
         return adminOnlyDomainConfigPolicy;
     }

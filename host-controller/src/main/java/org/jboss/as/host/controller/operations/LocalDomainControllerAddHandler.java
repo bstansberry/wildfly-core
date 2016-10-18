@@ -34,8 +34,7 @@ import org.jboss.as.controller.access.management.SensitiveTargetAccessConstraint
 import org.jboss.as.controller.extension.ExtensionRegistry;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.Resource;
-import org.jboss.as.controller.services.path.PathManagerService;
-import org.jboss.as.domain.controller.DomainController;
+import org.jboss.as.host.controller.HostController;
 import org.jboss.as.host.controller.HostControllerConfigurationPersister;
 import org.jboss.as.host.controller.descriptions.HostResolver;
 import org.jboss.as.repository.ContentRepository;
@@ -60,11 +59,10 @@ public abstract class LocalDomainControllerAddHandler implements OperationStepHa
                                                                  final HostControllerConfigurationPersister overallConfigPersister,
                                                                  final HostFileRepository fileRepository,
                                                                  final ContentRepository contentRepository,
-                                                                 final DomainController domainController,
-                                                                 final ExtensionRegistry extensionRegistry,
-                                                                 final PathManagerService pathManager) {
+                                                                 final HostController hostController,
+                                                                 final ExtensionRegistry extensionRegistry) {
         return new RealLocalDomainControllerAddHandler(rootRegistration, hostControllerInfo, overallConfigPersister,
-                fileRepository, contentRepository, domainController, extensionRegistry, pathManager);
+                fileRepository, contentRepository, hostController, extensionRegistry);
     }
 
     public static LocalDomainControllerAddHandler getTestInstance() {
@@ -107,33 +105,30 @@ public abstract class LocalDomainControllerAddHandler implements OperationStepHa
         private final HostFileRepository fileRepository;
         private final LocalHostControllerInfoImpl hostControllerInfo;
         private final ContentRepository contentRepository;
-        private final DomainController domainController;
+        private final HostController hostController;
         private final ExtensionRegistry extensionRegistry;
-        private final PathManagerService pathManager;
 
         protected RealLocalDomainControllerAddHandler(final ManagementResourceRegistration rootRegistration,
                 final LocalHostControllerInfoImpl hostControllerInfo,
                 final HostControllerConfigurationPersister overallConfigPersister,
                 final HostFileRepository fileRepository,
                 final ContentRepository contentRepository,
-                final DomainController domainController,
-                final ExtensionRegistry extensionRegistry,
-                final PathManagerService pathManager) {
+                final HostController hostController,
+                final ExtensionRegistry extensionRegistry) {
             this.rootRegistration = rootRegistration;
             this.overallConfigPersister = overallConfigPersister;
             this.fileRepository = fileRepository;
             this.hostControllerInfo = hostControllerInfo;
             this.contentRepository = contentRepository;
-            this.domainController = domainController;
+            this.hostController = hostController;
             this.extensionRegistry = extensionRegistry;
-            this.pathManager = pathManager;
         }
 
         protected void initializeDomain() {
             hostControllerInfo.setMasterDomainController(true);
             overallConfigPersister.initializeDomainConfigurationPersister(false);
 
-            domainController.initializeMasterDomainRegistry(rootRegistration, overallConfigPersister.getDomainPersister(), contentRepository, fileRepository, extensionRegistry, pathManager);
+            hostController.initializeMasterDomainRegistry(rootRegistration, overallConfigPersister.getDomainPersister(), contentRepository, fileRepository, extensionRegistry);
         }
     }
 

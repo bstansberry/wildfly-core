@@ -35,7 +35,6 @@ import java.io.DataInput;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -47,7 +46,6 @@ import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.OperationStepHandler;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.PathElement;
-import org.jboss.as.controller.RunningMode;
 import org.jboss.as.controller.client.Operation;
 import org.jboss.as.controller.client.OperationBuilder;
 import org.jboss.as.controller.client.OperationMessageHandler;
@@ -62,7 +60,6 @@ import org.jboss.as.controller.transform.TransformerRegistry;
 import org.jboss.as.controller.transform.Transformers;
 import org.jboss.as.domain.controller.DomainController;
 import org.jboss.as.domain.controller.HostConnectionInfo;
-import org.jboss.as.domain.controller.HostRegistrations;
 import org.jboss.as.domain.controller.SlaveRegistrationException;
 import org.jboss.as.domain.controller.logging.DomainControllerLogger;
 import org.jboss.as.domain.controller.operations.ReadMasterDomainModelHandler;
@@ -108,21 +105,19 @@ public class HostControllerRegistrationHandler implements ManagementRequestHandl
     }
 
     private final ManagementChannelHandler handler;
-    private final OperationExecutor operationExecutor;
+    private final HostControllerOperationExecutor operationExecutor;
     private final DomainController domainController;
     private final Executor registrationExecutor;
-    private final HostRegistrations slaveHostRegistrations;
     private final String address;
     private final DomainHostExcludeRegistry domainHostExcludeRegistry;
 
-    public HostControllerRegistrationHandler(ManagementChannelHandler handler, DomainController domainController, OperationExecutor operationExecutor,
-                                             Executor registrations, HostRegistrations slaveHostRegistrations,
+    public HostControllerRegistrationHandler(ManagementChannelHandler handler, DomainController domainController, HostControllerOperationExecutor operationExecutor,
+                                             Executor registrations,
                                              DomainHostExcludeRegistry domainHostExcludeRegistry) {
         this.handler = handler;
         this.operationExecutor = operationExecutor;
         this.domainController = domainController;
         this.registrationExecutor = registrations;
-        this.slaveHostRegistrations = slaveHostRegistrations;
         this.domainHostExcludeRegistry = domainHostExcludeRegistry;
         this.address = HostControllerRegistrationHandler.this.handler.getRemoteAddress().getHostAddress();
     }
@@ -159,72 +154,6 @@ public class HostControllerRegistrationHandler implements ManagementRequestHandl
         return handlers.resolveNext();
     }
 
-    /**
-     * Wrapper to the DomainController and the underlying {@code ModelController} to execute
-     * a {@code OperationStepHandler} implementation directly, bypassing normal domain coordination layer.
-     * TODO This interface probably should be adapted to provide use-case-specific methods instead of generic
-     * "execute whatever I hand you" ones. The "installSlaveExtensions" method needed to be non-generic unless
-     * I was willing to hand a ref to the root MRR to RemoteDomainConnnectionService.
-     */
-    public interface OperationExecutor {
-
-        /**
-         * Execute the operation.
-         *
-         * @param operation operation
-         * @param handler the message handler
-         * @param control the transaction control
-         * @param step the step to be executed
-         * @return the result
-         */
-        ModelNode execute(Operation operation, OperationMessageHandler handler, ModelController.OperationTransactionControl control, OperationStepHandler step);
-
-        /**
-         * Execute the operation to install extensions provided by a remote domain controller.
-         *
-         *
-         * @param extensions@return the result
-         */
-        ModelNode installSlaveExtensions(List<ModelNode> extensions);
-
-        /**
-         * Execute an operation using the current management model.
-         *
-         * @param operation    the operation
-         * @param handler      the operation handler to use
-         * @return the operation result
-         */
-        ModelNode executeReadOnly(ModelNode operation, OperationStepHandler handler, ModelController.OperationTransactionControl control);
-
-        /**
-         * Execute an operation using given resource model.
-         *
-         * @param operation    the operation
-         * @param model        the resource model
-         * @param handler      the operation handler to use
-         * @return the operation result
-         */
-        ModelNode executeReadOnly(ModelNode operation, Resource model, OperationStepHandler handler, ModelController.OperationTransactionControl control);
-
-        /**
-         * Attempts to acquire a non-exclusive read lock. After any operations requiring this lock have completed, #releaseReadlock
-         * must be called to release the lock.
-         * @param operationID - the operationID for this registration. Cannot be {@code null}.
-         * @throws IllegalArgumentException - if operationID is null.
-         * @throws InterruptedException - if the lock is not acquired.
-         */
-        void acquireReadlock(final Integer operationID) throws IllegalArgumentException, InterruptedException;
-
-        /**
-         * Release the non-exclusive read lock obtained from #acquireReadlock. This method must be called after any locked
-         * operations have completed or aborted to release the shared lock.
-         * @param operationID - the operationID for this registration. Cannot be {@code null}.
-         * @throws IllegalArgumentException - if if the operationId is null.
-         * @throws IllegalStateException - if the shared lock was not held.
-         */
-        void releaseReadlock(final Integer operationID) throws IllegalArgumentException;
-    }
-
     class InitiateRegistrationHandler implements ManagementRequestHandler<Void, RegistrationContext> {
 
         @Override
@@ -236,15 +165,6 @@ public class HostControllerRegistrationHandler implements ManagementRequestHandl
 
             final RegistrationContext registration = context.getAttachment();
             registration.initialize(hostName, hostInfo, context);
-
-            if (domainController.getCurrentRunningMode() == RunningMode.ADMIN_ONLY) {
-                registration.failed(SlaveRegistrationException.ErrorCode.MASTER_IS_ADMIN_ONLY, DomainControllerLogger.ROOT_LOGGER.adminOnlyModeCannotAcceptSlaves(RunningMode.ADMIN_ONLY));
-                return;
-            }
-            if (!domainController.getLocalHostInfo().isMasterDomainController()) {
-                registration.failed(SlaveRegistrationException.ErrorCode.HOST_IS_NOT_MASTER, DomainControllerLogger.ROOT_LOGGER.slaveControllerCannotAcceptOtherSlaves());
-                return;
-            }
 
             // Read the domain model async, this will block until the registration process is complete
             context.executeAsync(new ManagementRequestContext.AsyncTask<RegistrationContext>() {
@@ -617,7 +537,7 @@ public class HostControllerRegistrationHandler implements ManagementRequestHandl
                 default:
                     eventType = HostConnectionInfo.EventType.REGISTRATION_FAILED;
             }
-            slaveHostRegistrations.addHostEvent(hostName, HostConnectionInfo.Events.create(eventType, address));
+            domainController.addHostEvent(hostName, HostConnectionInfo.Events.create(eventType, address));
         }
 
         void sendCompletedMessage() {
@@ -742,7 +662,7 @@ public class HostControllerRegistrationHandler implements ManagementRequestHandl
      * @param message the operation message
      * @throws IOException for any error
      */
-    static void sendFailedResponse(final ManagementRequestContext<RegistrationContext> context, final byte errorCode, final String message) throws IOException {
+    static void sendFailedResponse(final ManagementRequestContext<?> context, final byte errorCode, final String message) throws IOException {
         final ManagementResponseHeader header = ManagementResponseHeader.create(context.getRequestHeader());
         final FlushableDataOutput output = context.writeMessage(header);
         try {

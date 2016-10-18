@@ -50,7 +50,7 @@ import org.jboss.as.controller.persistence.ConfigurationPersister;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.as.domain.controller.operations.ApplyExtensionsHandler;
-import org.jboss.as.host.controller.mgmt.HostControllerRegistrationHandler;
+import org.jboss.as.host.controller.mgmt.HostControllerOperationExecutor;
 import org.jboss.dmr.ModelNode;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
@@ -65,7 +65,7 @@ public abstract class TestModelControllerService extends AbstractControllerServi
     private final ControlledProcessState processState;
     final AtomicBoolean state = new AtomicBoolean(true);
     private final CountDownLatch latch = new CountDownLatch(2);
-    private final HostControllerRegistrationHandler.OperationExecutor internalExecutor;
+    private final HostControllerOperationExecutor internalExecutor;
     private final AbstractControllerTestBase.DelegatingResourceDefinitionInitializer initializer;
     private ManagementResourceRegistration rootMRR;
 
@@ -115,11 +115,11 @@ public abstract class TestModelControllerService extends AbstractControllerServi
     }
 
 
-    public org.jboss.as.host.controller.mgmt.HostControllerRegistrationHandler.OperationExecutor getInternalExecutor() {
+    public HostControllerOperationExecutor getInternalExecutor() {
         return internalExecutor;
     }
 
-    private final class InternalExecutor implements HostControllerRegistrationHandler.OperationExecutor {
+    private final class InternalExecutor implements HostControllerOperationExecutor {
 
         @Override
         public ModelNode execute(Operation operation, OperationMessageHandler handler, OperationTransactionControl control,

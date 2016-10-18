@@ -59,7 +59,6 @@ import org.jboss.as.controller.ResourceDefinition;
 import org.jboss.as.controller.RunningMode;
 import org.jboss.as.controller.audit.AuditLogger;
 import org.jboss.as.controller.audit.ManagedAuditLogger;
-import org.jboss.as.controller.capability.registry.ImmutableCapabilityRegistry;
 import org.jboss.as.controller.descriptions.NonResolvingResourceDescriptionResolver;
 import org.jboss.as.controller.extension.ExtensionRegistry;
 import org.jboss.as.controller.operations.common.Util;
@@ -69,19 +68,16 @@ import org.jboss.as.controller.persistence.ExtensibleConfigurationPersister;
 import org.jboss.as.controller.persistence.ModelMarshallingContext;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.Resource;
-import org.jboss.as.controller.services.path.PathManagerService;
 import org.jboss.as.controller.transform.OperationTransformer;
 import org.jboss.as.controller.transform.ResourceTransformationContext;
 import org.jboss.as.controller.transform.TransformationContext;
 import org.jboss.as.controller.transform.TransformationTarget;
 import org.jboss.as.controller.transform.Transformers;
-import org.jboss.as.domain.controller.DomainController;
 import org.jboss.as.domain.controller.LocalHostControllerInfo;
-import org.jboss.as.domain.controller.SlaveRegistrationException;
+import org.jboss.as.host.controller.HostController;
 import org.jboss.as.host.controller.HostControllerEnvironment;
 import org.jboss.as.host.controller.ignored.IgnoredDomainResourceRegistry;
 import org.jboss.as.host.controller.operations.LocalHostControllerInfoImpl;
-import org.jboss.as.protocol.mgmt.ManagementChannelHandler;
 import org.jboss.as.repository.ContentReference;
 import org.jboss.as.repository.ContentRepository;
 import org.jboss.as.repository.HostFileRepository;
@@ -111,10 +107,10 @@ public abstract class AbstractControllerTestBase {
     protected final ProcessType processType;
     protected final LocalHostControllerInfoImpl hostControllerInfo;
     protected final HostControllerEnvironment hostControllerEnvironment;
-    protected final DomainController domainController;
+    protected final HostController hostController;
     protected volatile DelegatingResourceDefinitionInitializer initializer;
     private final TestDelegatingResourceDefiniton rootResourceDefinition;
-    private final CapabilityRegistry capabilityRegistry;
+    protected final CapabilityRegistry capabilityRegistry;
 
     protected AbstractControllerTestBase() {
         this(ProcessType.EMBEDDED_SERVER);
@@ -130,7 +126,7 @@ public abstract class AbstractControllerTestBase {
         this.useDelegateRootResourceDefinition = useDelegateRootResourceDefinition;
         hostControllerEnvironment = createHostControllerEnvironment(hostName);
         hostControllerInfo = new LocalHostControllerInfoImpl(new ControlledProcessState(false), hostControllerEnvironment);
-        domainController = new MockDomainController();
+        hostController = new MockHostController();
         rootResourceDefinition = useDelegateRootResourceDefinition ?  new TestDelegatingResourceDefiniton() : null;
         capabilityRegistry = new CapabilityRegistry(processType.isServer());
     }
@@ -458,34 +454,11 @@ public abstract class AbstractControllerTestBase {
         }
     }
 
-    public class MockDomainController implements DomainController {
-
-        @Override
-        public RunningMode getCurrentRunningMode() {
-            return null;
-        }
+    public class MockHostController implements HostController {
 
         @Override
         public LocalHostControllerInfo getLocalHostInfo() {
             return hostControllerInfo;
-        }
-
-        @Override
-        public void registerRemoteHost(String hostName, ManagementChannelHandler handler, Transformers transformers,
-                                       Long remoteConnectionId, boolean registerProxyController) throws SlaveRegistrationException {
-        }
-
-        @Override
-        public boolean isHostRegistered(String id) {
-            return false;
-        }
-
-        @Override
-        public void unregisterRemoteHost(String id, Long remoteConnectionId, boolean cleanShutdown) {
-        }
-
-        @Override
-        public void pingRemoteHost(String hostName) {
         }
 
         @Override
@@ -512,21 +485,7 @@ public abstract class AbstractControllerTestBase {
         }
 
         @Override
-        public void stopLocalHost() {
-        }
-
-        @Override
         public void stopLocalHost(int exitCode) {
-        }
-
-        @Override
-        public ExtensionRegistry getExtensionRegistry() {
-            return null;
-        }
-
-        @Override
-        public ImmutableCapabilityRegistry getCapabilityRegistry() {
-            return capabilityRegistry;
         }
 
         @Override
@@ -540,11 +499,11 @@ public abstract class AbstractControllerTestBase {
         }
 
         @Override
-        public void initializeMasterDomainRegistry(ManagementResourceRegistration root, ExtensibleConfigurationPersister configurationPersister, ContentRepository contentRepository, HostFileRepository fileRepository, ExtensionRegistry extensionRegistry, PathManagerService pathManager) {
+        public void initializeMasterDomainRegistry(ManagementResourceRegistration root, ExtensibleConfigurationPersister configurationPersister, ContentRepository contentRepository, HostFileRepository fileRepository, ExtensionRegistry extensionRegistry) {
         }
 
         @Override
-        public void initializeSlaveDomainRegistry(ManagementResourceRegistration root, ExtensibleConfigurationPersister configurationPersister, ContentRepository contentRepository, HostFileRepository fileRepository, LocalHostControllerInfo hostControllerInfo, ExtensionRegistry extensionRegistry, IgnoredDomainResourceRegistry ignoredDomainResourceRegistry, PathManagerService pathManager) {
+        public void initializeSlaveDomainRegistry(ManagementResourceRegistration root, ExtensibleConfigurationPersister configurationPersister, ContentRepository contentRepository, HostFileRepository fileRepository, LocalHostControllerInfo hostControllerInfo, ExtensionRegistry extensionRegistry, IgnoredDomainResourceRegistry ignoredDomainResourceRegistry) {
         }
     }
 
