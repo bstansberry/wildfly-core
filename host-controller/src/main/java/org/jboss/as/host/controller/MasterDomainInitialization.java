@@ -16,11 +16,19 @@ limitations under the License.
 
 package org.jboss.as.host.controller;
 
+import static org.jboss.as.remoting.Protocol.REMOTE;
+import static org.jboss.as.remoting.Protocol.REMOTE_HTTP;
+import static org.jboss.as.remoting.Protocol.REMOTE_HTTPS;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Future;
 
 import org.jboss.as.controller.ControlledProcessState;
 import org.jboss.as.controller.ProcessType;
 import org.jboss.as.controller.RunningMode;
+import org.jboss.as.host.controller.discovery.DiscoveryOption;
+import org.jboss.as.host.controller.discovery.DomainControllerManagementInterface;
 import org.jboss.as.host.controller.mgmt.DomainHostExcludeRegistry;
 import org.jboss.as.host.controller.mgmt.HostControllerOperationExecutor;
 import org.jboss.as.host.controller.mgmt.MasterDomainControllerOperationHandlerService;
@@ -75,6 +83,9 @@ class MasterDomainInitialization extends AbstractDomainInitialization {
     @Override
     public void stop(StopContext context) {
         domainModelControllerService.unregisterLocalHost();
+        // We installed DiscoveryService in initialize but the ServiceTarget we used doesn't add a dep on us,
+        // so we need to remove it ourselves
+        DiscoveryService.uninstall(context.getController().getServiceContainer());
         super.stop(context);
     }
 
@@ -97,9 +108,37 @@ class MasterDomainInitialization extends AbstractDomainInitialization {
                         HostControllerService.HC_EXECUTOR_SERVICE_NAME, HostControllerService.HC_SCHEDULED_EXECUTOR_SERVICE_NAME);
             }
 
+            publishDiscoveryOptions(serviceTarget);
+
             // Tell DMCS to record an event registering itself as a host controller
             domainModelControllerService.registerLocalHost();
         }
         return ok;
+    }
+
+
+    /** Allow slave host controllers to discover this domain controller using anmy of the provided discovery options. */
+    private void publishDiscoveryOptions(final ServiceTarget serviceTarget) {
+        List<DiscoveryOption> discoveryOptions = hostControllerInfo.getRemoteDomainControllerDiscoveryOptions();
+        if (discoveryOptions != null) {
+            List<DomainControllerManagementInterface> interfaces = new ArrayList<>();
+            if (hostControllerInfo.getNativeManagementInterface() != null && !hostControllerInfo.getNativeManagementInterface().isEmpty()
+                    && hostControllerInfo.getNativeManagementPort() > 0) {
+                interfaces.add(new DomainControllerManagementInterface(hostControllerInfo.getNativeManagementPort(),
+                        hostControllerInfo.getNativeManagementInterface(), REMOTE));
+            }
+            if (hostControllerInfo.getHttpManagementSecureInterface() != null && !hostControllerInfo.getHttpManagementSecureInterface().isEmpty()
+                    && hostControllerInfo.getHttpManagementSecurePort() > 0) {
+                interfaces.add(new DomainControllerManagementInterface(hostControllerInfo.getHttpManagementSecurePort(),
+                        hostControllerInfo.getHttpManagementSecureInterface(), REMOTE_HTTPS));
+            }
+            if (hostControllerInfo.getHttpManagementInterface() != null && !hostControllerInfo.getHttpManagementInterface().isEmpty()
+                    && hostControllerInfo.getHttpManagementPort() > 0) {
+                interfaces.add(new DomainControllerManagementInterface(hostControllerInfo.getHttpManagementPort(),
+                        hostControllerInfo.getHttpManagementInterface(), REMOTE_HTTP));
+            }
+
+            DiscoveryService.install(serviceTarget, discoveryOptions, interfaces);
+        }
     }
 }

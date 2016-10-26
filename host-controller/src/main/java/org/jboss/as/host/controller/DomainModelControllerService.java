@@ -47,7 +47,6 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.IOException;
 import java.security.PrivilegedAction;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -129,8 +128,6 @@ import org.jboss.as.domain.controller.operations.coordination.PrepareStepHandler
 import org.jboss.as.domain.controller.resources.DomainRootDefinition;
 import org.jboss.as.domain.management.CoreManagementResourceDefinition;
 import org.jboss.as.host.controller.RemoteDomainConnectionService.RemoteFileRepository;
-import org.jboss.as.host.controller.discovery.DiscoveryOption;
-import org.jboss.as.host.controller.discovery.DomainControllerManagementInterface;
 import org.jboss.as.host.controller.ignored.IgnoredDomainResourceRegistry;
 import org.jboss.as.host.controller.logging.HostControllerLogger;
 import org.jboss.as.host.controller.mgmt.DomainHostExcludeRegistry;
@@ -616,13 +613,6 @@ public class DomainModelControllerService extends AbstractControllerService impl
                 // Now we know our management interface configuration. Install the server inventory
                 Future<ServerInventory> inventoryFuture = installServerInventory(serviceTarget);
 
-                // Now we know our discovery configuration.
-                List<DiscoveryOption> discoveryOptions = hostControllerInfo.getRemoteDomainControllerDiscoveryOptions();
-                if (hostControllerInfo.isMasterDomainController() && (discoveryOptions != null)) {
-                    // Install the discovery service
-                    installDiscoveryService(serviceTarget, discoveryOptions);
-                }
-
                 // Block for the ServerInventory
                 establishServerInventory(inventoryFuture);
 
@@ -763,26 +753,6 @@ public class DomainModelControllerService extends AbstractControllerService impl
         }
         return ServerInventoryService.install(serviceTarget, this, runningModeControl, environment, extensionRegistry,
                 hostControllerInfo.getHttpManagementInterface(), hostControllerInfo.getHttpManagementPort(), REMOTE_HTTP.toString());
-    }
-
-    private void installDiscoveryService(final ServiceTarget serviceTarget, List<DiscoveryOption> discoveryOptions) {
-        List<DomainControllerManagementInterface> interfaces = new ArrayList<>();
-        if (hostControllerInfo.getNativeManagementInterface() != null && !hostControllerInfo.getNativeManagementInterface().isEmpty()
-                && hostControllerInfo.getNativeManagementPort() > 0) {
-            interfaces.add(new DomainControllerManagementInterface(hostControllerInfo.getNativeManagementPort(),
-                    hostControllerInfo.getNativeManagementInterface(), REMOTE));
-        }
-        if (hostControllerInfo.getHttpManagementSecureInterface() != null && !hostControllerInfo.getHttpManagementSecureInterface().isEmpty()
-                && hostControllerInfo.getHttpManagementSecurePort() > 0) {
-            interfaces.add(new DomainControllerManagementInterface(hostControllerInfo.getHttpManagementSecurePort(),
-                    hostControllerInfo.getHttpManagementSecureInterface(), REMOTE_HTTPS));
-        }
-        if (hostControllerInfo.getHttpManagementInterface() != null && !hostControllerInfo.getHttpManagementInterface().isEmpty()
-                && hostControllerInfo.getHttpManagementPort() > 0) {
-            interfaces.add(new DomainControllerManagementInterface(hostControllerInfo.getHttpManagementPort(),
-                    hostControllerInfo.getHttpManagementInterface(), REMOTE_HTTP));
-        }
-        DiscoveryService.install(serviceTarget, discoveryOptions, interfaces, hostControllerInfo.isMasterDomainController());
     }
 
     enum DomainConnectResult {
