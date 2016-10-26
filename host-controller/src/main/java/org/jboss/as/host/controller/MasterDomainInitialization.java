@@ -23,6 +23,7 @@ import static org.jboss.as.remoting.Protocol.REMOTE_HTTPS;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.jboss.as.controller.ControlledProcessState;
 import org.jboss.as.controller.ProcessType;
@@ -55,8 +56,10 @@ class MasterDomainInitialization extends AbstractDomainInitialization {
                                    HostControllerEnvironment environment,
                                    HostControllerOperationExecutor operationExecutor,
                                    MasterDomainControllerOperationHandlerService.TransactionalOperationExecutor txOperationExecutor,
-                                   DomainHostExcludeRegistry domainHostExcludeRegistry) {
-        MasterDomainInitialization service = new MasterDomainInitialization(domainController, processState, processType, runningMode, environment, operationExecutor, txOperationExecutor, domainHostExcludeRegistry);
+                                   DomainHostExcludeRegistry domainHostExcludeRegistry,
+                                   AtomicReference<Integer> lockPermitHolder) {
+        MasterDomainInitialization service = new MasterDomainInitialization(domainController, processState, processType,
+                runningMode, environment, operationExecutor, txOperationExecutor, domainHostExcludeRegistry, lockPermitHolder);
         return install(serviceTarget, SLAVE_NAME, service);
     }
 
@@ -72,8 +75,9 @@ class MasterDomainInitialization extends AbstractDomainInitialization {
                                HostControllerEnvironment environment,
                                HostControllerOperationExecutor operationExecutor,
                                MasterDomainControllerOperationHandlerService.TransactionalOperationExecutor txOperationExecutor,
-                               DomainHostExcludeRegistry domainHostExcludeRegistry) {
-        super(domainController, processState, runningMode, environment);
+                               DomainHostExcludeRegistry domainHostExcludeRegistry,
+                               AtomicReference<Integer> lockPermitHolder) {
+        super(domainController, processState, runningMode, environment, lockPermitHolder);
         this.processType = processType;
         this.operationExecutor = operationExecutor;
         this.txOperationExecutor = txOperationExecutor;
@@ -81,12 +85,11 @@ class MasterDomainInitialization extends AbstractDomainInitialization {
     }
 
     @Override
-    public void stop(StopContext context) {
+    void terminate(StopContext context) {
         domainModelControllerService.unregisterLocalHost();
         // We installed DiscoveryService in initialize but the ServiceTarget we used doesn't add a dep on us,
         // so we need to remove it ourselves
         DiscoveryService.uninstall(context.getController().getServiceContainer());
-        super.stop(context);
     }
 
     boolean initialize(final ServiceTarget serviceTarget) {

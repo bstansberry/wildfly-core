@@ -65,6 +65,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
@@ -624,14 +625,16 @@ public class DomainModelControllerService extends AbstractControllerService impl
 
                 // Kick off a service to parse the domain-wide model or register with the master and acquire it,
                 // plus set up appropriate handling for slave registration requests
+                AtomicReference<Integer> lockPermitHolder = new AtomicReference<>();
                 Future<Boolean> domainInitFuture;
                 if (hostControllerInfo.isMasterDomainController()) {
                     InternalExecutor internalExecutor = new InternalExecutor();
                     domainInitFuture = MasterDomainInitialization.install(serviceTarget, this, processState, processType,
-                            currentRunningMode, environment, internalExecutor, internalExecutor, domainHostExcludeRegistry);
+                            currentRunningMode, environment, internalExecutor, internalExecutor, domainHostExcludeRegistry,
+                            lockPermitHolder);
                 } else {
                     domainInitFuture = SlaveDomainInitialization.install(serviceTarget, this, processState,
-                            currentRunningMode, environment);
+                            currentRunningMode, environment, lockPermitHolder);
                 }
                 ok = getFuture(domainInitFuture);
             }
@@ -736,6 +739,25 @@ public class DomainModelControllerService extends AbstractControllerService impl
     void unregisterLocalHost() {
         slaveHostRegistrations.recordLocalHostUnregistration(hostControllerInfo.getLocalHostName(),
                 HostConnectionInfo.Events.create(HostConnectionInfo.EventType.UNREGISTERED, "local"));
+    }
+
+    /*
+     * This attempts to obtain an exclusive ModelController lock. Acquisition of the the exclusive
+     * lock will block read locks, until released.
+     *
+     * @return the lock permit to pass to {@link #releaseWriteLock(int)}
+     */
+    final int acquireExclusiveLock() throws InterruptedException {
+        return acquireWriteLock();
+    }
+
+    /*
+     * Release the exclusive lock.
+     *
+     * @param permit the permit returned by {@link #acquireWriteLock()}
+     */
+    final void releaseExclusiveLock(int permit) {
+        releaseWriteLock(permit);
     }
 
     @Override

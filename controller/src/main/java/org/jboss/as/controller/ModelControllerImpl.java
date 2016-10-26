@@ -836,6 +836,12 @@ class ModelControllerImpl implements ModelController {
         model.discard();
     }
 
+    int acquireWriteLock() throws InterruptedException {
+        int permit = random.nextInt();
+        acquireWriteLock(permit, true);
+        return permit;
+    }
+
     void acquireWriteLock(Integer permit, final boolean interruptibly) throws InterruptedException {
         if (interruptibly) {
             //noinspection LockAcquiredButNotSafelyReleased
