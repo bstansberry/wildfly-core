@@ -54,6 +54,15 @@ public interface LocalHostControllerInfo {
      boolean isMasterDomainController();
 
     /**
+     * Whether we are configured to be eligible to be elected master domain controller.
+     *
+     * @return {@code true} if the local host controller is configured to be a candidate domain controller (CDC)
+     *
+     * @throws IllegalStateException if {@link #getProcessState()} is {@link org.jboss.as.controller.ControlledProcessState.State#STARTING}
+     */
+    boolean isCandidateDomainController();
+
+    /**
      * Whether we are acting as a backup DC or not (started with the --backup option)
      *
      * @return {@code true} if we intend to be able to take over as DC

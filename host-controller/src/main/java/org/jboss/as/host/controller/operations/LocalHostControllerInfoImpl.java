@@ -42,6 +42,8 @@ public class LocalHostControllerInfoImpl implements LocalHostControllerInfo {
 
     private final String localHostName;
     private volatile boolean master;
+    private volatile boolean candidateDomainController;
+
     private volatile String nativeManagementInterface;
     private volatile int nativeManagementPort;
 
@@ -83,6 +85,11 @@ public class LocalHostControllerInfoImpl implements LocalHostControllerInfo {
         return master;
     }
 
+    @Override
+    public boolean isCandidateDomainController() {
+        // XXX change to actual config value.
+        return isMasterDomainController();
+    }
     @Override
     public String getNativeManagementInterface() {
         return nativeManagementInterface;
@@ -160,6 +167,9 @@ public class LocalHostControllerInfoImpl implements LocalHostControllerInfo {
         this.master = master;
     }
 
+    void setCandidateDomainController(boolean isCandidateDomainController) {
+        this.candidateDomainController = isCandidateDomainController;
+    }
     void setNativeManagementInterface(String nativeManagementInterface) {
         this.nativeManagementInterface = nativeManagementInterface;
     }
