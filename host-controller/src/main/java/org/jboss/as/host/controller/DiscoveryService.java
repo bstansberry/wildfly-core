@@ -36,6 +36,8 @@ import org.jboss.as.network.NetworkInterfaceBinding;
 import org.jboss.as.server.services.net.NetworkInterfaceService;
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceContainer;
+import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
@@ -57,27 +59,25 @@ class DiscoveryService implements Service<Void> {
     private final InjectedValue<ExecutorService> executorService = new InjectedValue<ExecutorService>();
     private final List<DiscoveryOption> discoveryOptions;
     private final List<DomainControllerManagementInterface> managementInterfaces;
-    private final boolean isMasterDomainController;
 
     /**
      * Create the DiscoveryService instance.
-     *
-     * @param discoveryOptions the list of discovery options
-     * @param port the port number of the domain controller
-     * @param isMasterDomainController whether or not the local host controller is the master
+     *  @param discoveryOptions the list of discovery options
+     * @param managementInterfaces configuration information for a management interface
      */
-    private DiscoveryService(List<DiscoveryOption> discoveryOptions, List<DomainControllerManagementInterface> managementInterfaces, boolean isMasterDomainController) {
+    private DiscoveryService(List<DiscoveryOption> discoveryOptions, List<DomainControllerManagementInterface> managementInterfaces) {
         this.discoveryOptions = discoveryOptions;
         this.managementInterfaces = managementInterfaces;
         for(DomainControllerManagementInterface managementInterface : managementInterfaces) {
             interfaceBindings.put(managementInterface.getHost(), new InjectedValue<NetworkInterfaceBinding>());
         }
-        this.isMasterDomainController = isMasterDomainController;
     }
 
     static void install(final ServiceTarget serviceTarget, final List<DiscoveryOption> discoveryOptions,
-                        final List<DomainControllerManagementInterface> managementInterfaces, final boolean isMasterDomainController) {
-        final DiscoveryService discovery = new DiscoveryService(discoveryOptions, managementInterfaces, isMasterDomainController);
+                        final List<DomainControllerManagementInterface> managementInterfaces) {
+        assert discoveryOptions != null;
+        assert managementInterfaces != null;
+        final DiscoveryService discovery = new DiscoveryService(discoveryOptions, managementInterfaces);
         ServiceBuilder builder = serviceTarget.addService(DiscoveryService.SERVICE_NAME, discovery)
                 .addDependency(HostControllerService.HC_EXECUTOR_SERVICE_NAME, ExecutorService.class, discovery.executorService);
         Set<String> alreadyDefinedInterfaces = new HashSet<String>();
@@ -90,24 +90,29 @@ class DiscoveryService implements Service<Void> {
        builder.install();
     }
 
+    static void uninstall(ServiceContainer serviceContainer) {
+        ServiceController<?> controller = serviceContainer.getService(SERVICE_NAME);
+        if (controller != null) {
+            controller.setMode(ServiceController.Mode.REMOVE);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override
-    public synchronized void start(final StartContext context) throws StartException {
+    public void start(final StartContext context) throws StartException {
         final Runnable task = new Runnable() {
             @Override
             public void run() {
                 try {
-                    if (isMasterDomainController && (discoveryOptions != null)) {
-                        // Allow slave host controllers to discover this domain controller using any
-                        // of the provided discovery options.
+                    // Allow slave host controllers to discover this domain controller using any
+                    // of the provided discovery options.
 
-                        for(DomainControllerManagementInterface managementInterface : managementInterfaces) {
-                            String host = interfaceBindings.get(managementInterface.getAddress()).getValue().getAddress().getHostAddress();
-                            managementInterface.setHost(host);
-                        }
-                        for (DiscoveryOption discoveryOption : discoveryOptions) {
-                            discoveryOption.allowDiscovery(managementInterfaces);
-                        }
+                    for(DomainControllerManagementInterface managementInterface : managementInterfaces) {
+                        String host = interfaceBindings.get(managementInterface.getAddress()).getValue().getAddress().getHostAddress();
+                        managementInterface.setHost(host);
+                    }
+                    for (DiscoveryOption discoveryOption : discoveryOptions) {
+                        discoveryOption.allowDiscovery(managementInterfaces);
                     }
                     context.complete();
                 } catch (Exception e) {
@@ -126,15 +131,13 @@ class DiscoveryService implements Service<Void> {
 
     /** {@inheritDoc} */
     @Override
-    public synchronized void stop(final StopContext context) {
+    public void stop(final StopContext context) {
         final Runnable task = new Runnable() {
             @Override
             public void run() {
                 try {
-                    if (isMasterDomainController && (discoveryOptions != null)) {
-                        for (DiscoveryOption discoveryOption : discoveryOptions) {
-                            discoveryOption.cleanUp();
-                        }
+                    for (DiscoveryOption discoveryOption : discoveryOptions) {
+                        discoveryOption.cleanUp();
                     }
                 } finally {
                     context.complete();
@@ -152,7 +155,7 @@ class DiscoveryService implements Service<Void> {
 
     /** {@inheritDoc} */
     @Override
-    public synchronized Void getValue() throws IllegalStateException, IllegalArgumentException {
+    public Void getValue() throws IllegalStateException, IllegalArgumentException {
        return null;
     }
 }
