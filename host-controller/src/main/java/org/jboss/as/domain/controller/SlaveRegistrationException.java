@@ -70,6 +70,10 @@ public class SlaveRegistrationException extends Exception {
         return new SlaveRegistrationException(ErrorCode.HOST_ALREADY_EXISTS, DomainControllerLogger.ROOT_LOGGER.slaveControllerCannotAcceptOtherSlaves());
     }
 
+    public static SlaveRegistrationException forMasterIsOlderVersionThanSlave() {
+        return new SlaveRegistrationException(ErrorCode.INCOMPATIBLE_VERSION, DomainControllerLogger.ROOT_LOGGER.slaveControllerIsNewerVersionThanMaster());
+    }
+
     public String marshal() {
         return errorCode.getCode() + SEPARATOR + errorMessage;
     }

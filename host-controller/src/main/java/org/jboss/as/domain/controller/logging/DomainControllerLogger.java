@@ -802,4 +802,13 @@ public interface DomainControllerLogger extends BasicLogger {
 
     @Message(id = 97, value = "Cannot explode a subdeployment of an unexploded deployment")
     OperationFailedException cannotExplodeSubDeploymentOfUnexplodedDeployment();
+
+    /**
+     * Creates an exception message indicating the registering slave is a new API release than the current master,
+     * and is not allowed to register.
+     *
+     * @return a message for the error.
+     */
+    @Message(id = 98, value = "Domain Controller software API version is older than slave API version. Newer API version slaves may not be registered with older API version domain controllers.")
+    String slaveControllerIsNewerVersionThanMaster();
 }

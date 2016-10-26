@@ -471,9 +471,8 @@ public class HostControllerRegistrationHandler implements ManagementRequestHandl
             //
             if (sendResultToHost(transaction, result)) return;
             synchronized (this) {
-                Long pingPongId = hostInfo.getRemoteConnectionId();
                 // Register the slave
-                domainController.registerRemoteHost(hostName, handler, transformers, pingPongId, registerProxyController);
+                domainController.registerRemoteHost(hostInfo, handler, transformers, registerProxyController);
                 // Complete registration
                 if(! failed) {
                     transaction.commit();

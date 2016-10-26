@@ -82,6 +82,7 @@ import org.jboss.as.controller.ManagementModel;
 import org.jboss.as.controller.ModelController;
 import org.jboss.as.controller.ModelController.OperationTransactionControl;
 import org.jboss.as.controller.ModelControllerServiceInitialization;
+import org.jboss.as.controller.ModelVersion;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.OperationStepHandler;
@@ -133,6 +134,7 @@ import org.jboss.as.host.controller.ignored.IgnoredDomainResourceRegistry;
 import org.jboss.as.host.controller.logging.HostControllerLogger;
 import org.jboss.as.host.controller.mgmt.DomainHostExcludeRegistry;
 import org.jboss.as.host.controller.mgmt.HostControllerOperationExecutor;
+import org.jboss.as.host.controller.mgmt.HostInfo;
 import org.jboss.as.host.controller.mgmt.MasterDomainControllerOperationHandlerService;
 import org.jboss.as.host.controller.mgmt.ServerToHostOperationHandlerFactoryService;
 import org.jboss.as.host.controller.mgmt.ServerToHostProtocolHandler;
@@ -329,8 +331,8 @@ public class DomainModelControllerService extends AbstractControllerService impl
     }
 
     @Override
-    public void registerRemoteHost(final String hostName, final ManagementChannelHandler handler, final Transformers transformers,
-                                   final Long remoteConnectionId, final boolean registerProxyController) throws SlaveRegistrationException {
+    public void registerRemoteHost(final HostInfo hostInfo, final ManagementChannelHandler handler, final Transformers transformers,
+                                   final boolean registerProxyController) throws SlaveRegistrationException {
         if (!hostControllerInfo.isMasterDomainController()) {
             throw SlaveRegistrationException.forHostIsNotMaster();
         }
@@ -339,6 +341,12 @@ public class DomainModelControllerService extends AbstractControllerService impl
             throw SlaveRegistrationException.forMasterInAdminOnlyMode(runningModeControl.getRunningMode());
         }
 
+        // verify the registering slave is not a newer API version than the current master.
+        if (!slaveRegistrationVersionOk(ModelVersion.CURRENT, hostInfo)) {
+            throw SlaveRegistrationException.forMasterIsOlderVersionThanSlave();
+        }
+
+        final String hostName = hostInfo.getHostName();
         final PathElement pe = PathElement.pathElement(ModelDescriptionConstants.HOST, hostName);
         final PathAddress addr = PathAddress.pathAddress(pe);
         ProxyController existingController = modelNodeRegistration.getProxyController(addr);
@@ -347,7 +355,7 @@ public class DomainModelControllerService extends AbstractControllerService impl
             throw SlaveRegistrationException.forHostAlreadyExists(pe.getValue());
         }
 
-        final SlaveHostPinger pinger = remoteConnectionId == null ? null : new SlaveHostPinger(hostName, handler, pingScheduler, remoteConnectionId);
+        final SlaveHostPinger pinger = hostInfo.getRemoteConnectionId() == null ? null : new SlaveHostPinger(hostName, handler, pingScheduler, hostInfo.getRemoteConnectionId());
         final String address = handler.getRemoteAddress().getHostAddress();
         slaveHostRegistrations.recordLocalHostRegistration(hostName, pinger, address);
 
@@ -927,6 +935,21 @@ public class DomainModelControllerService extends AbstractControllerService impl
         DomainRootDefinition domainRootDefinition = new DomainRootDefinition(environment, configurationPersister, contentRepo, fileRepository, isMaster, hostControllerInfo,
                 extensionRegistry, ignoredDomainResourceRegistry, authorizer, securityIdentitySupplier, this, domainHostExcludeRegistry, getMutableRootResourceRegistrationProvider());
         rootResourceDefinition.setDelegate(domainRootDefinition, root);
+    }
+
+    private boolean slaveRegistrationVersionOk(final ModelVersion masterVersion, final HostInfo slaveHostInfo) {
+        assert masterVersion != null;
+        assert slaveHostInfo != null;
+        if (masterVersion.getMajor() < slaveHostInfo.getManagementMajorVersion()) {
+            return false;
+        }
+        if (masterVersion.getMinor() < slaveHostInfo.getManagementMinorVersion()) {
+            return false;
+        }
+        if (masterVersion.getMicro() < slaveHostInfo.getManagementMicroVersion()) {
+            return false;
+        }
+        return true;
     }
 
     private class DelegatingServerInventory implements ServerInventory {
