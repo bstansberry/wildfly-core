@@ -1346,4 +1346,8 @@ public interface HostControllerLogger extends BasicLogger {
     @LogMessage(level = Level.ERROR)
     @Message(id = 196, value = "Cannot move the file %s to %s, unable to persist domain configuration changes: %s ")
     void cannotRenameCachedDomainXmlOnBoot(String tmpFilename, String destFilename, String reason);
+
+    @LogMessage(level = Level.ERROR)
+    @Message(id = 197, value = "Interrupted waiting for the exclusive management lock before moving to or from master status")
+    void interruptedAwaitingLockToChangeMasterState();
 }

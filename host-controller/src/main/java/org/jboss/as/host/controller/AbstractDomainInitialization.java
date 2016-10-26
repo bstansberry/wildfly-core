@@ -21,11 +21,13 @@ import static org.jboss.as.host.controller.logging.HostControllerLogger.ROOT_LOG
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.jboss.as.controller.ControlledProcessState;
 import org.jboss.as.controller.RunningMode;
 import org.jboss.as.controller.persistence.ConfigurationPersistenceException;
 import org.jboss.as.domain.controller.LocalHostControllerInfo;
+import org.jboss.as.host.controller.logging.HostControllerLogger;
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
@@ -79,16 +81,19 @@ abstract class AbstractDomainInitialization implements Service<Void> {
     final HostControllerEnvironment environment;
     private final ControlledProcessState processState;
     final FutureDomainInitialization futureDomainInitialization = new FutureDomainInitialization();
+    final AtomicReference<Integer> lockPermitHolder;
     private final InjectedValue<ExecutorService> injectedExecutorService = new InjectedValue<ExecutorService>();
 
 
     AbstractDomainInitialization(DomainModelControllerService domainModelControllerService,
-                                 ControlledProcessState processState, RunningMode runningMode, HostControllerEnvironment environment) {
+                                 ControlledProcessState processState, RunningMode runningMode,
+                                 HostControllerEnvironment environment, AtomicReference<Integer> lockPermitHolder) {
         this.domainModelControllerService = domainModelControllerService;
         this.processState = processState;
         this.hostControllerInfo = domainModelControllerService.getLocalHostInfo();
         this.runningMode = runningMode;
         this.environment = environment;
+        this.lockPermitHolder = lockPermitHolder;
     }
 
     @Override
@@ -113,7 +118,33 @@ abstract class AbstractDomainInitialization implements Service<Void> {
     }
 
     @Override
-    public void stop(StopContext context) {
+    public void stop(final StopContext context) {
+        Runnable r = new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    if (processState.getState() != ControlledProcessState.State.STOPPING) {
+                        lockPermitHolder.set(domainModelControllerService.acquireExclusiveLock());
+                    }
+                    terminate(context);
+                } catch (InterruptedException ie) {
+                    HostControllerLogger.ROOT_LOGGER.interruptedAwaitingLockToChangeMasterState();
+                } finally {
+                    context.complete();
+                }
+            }
+        };
+
+        final ExecutorService executorService = injectedExecutorService.getValue();
+        try {
+            try {
+                executorService.execute(r);
+            } catch (RejectedExecutionException e) {
+                r.run();
+            }
+        } finally {
+            context.asynchronous();
+        }
     }
 
     @Override
@@ -122,6 +153,8 @@ abstract class AbstractDomainInitialization implements Service<Void> {
     }
 
     abstract boolean initialize(ServiceTarget serviceTarget);
+
+    abstract void terminate(StopContext context);
 
     final boolean loadDomainWideConfig() {
 
@@ -148,8 +181,15 @@ abstract class AbstractDomainInitialization implements Service<Void> {
             futureDomainInitialization.setFailure(e);
             startContext.failed(new StartException(e));
         } finally {
-            if (!failed) {
-                futureDomainInitialization.setInitializationResult(ok);
+            try {
+                Integer permit = lockPermitHolder.getAndSet(null);
+                if (permit != null) {
+                    domainModelControllerService.releaseExclusiveLock(permit);
+                }
+            } finally {
+                if (!failed) {
+                    futureDomainInitialization.setInitializationResult(ok);
+                }
             }
         }
     }

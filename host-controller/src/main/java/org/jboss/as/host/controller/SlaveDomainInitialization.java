@@ -23,6 +23,7 @@ import static org.jboss.as.host.controller.model.host.AdminOnlyDomainConfigPolic
 
 import java.util.List;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.jboss.as.controller.ControlledProcessState;
 import org.jboss.as.controller.RunningMode;
@@ -48,9 +49,10 @@ class SlaveDomainInitialization extends AbstractDomainInitialization {
                                    DomainModelControllerService domainController,
                                    ControlledProcessState processState,
                                    RunningMode runningMode,
-                                   HostControllerEnvironment environment) {
+                                   HostControllerEnvironment environment,
+                                   AtomicReference<Integer> lockPermitHolder) {
         SlaveDomainInitialization service = new SlaveDomainInitialization(domainController, processState, runningMode,
-                environment, serviceTarget);
+                environment, serviceTarget, lockPermitHolder);
         return install(serviceTarget, SLAVE_NAME, service);
     }
 
@@ -67,15 +69,15 @@ class SlaveDomainInitialization extends AbstractDomainInitialization {
                               ControlledProcessState processState,
                               RunningMode runningMode,
                               HostControllerEnvironment environment,
-                              ServiceTarget parentTarget) {
-        super(domainModelControllerService, processState, runningMode, environment);
+                              ServiceTarget parentTarget,
+                              AtomicReference<Integer> lockPermitHolder) {
+        super(domainModelControllerService, processState, runningMode, environment, lockPermitHolder);
         this.parentTarget = parentTarget;
     }
 
     @Override
-    public void stop(StopContext context) {
+    void terminate(StopContext context) {
         domainModelControllerService.disconnectFromMaster(context.getController().getServiceContainer());
-        super.stop(context);
     }
 
     boolean initialize(ServiceTarget serviceTarget) {
