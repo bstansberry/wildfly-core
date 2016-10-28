@@ -340,12 +340,10 @@ public class DomainModelControllerService extends AbstractControllerService impl
         if (runningModeControl.getRunningMode() == RunningMode.ADMIN_ONLY) {
             throw SlaveRegistrationException.forMasterInAdminOnlyMode(runningModeControl.getRunningMode());
         }
-
         // verify the registering slave is not a newer API version than the current master.
         if (!slaveRegistrationVersionOk(ModelVersion.CURRENT, hostInfo)) {
             throw SlaveRegistrationException.forMasterIsOlderVersionThanSlave();
         }
-
         final String hostName = hostInfo.getHostName();
         final PathElement pe = PathElement.pathElement(ModelDescriptionConstants.HOST, hostName);
         final PathAddress addr = PathAddress.pathAddress(pe);
@@ -808,16 +806,15 @@ public class DomainModelControllerService extends AbstractControllerService impl
                             CommandLineConstants.CACHED_DC);
 
                 }
-                SystemExiter.abort(ExitCodes.HOST_CONTROLLER_ABORT_EXIT_CODE);
-                // If we got here, the Exiter didn't really exit. Must be embedded.
-                // Inform the caller so it knows not to proceed with boot.
+                // this returns ABORT to the caller, indicating the the DC is not available
+                // and boot (in the non --cached-dc case), should not continue.
                 return DomainConnectResult.ABORT;
             } else if (currentRunningMode != RunningMode.ADMIN_ONLY) {
                 // Register a service that will try again once we reach RUNNING state
                 DeferredDomainConnectService.install(serviceTarget, masterDomainControllerClient);
             }
-            return DomainConnectResult.FAILED;
         }
+        return DomainConnectResult.FAILED;
     }
 
     void disconnectFromMaster(ServiceContainer serviceContainer) {
