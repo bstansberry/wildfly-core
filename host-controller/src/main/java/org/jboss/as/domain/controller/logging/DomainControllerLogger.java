@@ -809,6 +809,6 @@ public interface DomainControllerLogger extends BasicLogger {
      *
      * @return a message for the error.
      */
-    @Message(id = 98, value = "Domain Controller software API version is older than slave API version. Newer API version slaves may not be registered with older API version domain controllers.")
+    @Message(id = 98, value = "Domain Controller management API version is older than slave management API version. Newer API version slaves may not be registered with older API version domain controllers.")
     String slaveControllerIsNewerVersionThanMaster();
 }
