@@ -87,8 +87,7 @@ public class LocalHostControllerInfoImpl implements LocalHostControllerInfo {
 
     @Override
     public boolean isCandidateDomainController() {
-        // XXX change to actual config value.
-        return isMasterDomainController();
+        return candidateDomainController;
     }
     @Override
     public String getNativeManagementInterface() {
