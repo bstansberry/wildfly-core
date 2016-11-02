@@ -82,6 +82,7 @@ import org.jboss.as.controller.ManagementModel;
 import org.jboss.as.controller.ModelController;
 import org.jboss.as.controller.ModelController.OperationTransactionControl;
 import org.jboss.as.controller.ModelControllerServiceInitialization;
+import org.jboss.as.controller.ModelVersion;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.OperationStepHandler;
@@ -132,6 +133,7 @@ import org.jboss.as.host.controller.ignored.IgnoredDomainResourceRegistry;
 import org.jboss.as.host.controller.logging.HostControllerLogger;
 import org.jboss.as.host.controller.mgmt.DomainHostExcludeRegistry;
 import org.jboss.as.host.controller.mgmt.HostControllerOperationExecutor;
+import org.jboss.as.host.controller.mgmt.HostInfo;
 import org.jboss.as.host.controller.mgmt.MasterDomainControllerOperationHandlerService;
 import org.jboss.as.host.controller.mgmt.ServerToHostOperationHandlerFactoryService;
 import org.jboss.as.host.controller.mgmt.ServerToHostProtocolHandler;
@@ -326,8 +328,8 @@ public class DomainModelControllerService extends AbstractControllerService impl
     }
 
     @Override
-    public void registerRemoteHost(final String hostName, final ManagementChannelHandler handler, final Transformers transformers,
-                                   final Long remoteConnectionId, final boolean registerProxyController) throws SlaveRegistrationException {
+    public void registerRemoteHost(final HostInfo hostInfo, final ManagementChannelHandler handler, final Transformers transformers,
+                                   final boolean registerProxyController) throws SlaveRegistrationException {
         if (!hostControllerInfo.isMasterDomainController()) {
             throw SlaveRegistrationException.forHostIsNotMaster();
         }
@@ -335,7 +337,11 @@ public class DomainModelControllerService extends AbstractControllerService impl
         if (runningModeControl.getRunningMode() == RunningMode.ADMIN_ONLY) {
             throw SlaveRegistrationException.forMasterInAdminOnlyMode(runningModeControl.getRunningMode());
         }
-
+        // verify the registering slave is not a newer API version than the current master.
+        if (!slaveRegistrationVersionOk(ModelVersion.CURRENT, hostInfo)) {
+            throw SlaveRegistrationException.forMasterIsOlderVersionThanSlave();
+        }
+        final String hostName = hostInfo.getHostName();
         final PathElement pe = PathElement.pathElement(ModelDescriptionConstants.HOST, hostName);
         final PathAddress addr = PathAddress.pathAddress(pe);
         ProxyController existingController = modelNodeRegistration.getProxyController(addr);
@@ -344,7 +350,7 @@ public class DomainModelControllerService extends AbstractControllerService impl
             throw SlaveRegistrationException.forHostAlreadyExists(pe.getValue());
         }
 
-        final SlaveHostPinger pinger = remoteConnectionId == null ? null : new SlaveHostPinger(hostName, handler, pingScheduler, remoteConnectionId);
+        final SlaveHostPinger pinger = hostInfo.getRemoteConnectionId() == null ? null : new SlaveHostPinger(hostName, handler, pingScheduler, hostInfo.getRemoteConnectionId());
         final String address = handler.getRemoteAddress().getHostAddress();
         slaveHostRegistrations.recordLocalHostRegistration(hostName, pinger, address);
 
@@ -797,16 +803,15 @@ public class DomainModelControllerService extends AbstractControllerService impl
                             CommandLineConstants.CACHED_DC);
 
                 }
-                SystemExiter.abort(ExitCodes.HOST_CONTROLLER_ABORT_EXIT_CODE);
-                // If we got here, the Exiter didn't really exit. Must be embedded.
-                // Inform the caller so it knows not to proceed with boot.
+                // this returns ABORT to the caller, indicating the the DC is not available
+                // and boot (in the non --cached-dc case), should not continue.
                 return DomainConnectResult.ABORT;
             } else if (currentRunningMode != RunningMode.ADMIN_ONLY) {
                 // Register a service that will try again once we reach RUNNING state
                 DeferredDomainConnectService.install(serviceTarget, masterDomainControllerClient);
             }
-            return DomainConnectResult.FAILED;
         }
+        return DomainConnectResult.FAILED;
     }
 
     void disconnectFromMaster(ServiceContainer serviceContainer) {
@@ -924,6 +929,24 @@ public class DomainModelControllerService extends AbstractControllerService impl
         DomainRootDefinition domainRootDefinition = new DomainRootDefinition(environment, configurationPersister, contentRepo, fileRepository, isMaster, hostControllerInfo,
                 extensionRegistry, ignoredDomainResourceRegistry, authorizer, this, domainHostExcludeRegistry, getMutableRootResourceRegistrationProvider());
         rootResourceDefinition.setDelegate(domainRootDefinition, root);
+    }
+
+    private boolean slaveRegistrationVersionOk(final ModelVersion masterVersion, final HostInfo slaveHostInfo) {
+        assert masterVersion != null;
+        assert slaveHostInfo != null;
+        if (masterVersion.getMajor() > slaveHostInfo.getManagementMajorVersion()) {
+            return true;
+        }
+        if (masterVersion.getMajor() == slaveHostInfo.getManagementMajorVersion() &&
+                masterVersion.getMinor() > slaveHostInfo.getManagementMinorVersion()) {
+            return true;
+        }
+        if (masterVersion.getMajor() == slaveHostInfo.getManagementMajorVersion() &&
+                masterVersion.getMinor() == slaveHostInfo.getManagementMinorVersion() &&
+                masterVersion.getMicro() >= slaveHostInfo.getManagementMicroVersion()) {
+            return true;
+        }
+        return false;
     }
 
     private class DelegatingServerInventory implements ServerInventory {

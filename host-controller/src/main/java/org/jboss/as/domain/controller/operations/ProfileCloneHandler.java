@@ -80,7 +80,8 @@ public class ProfileCloneHandler implements OperationStepHandler {
         final PathAddress address = PathAddress.pathAddress(PathElement.pathElement(PROFILE, profileName));
         final PathAddress newPA = PathAddress.pathAddress(PROFILE, newProfile);
 
-        if (!hostInfo.isMasterDomainController()) {
+        // for both master and CDC cases, we can't ignore anything.
+        if (! (hostInfo.isMasterDomainController() || hostInfo.isCandidateDomainController())) {
             if (ignoredDomainResourceRegistry.isResourceExcluded(address) || ignoredDomainResourceRegistry.isResourceExcluded(newPA)) {
                 return;
             }

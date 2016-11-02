@@ -118,6 +118,11 @@ public abstract class AbstractOperationTestCase {
         }
 
         @Override
+        public boolean isCandidateDomainController() {
+            return false;
+        }
+
+        @Override
         public String getNativeManagementInterface() {
             return null;
         }

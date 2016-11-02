@@ -212,6 +212,11 @@ public class LegacyKernelServicesImpl extends AbstractKernelServicesImpl {
             }
 
             @Override
+            public boolean isCandidateDomainController() {
+                return false;
+            }
+
+            @Override
             public String getRemoteDomainControllerUsername() {
                 return null;
             }

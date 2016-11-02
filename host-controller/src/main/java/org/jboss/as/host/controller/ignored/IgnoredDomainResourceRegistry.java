@@ -70,7 +70,7 @@ public class IgnoredDomainResourceRegistry {
      * @return {@code true} if the operation should be ignored; {@code false} otherwise
      */
     public boolean isResourceExcluded(final PathAddress address) {
-        if (!localHostControllerInfo.isMasterDomainController() && address.size() > 0) {
+        if (!isDomainController() && address.size() > 0) {
             IgnoredDomainResourceRoot root = this.rootResource;
             PathElement firstElement = address.getElement(0);
             IgnoreDomainResourceTypeResource typeResource = root == null ? null : root.getChildInternal(firstElement.getKey());
@@ -103,8 +103,10 @@ public class IgnoredDomainResourceRegistry {
         this.rootResource = root;
     }
 
-    boolean isMaster() {
-        return localHostControllerInfo.isMasterDomainController();
+    // encapsulate the idea of a domain controller as either the current master, or one that *could* become master, by election etc.
+    // neither case can ignore configuration.
+    boolean isDomainController() {
+        return localHostControllerInfo.isMasterDomainController() || localHostControllerInfo.isCandidateDomainController();
     }
 
     public IgnoredClonedProfileRegistry getIgnoredClonedProfileRegistry() {
@@ -164,7 +166,7 @@ public class IgnoredDomainResourceRegistry {
          * @return whether the operation should be ignored
          */
         public boolean checkIgnoredProfileClone(ModelNode operation) {
-            if (!localHostControllerInfo.isMasterDomainController()) {
+            if (!isDomainController()) {
                 PathAddress addr = PathAddress.pathAddress(operation.get(OP_ADDR));
                 if (addr.size() > 0) {
                     PathElement first = addr.getElement(0);
@@ -198,7 +200,7 @@ public class IgnoredDomainResourceRegistry {
          * Callback for starting applying a fresh domain model from the DC. This will clear the runtime registry
          */
         public void initializeModelSync() {
-            if (!localHostControllerInfo.isMasterDomainController()) {
+            if (!isDomainController()){
                 //We are resyncing the model, so clear the runtime registry
                 getIgnoredClonedProfiles(true).clear();
             }
@@ -211,7 +213,7 @@ public class IgnoredDomainResourceRegistry {
          * @param rollback {@code true} if the changes should be rolled back, {@code false} if they should be committed.
          */
         public void complete(boolean rollback) {
-            if (!localHostControllerInfo.isMasterDomainController()) {
+            if (!isDomainController()) {
                 if (!rollback) {
                     if (currentTxIgnoredClonedProfiles != null) {
                         ignoredClonedProfiles = currentTxIgnoredClonedProfiles;

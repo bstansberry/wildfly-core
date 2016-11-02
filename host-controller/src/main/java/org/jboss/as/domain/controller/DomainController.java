@@ -24,6 +24,7 @@ package org.jboss.as.domain.controller;
 
 import org.jboss.as.controller.extension.ExtensionRegistry;
 import org.jboss.as.controller.transform.Transformers;
+import org.jboss.as.host.controller.mgmt.HostInfo;
 import org.jboss.as.protocol.mgmt.ManagementChannelHandler;
 import org.jboss.as.repository.HostFileRepository;
 
@@ -38,16 +39,15 @@ public interface DomainController extends HostRegistrations {
      * Registers a slave Host Controller with this domain controller.
      *
      *
-     * @param hostName the name of the slave host
+     * @param hostInfo the slave's registration info
      * @param handler  handler for communications with the host
      * @param transformers transformation handler for converting resources and operations to forms appropriate for the slave
-     * @param remoteConnectionId long identifying this specific connection to the host, or {@code null} if the host did not provide such an id
      * @param registerProxyController {@code true} if a proxy controller should be registered for the host; {@code false}
      *                                             if the host is in --admin-only mode and should not be visible to outside users
      * @throws SlaveRegistrationException  if there is a problem registering the host
      */
-    void registerRemoteHost(final String hostName, final ManagementChannelHandler handler, final Transformers transformers,
-                            Long remoteConnectionId, boolean registerProxyController) throws SlaveRegistrationException;
+    void registerRemoteHost(final HostInfo hostInfo, final ManagementChannelHandler handler, final Transformers transformers,
+                            boolean registerProxyController) throws SlaveRegistrationException;
 
     /**
      * Check if a Host Controller is already registered with this domain controller.

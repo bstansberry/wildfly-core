@@ -82,7 +82,7 @@ class IgnoredDomainResourceRoot implements Resource.ResourceEntry {
     @Override
     public boolean hasChild(PathElement element) {
         synchronized (children) {
-            return !isMaster() && IGNORED_RESOURCE_TYPE.equals(element.getKey())
+            return !isDomainController() && IGNORED_RESOURCE_TYPE.equals(element.getKey())
                     && children.containsKey(element.getValue());
         }
     }
@@ -90,7 +90,7 @@ class IgnoredDomainResourceRoot implements Resource.ResourceEntry {
     @Override
     public Resource getChild(PathElement element) {
         Resource result = null;
-        if (!isMaster() && IGNORED_RESOURCE_TYPE.equals(element.getKey())) {
+        if (!isDomainController() && IGNORED_RESOURCE_TYPE.equals(element.getKey())) {
             result = getChildInternal(element.getValue());
         }
         return result;
@@ -107,7 +107,7 @@ class IgnoredDomainResourceRoot implements Resource.ResourceEntry {
 
     @Override
     public boolean hasChildren(String childType) {
-        boolean result = !isMaster() && IGNORED_RESOURCE_TYPE.equals(childType);
+        boolean result = !isDomainController() && IGNORED_RESOURCE_TYPE.equals(childType);
         if (result) {
             synchronized (children) {
                 result = children.size() > 0;
@@ -129,7 +129,7 @@ class IgnoredDomainResourceRoot implements Resource.ResourceEntry {
     @Override
     public Set<String> getChildrenNames(String childType) {
         Set<String> result;
-        if (!isMaster() && IGNORED_RESOURCE_TYPE.equals(childType)) {
+        if (!isDomainController() && IGNORED_RESOURCE_TYPE.equals(childType)) {
             synchronized (children) {
                 result = new HashSet<String>(children.keySet());
             }
@@ -142,7 +142,7 @@ class IgnoredDomainResourceRoot implements Resource.ResourceEntry {
     @Override
     public Set<ResourceEntry> getChildren(String childType) {
         Set<ResourceEntry> result;
-        if (!isMaster() && IGNORED_RESOURCE_TYPE.equals(childType)) {
+        if (!isDomainController() && IGNORED_RESOURCE_TYPE.equals(childType)) {
             synchronized (children) {
                 result = new HashSet<ResourceEntry>(children.values());
             }
@@ -154,7 +154,7 @@ class IgnoredDomainResourceRoot implements Resource.ResourceEntry {
 
     @Override
     public void registerChild(PathElement address, Resource resource) {
-        if (!isMaster() && IGNORED_RESOURCE_TYPE.equals(address.getKey())) {
+        if (!isDomainController() && IGNORED_RESOURCE_TYPE.equals(address.getKey())) {
             synchronized (children) {
                 if (children.containsKey(address.getValue())) {
                     throw ControllerLogger.ROOT_LOGGER.duplicateResource(address.getValue());
@@ -220,8 +220,8 @@ class IgnoredDomainResourceRoot implements Resource.ResourceEntry {
         children.put(child.getName(), child);
     }
 
-    private boolean isMaster() {
-        return ignoredRegistry.isMaster();
+    private boolean isDomainController() {
+        return ignoredRegistry.isDomainController();
     }
 
     @Override

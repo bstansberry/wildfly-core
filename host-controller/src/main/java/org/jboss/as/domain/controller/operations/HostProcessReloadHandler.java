@@ -87,7 +87,7 @@ public class HostProcessReloadHandler extends ProcessReloadHandler<HostRunningMo
 
     public static OperationDefinition getDefinition(final LocalHostControllerInfo hostControllerInfo) {
         return new DeferredParametersOperationDefinitionBuilder(hostControllerInfo, OPERATION_NAME, HostModelUtil.getResourceDescriptionResolver())
-            .setParameters(hostControllerInfo.isMasterDomainController() ? MASTER_ATTRIBUTES : SLAVE_ATTRIBUTES)
+            .setParameters((hostControllerInfo.isMasterDomainController() || hostControllerInfo.isCandidateDomainController()) ? MASTER_ATTRIBUTES : SLAVE_ATTRIBUTES)
             .withFlag(OperationEntry.Flag.HOST_CONTROLLER_ONLY)
             .setRuntimeOnly()
             .build();
@@ -122,8 +122,11 @@ public class HostProcessReloadHandler extends ProcessReloadHandler<HostRunningMo
         final boolean adminOnly = ADMIN_ONLY.resolveModelAttribute(context, operation).asBoolean(false);
         final boolean restartServers = RESTART_SERVERS.resolveModelAttribute(context, operation).asBoolean(true);
         final boolean useCurrentHostConfig = USE_CURRENT_HOST_CONFIG.resolveModelAttribute(context, operation).asBoolean(true);
-        final boolean useCurrentDomainConfig = hostControllerInfo.isMasterDomainController() && USE_CURRENT_DOMAIN_CONFIG.resolveModelAttribute(context, operation).asBoolean(true);
-        final String domainConfig = hostControllerInfo.isMasterDomainController() && operation.hasDefined(DOMAIN_CONFIG.getName()) ? DOMAIN_CONFIG.resolveModelAttribute(context, operation).asString() : null;
+
+        // changing the domain config on restart is not allowed for clustered domains, but should be fine for single master domains see WFCORE-1552 / WFCORE-1882
+        final boolean isSingleMasterDomain = hostControllerInfo.isMasterDomainController() && !hostControllerInfo.isCandidateDomainController();
+        final boolean useCurrentDomainConfig = isSingleMasterDomain && USE_CURRENT_DOMAIN_CONFIG.resolveModelAttribute(context, operation).asBoolean(true);
+        final String domainConfig = isSingleMasterDomain && operation.hasDefined(DOMAIN_CONFIG.getName()) ? DOMAIN_CONFIG.resolveModelAttribute(context, operation).asString() : null;
         final String hostConfig = operation.hasDefined(HOST_CONFIG.getName()) ? HOST_CONFIG.resolveModelAttribute(context, operation).asString() : null;
         if (operation.hasDefined(USE_CURRENT_DOMAIN_CONFIG.getName()) && domainConfig != null) {
             throw HostControllerLogger.ROOT_LOGGER.cannotBothHaveFalseUseCurrentDomainConfigAndDomainConfig();
@@ -176,7 +179,7 @@ public class HostProcessReloadHandler extends ProcessReloadHandler<HostRunningMo
                     return new DescriptionProvider() {
                         @Override
                         public ModelNode getModelDescription(Locale locale) {
-                            AttributeDefinition[] params = hostControllerInfo.isMasterDomainController() ? MASTER_ATTRIBUTES : SLAVE_ATTRIBUTES;
+                            AttributeDefinition[] params = (hostControllerInfo.isMasterDomainController() || hostControllerInfo.isCandidateDomainController()) ? MASTER_ATTRIBUTES : SLAVE_ATTRIBUTES;
                             return new DefaultOperationDescriptionProvider(getName(), resolver, attributeResolver, replyType, replyValueType, replyAllowNull, deprecationData, replyParameters, params, accessConstraints).getModelDescription(locale);
                         }
                     };
