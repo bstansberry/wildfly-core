@@ -937,16 +937,19 @@ public class DomainModelControllerService extends AbstractControllerService impl
     private boolean slaveRegistrationVersionOk(final ModelVersion masterVersion, final HostInfo slaveHostInfo) {
         assert masterVersion != null;
         assert slaveHostInfo != null;
-        if (masterVersion.getMajor() < slaveHostInfo.getManagementMajorVersion()) {
-            return false;
+        if (masterVersion.getMajor() > slaveHostInfo.getManagementMajorVersion()) {
+            return true;
         }
-        if (masterVersion.getMinor() < slaveHostInfo.getManagementMinorVersion()) {
-            return false;
+        if (masterVersion.getMajor() == slaveHostInfo.getManagementMajorVersion() &&
+                masterVersion.getMinor() > slaveHostInfo.getManagementMinorVersion()) {
+            return true;
         }
-        if (masterVersion.getMicro() < slaveHostInfo.getManagementMicroVersion()) {
-            return false;
+        if (masterVersion.getMajor() == slaveHostInfo.getManagementMajorVersion() &&
+                masterVersion.getMinor() == slaveHostInfo.getManagementMinorVersion() &&
+                masterVersion.getMicro() >= slaveHostInfo.getManagementMicroVersion()) {
+            return true;
         }
-        return true;
+        return false;
     }
 
     private class DelegatingServerInventory implements ServerInventory {
