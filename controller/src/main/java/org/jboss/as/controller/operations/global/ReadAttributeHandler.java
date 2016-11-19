@@ -280,14 +280,38 @@ public class ReadAttributeHandler extends GlobalOperationHandlers.AbstractMultiT
         } else if (subModel.hasDefined(attribute.getName())) {
             final ModelNode result = subModel.get(attribute.getName());
             context.getResult().set(result);
-        } else if (defaults && attribute.getDefaultValue() != null) {
-            // No defined value in the model. See if we should reply with a default from the metadata,
-            // reply with undefined, or fail because it's a non-existent attribute name
+        } else if (defaults && attribute.getDefaultValue() != null  && !hasAlternatives(attribute, subModel)) {
+            // No defined value in the model, but the user wants defaults, this attribute has one,
+            // and there is no alternative attribute defined. This means the default should
+            // take effect in the runtime, so report the default.
             context.getResult().set(attribute.getDefaultValue());
         } else {
-            // model had no defined value, but we treat its existence in the model or the metadata
-            // as proof that it's a legit attribute name
+            // No value and no effective (or desired) default, so return undefined
             context.getResult(); // this initializes the "result" to ModelType.UNDEFINED
         }
+    }
+
+    private static boolean hasAlternatives(AttributeDefinition attribute, ModelNode subModel) {
+        String[] alts = attribute.getAlternatives();
+        if (alts != null) {
+            for (String alt : alts) {
+                if (subModel.hasDefined(alt)) {
+                    return true;
+                }
+                // It's possible the alternative 'alt' value is not directly stored in the model and
+                // will not be picked up by the hasDefined(alt) test above but rather needs
+                // execution of a custom read handler to check. But checking for custom read handling
+                // and adding read attribute steps to execute that handling is more than I'm willing
+                // to do now for what seems like a real edge case. So we just assume the alt
+                // is not defined and allow this method to return false and attribute's
+                // default value to be reported. Even if incorrect that result is at least
+                // consistent with what happened prior to WFCORE-2011. I considered just checking
+                // for the existence of a custom read handler and if found return true without
+                // executing it. But then we are just guessing that it would return undefined
+                // and perhaps producing a wrong result that may be different from
+                // pre-WFCORE-2011 behavior.
+            }
+        }
+        return false;
     }
 }
