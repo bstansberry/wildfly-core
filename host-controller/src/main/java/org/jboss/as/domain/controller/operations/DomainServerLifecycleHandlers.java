@@ -412,6 +412,48 @@ public class DomainServerLifecycleHandlers {
         }
     }
 
+    private static class KillServersLifecycleHander extends AbstractHackLifecycleHandler {
+
+        @Override
+        public void execute(OperationContext context, ModelNode operation) throws OperationFailedException {
+            context.acquireControllerLock();
+            context.readResource(PathAddress.EMPTY_ADDRESS, false);
+            final ModelNode model = Resource.Tools.readModel(context.readResourceFromRoot(PathAddress.EMPTY_ADDRESS, true));
+            final String group = getServerGroupName(operation);
+            final boolean blocking = BLOCKING.resolveModelAttribute(context, operation).asBoolean();
+            final boolean suspend = SUSPEND.resolveModelAttribute(context, operation).asBoolean();
+            context.addStep(new OperationStepHandler() {
+                @Override
+                public void execute(OperationContext context, ModelNode operation) throws OperationFailedException {
+                    final String hostName = model.get(HOST).keys().iterator().next();
+                    final ModelNode serverConfig = model.get(HOST, hostName).get(SERVER_CONFIG);
+                    final Set<String> serversInGroup = getServersForGroup(model, group);
+                    final Set<String> waitForServers = new HashSet<String>();
+                    if (serverConfig.isDefined()) {
+                        // Even though we don't read from the service registry, we are modifying a service
+                        context.getServiceRegistry(true);
+                        for (Property config : serverConfig.asPropertyList()) {
+                            final ServerStatus status = serverInventory.determineServerStatus(config.getName());
+                            if (status != ServerStatus.STARTING && status != ServerStatus.STARTED) {
+                                if (group == null || serversInGroup.contains(config.getName())) {
+                                    if (status != ServerStatus.STOPPED) {
+                                        serverInventory.stopServer(config.getName(), 0);
+                                    }
+                                    serverInventory.startServer(config.getName(), model, false, suspend);
+                                    waitForServers.add(config.getName());
+                                }
+                            }
+                        }
+                        if (blocking) {
+                            serverInventory.awaitServersState(waitForServers, true);
+                        }
+                    }
+                    context.completeStep(OperationContext.RollbackHandler.NOOP_ROLLBACK_HANDLER);
+                }
+            }, Stage.RUNTIME);
+        }
+    }
+
     public static void registerServerLifeCycleOperationsTransformers(ResourceTransformationDescriptionBuilder builder) {
         builder.addOperationTransformationOverride(SUSPEND_SERVERS).setReject().end()
                 .discardOperations(RESUME_SERVERS) //If the legacy slave was not able to suspend a server, then nothing is suspended and the "resume" can be interpreted as having worked.
