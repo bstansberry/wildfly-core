@@ -257,6 +257,7 @@ public class ModelDescriptionConstants {
     public static final String KEYSTORE_PROVIDER = "keystore-provider";
     public static final String KEYSTORE_RELATIVE_TO = "keystore-relative-to";
     public static final String KEYTAB = "keytab";
+    public static final String KILL_SERVERS = "kill-servers";
     public static final String LDAP = "ldap";
     public static final String LDAP_CONNECTION = "ldap-connection";
     public static final String LOCAL = "local";
