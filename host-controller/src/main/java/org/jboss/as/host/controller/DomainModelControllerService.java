@@ -36,6 +36,7 @@ import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OUT
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.PROFILE;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.RESULT;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.RUNNING_SERVER;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SERVER_CONFIG;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SERVER_LAUNCH;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SERVICE;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SUBSYSTEM;
@@ -149,6 +150,8 @@ import org.jboss.as.host.controller.mgmt.ServerToHostProtocolHandler;
 import org.jboss.as.host.controller.mgmt.SlaveHostPinger;
 import org.jboss.as.host.controller.model.host.AdminOnlyDomainConfigPolicy;
 import org.jboss.as.host.controller.operations.LocalHostControllerInfoImpl;
+import org.jboss.as.host.controller.operations.ServerProcessHandlers;
+import org.jboss.as.host.controller.operations.ServerRestartHandler;
 import org.jboss.as.host.controller.operations.StartServersHandler;
 import org.jboss.as.host.controller.resources.ServerConfigResourceDefinition;
 import org.jboss.as.process.CommandLineConstants;
@@ -465,10 +468,24 @@ public class DomainModelControllerService extends AbstractControllerService impl
     }
 
     @Override
-    public void reportServerInstability(String serverName) {
-        MasterDomainControllerClient mdc = masterDomainControllerClient;
-        if (mdc != null) {
-            mdc.reportServerInstability(serverName);
+    public void serverUnstable(String serverName) {
+        boolean change = serverInventory.serverUnstable(serverName);
+        if (change) {
+            HostControllerLogger.ROOT_LOGGER.managedServerUnstable(serverName);
+            // Tell the DC, if that's not us
+            MasterDomainControllerClient mdc = masterDomainControllerClient;
+            if (mdc != null) {
+                mdc.reportServerInstability(serverName);
+            }
+        } // else only report this once
+
+        // Asynchronously do any configured handling of instability
+        InconsistentServerHandling ish = InconsistentServerHandling.configured();
+        if (ish != InconsistentServerHandling.IGNORE) {
+            final ExecutorService executorService = getExecutorServiceInjector().getOptionalValue();
+            if (executorService != null) {
+                executorService.submit(() -> ish.handle(DomainModelControllerService.this, serverName));
+            } // else test environment
         }
     }
 
@@ -1120,8 +1137,8 @@ public class DomainModelControllerService extends AbstractControllerService impl
         }
 
         @Override
-        public void serverUnstable(String serverProcessName) {
-            getServerInventory().serverUnstable(serverProcessName);
+        public boolean serverUnstable(String serverName) {
+            return getServerInventory().serverUnstable(serverName);
         }
 
         @Override
@@ -1552,8 +1569,8 @@ public class DomainModelControllerService extends AbstractControllerService impl
             }
 
             @Override
-            public void serverUnstable(String serverProcessName) {
-
+            public boolean serverUnstable(String serverName) {
+                return true;
             }
 
             @Override
@@ -1657,6 +1674,59 @@ public class DomainModelControllerService extends AbstractControllerService impl
                 }
 
             }
+        }
+    }
+
+    enum InconsistentServerHandling {
+        IGNORE("ignore"), KILL("kill"), KILL_START("kill+start");
+
+        private static InconsistentServerHandling configured() {
+            String prop = WildFlySecurityManager.getPropertyPrivileged("org.jboss.as.deprecated.domain.inconsistent.handling", IGNORE.toString()).toLowerCase();
+            switch (prop) {
+                case "ignore":
+                    return IGNORE;
+                case "kill":
+                    return KILL;
+                case "kill+start":
+                    return KILL_START;
+                default:
+                    // TODO log something
+                    return IGNORE;
+            }
+        }
+
+        private final String name;
+        InconsistentServerHandling(String name) {
+            this.name = name;
+        }
+
+        private void handle(DomainModelControllerService dmcs, String serverName) {
+            if (this != IGNORE) {
+
+                ModelController mc;
+                try {
+                    mc = dmcs.getValue();
+                } catch (RuntimeException e) {
+                    // dmcs is not started; nothing to do
+                    return;
+                }
+                PathAddress pa = PathAddress.pathAddress(PathElement.pathElement(HOST, dmcs.getLocalHostInfo().getLocalHostName()),
+                        PathElement.pathElement(SERVER_CONFIG, serverName));
+                Operation op = Operation.Factory.create(Util.createEmptyOperation(ServerProcessHandlers.KILL_OPERATION.getName(), pa));
+                OperationResponse resp = mc.execute(op, OperationMessageHandler.DISCARD, OperationTransactionControl.COMMIT);
+                if (SUCCESS.equals(resp.getResponseNode().get(OUTCOME).asString())) {
+                    if (this == KILL_START) {
+                        op = Operation.Factory.create(Util.createEmptyOperation(ServerRestartHandler.OPERATION_NAME, pa));
+                        resp = mc.execute(op, OperationMessageHandler.DISCARD, OperationTransactionControl.COMMIT);
+                        // TODO deal with failure
+                    }
+                } // else TODO deal with failure
+            }
+        }
+
+        @Override
+        public String toString() {
+            return name;
         }
     }
 }

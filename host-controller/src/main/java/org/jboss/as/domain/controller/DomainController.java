@@ -124,8 +124,9 @@ public interface DomainController {
     /**
      * Report to the domain controller that a server has been reported as unstable.
      * @param serverName  the name of the server
+     *
      */
-    default void reportServerInstability(String serverName) {
+    default void serverUnstable(String serverName) {
         // default no-op because I'm tired of writing no-op impls in testsuite classes
     }
 

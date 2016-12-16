@@ -370,7 +370,8 @@ public class ServerToHostProtocolHandler implements ManagementRequestHandlerFact
                 @Override
                 public void execute(ManagementRequestContext<ServerInventory> serverInventoryManagementRequestContext) throws Exception {
                     try {
-                        serverInventory.serverUnstable(serverProcessName);
+                        String serverName = serverInventory.getProcessServerName(serverProcessName);
+                        domainController.serverUnstable(serverName);
                     } finally {
                         resultHandler.done(null);
                     }

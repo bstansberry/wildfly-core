@@ -250,9 +250,12 @@ public interface ServerInventory {
     /**
      * Notification that a server process has become unstable.
      *
-     * @param serverProcessName the name of the server process
+     * @param serverName the name of the server process
+     *
+     * @return {@code true} if this is a change in condition, i.e. this is the first report of this
+     *         for this server process; {@code false} if the server process was already considered unstable
      */
-    void serverUnstable(String serverProcessName);
+    boolean serverUnstable(String serverName);
 
     /**
      * Notification that a server has stopped.

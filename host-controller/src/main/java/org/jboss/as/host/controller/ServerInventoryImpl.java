@@ -689,17 +689,9 @@ public class ServerInventoryImpl implements ServerInventory {
     }
 
     @Override
-    public void serverUnstable(final String serverProcessName) {
-        final String serverName = ManagedServer.getServerName(serverProcessName);
+    public boolean serverUnstable(final String serverName) {
         final ManagedServer server = servers.get(serverName);
-        boolean change = true;
-        if (server != null) {
-            change = server.processUnstable();
-        }
-        if (change) {
-            // Pass the news on to the DC
-            domainController.reportServerInstability(serverName);
-        }
+        return server != null && server.processUnstable();
     }
 
     @Override

@@ -19,7 +19,9 @@
 package org.jboss.as.host.controller.operations;
 
 
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.HOST;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP_ADDR;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SERVER_CONFIG;
 
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationDefinition;
@@ -30,6 +32,7 @@ import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.RunningMode;
 import org.jboss.as.controller.client.helpers.domain.ServerStatus;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
+import org.jboss.as.controller.operations.common.Util;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.as.host.controller.logging.HostControllerLogger;
 import org.jboss.as.host.controller.ServerInventory;
@@ -44,6 +47,11 @@ public class ServerRestartHandler implements OperationStepHandler {
 
     public static final String OPERATION_NAME = "restart";
     public static final OperationDefinition DEFINITION = ServerStartHandler.getOperationDefinition(OPERATION_NAME, ServerStartHandler.SUSPEND);
+
+    public static ModelNode getOperation(String host, String server) {
+        PathAddress pa = PathAddress.pathAddress(PathElement.pathElement(HOST, host), PathElement.pathElement(SERVER_CONFIG, server));
+        return Util.createEmptyOperation(OPERATION_NAME, pa);
+    }
 
     private final ServerInventory serverInventory;
 
