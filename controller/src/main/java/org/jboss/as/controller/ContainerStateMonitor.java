@@ -156,6 +156,18 @@ public final class ContainerStateMonitor extends AbstractServiceListener<Object>
     }
 
     /**
+     * Pause awaiting service container stability without affecting problem tracking.
+     *
+     * @param timeout maximum period to wait for service container stability
+     * @param timeUnit unit in which {@code timeout} is expressed
+     *
+     * @throws java.lang.InterruptedException if the thread is interrupted while awaiting service container stability
+     */
+    void pauseForStability(long timeout, TimeUnit timeUnit) throws InterruptedException {
+        monitor.awaitStability(timeout, timeUnit, null, null);
+    }
+
+    /**
      * Creates a data structure reporting recent favorable and unfavorable changes in the state of installed services.
      *
      * @param resetHistory {@code true} if history tracking state used for detecting what has changed on the next
