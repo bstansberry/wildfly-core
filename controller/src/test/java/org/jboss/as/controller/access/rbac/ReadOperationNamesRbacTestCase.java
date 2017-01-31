@@ -24,6 +24,7 @@ package org.jboss.as.controller.access.rbac;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.ADD;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OPERATION_HEADERS;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.QUERY;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.READ_ATTRIBUTE_DESCRIPTION_OPERATION;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.READ_ATTRIBUTE_GROUP_NAMES_OPERATION;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.READ_ATTRIBUTE_GROUP_OPERATION;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.READ_ATTRIBUTE_OPERATION;
@@ -117,7 +118,7 @@ public class ReadOperationNamesRbacTestCase extends AbstractControllerTestBase {
     private static final String[] ALL_OPERATION_NAMES_ARRAY;
     static {
         ALL_OPERATION_NAMES_ARRAY = new String[] {ADD, REMOVE,
-                READ_ATTRIBUTE_OPERATION, READ_ATTRIBUTE_GROUP_OPERATION, READ_ATTRIBUTE_GROUP_NAMES_OPERATION,
+                READ_ATTRIBUTE_OPERATION, READ_ATTRIBUTE_DESCRIPTION_OPERATION, READ_ATTRIBUTE_GROUP_OPERATION, READ_ATTRIBUTE_GROUP_NAMES_OPERATION,
                 READ_CHILDREN_NAMES_OPERATION, READ_CHILDREN_RESOURCES_OPERATION, READ_CHILDREN_TYPES_OPERATION, READ_OPERATION_DESCRIPTION_OPERATION,
                 READ_OPERATION_NAMES_OPERATION, READ_RESOURCE_OPERATION, READ_RESOURCE_DESCRIPTION_OPERATION, UNDEFINE_ATTRIBUTE_OPERATION, WRITE_ATTRIBUTE_OPERATION,
                 OP_CONFIG_RW_ACCESS_READ_WRITE, OP_CONFIG_RW_READ_WRITE, OP_CONFIG_RW_WRITE, OP_CONFIG_RW_READ, OP_CONFIG_RW_NONE,
@@ -143,7 +144,7 @@ public class ReadOperationNamesRbacTestCase extends AbstractControllerTestBase {
     public void testReadOperationNamesAsMonitorNonSensitiveResource() throws Exception {
         registerOperationResource(null);
         testReadOperationNames(StandardRole.MONITOR, true, new String[] {
-                READ_ATTRIBUTE_OPERATION, READ_ATTRIBUTE_GROUP_OPERATION, READ_ATTRIBUTE_GROUP_NAMES_OPERATION,
+                READ_ATTRIBUTE_OPERATION, READ_ATTRIBUTE_DESCRIPTION_OPERATION, READ_ATTRIBUTE_GROUP_OPERATION, READ_ATTRIBUTE_GROUP_NAMES_OPERATION,
                 READ_CHILDREN_NAMES_OPERATION, READ_CHILDREN_RESOURCES_OPERATION, READ_CHILDREN_TYPES_OPERATION, READ_OPERATION_DESCRIPTION_OPERATION,
                 READ_OPERATION_NAMES_OPERATION, READ_RESOURCE_OPERATION, READ_RESOURCE_DESCRIPTION_OPERATION,
                 OP_CONFIG_RO_WRITE /*Although this has a write sensitivity, the operation is read-only so the sensitivity should not be relevant*/,
@@ -163,7 +164,7 @@ public class ReadOperationNamesRbacTestCase extends AbstractControllerTestBase {
     public void testReadOperationNamesAsMaintainerNonSensitiveResource() throws Exception {
         registerOperationResource(null);
         testReadOperationNames(StandardRole.MAINTAINER, true, new String[] {ADD, REMOVE,
-                READ_ATTRIBUTE_OPERATION, READ_ATTRIBUTE_GROUP_OPERATION, READ_ATTRIBUTE_GROUP_NAMES_OPERATION, READ_CHILDREN_NAMES_OPERATION,
+                READ_ATTRIBUTE_OPERATION, READ_ATTRIBUTE_DESCRIPTION_OPERATION, READ_ATTRIBUTE_GROUP_OPERATION, READ_ATTRIBUTE_GROUP_NAMES_OPERATION, READ_CHILDREN_NAMES_OPERATION,
                 READ_CHILDREN_RESOURCES_OPERATION, READ_CHILDREN_TYPES_OPERATION, READ_OPERATION_DESCRIPTION_OPERATION,
                 READ_OPERATION_NAMES_OPERATION, READ_RESOURCE_OPERATION, READ_RESOURCE_DESCRIPTION_OPERATION, UNDEFINE_ATTRIBUTE_OPERATION, WRITE_ATTRIBUTE_OPERATION,
                 OP_CONFIG_RW_NONE, OP_RUNTIME_RW_NONE,

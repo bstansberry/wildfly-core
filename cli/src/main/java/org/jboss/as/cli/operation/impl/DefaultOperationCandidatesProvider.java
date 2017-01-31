@@ -426,6 +426,7 @@ public class DefaultOperationCandidatesProvider implements OperationCandidatesPr
             }};
         addGlobalOpPropCompleter(Util.UNDEFINE_ATTRIBUTE, Util.NAME, attrNameCompleter);
         addGlobalOpPropCompleter(Util.READ_ATTRIBUTE, Util.NAME, attrNameCompleter);
+        addGlobalOpPropCompleter(Util.READ_ATTRIBUTE_DESCRIPTION, Util.NAME, attrNameCompleter);
         addGlobalOpPropCompleter(Util.WRITE_ATTRIBUTE, Util.NAME, new CommandLineCompleterFactory(){
             @Override
             public CommandLineCompleter createCompleter(CommandContext ctx, OperationRequestAddress address) {

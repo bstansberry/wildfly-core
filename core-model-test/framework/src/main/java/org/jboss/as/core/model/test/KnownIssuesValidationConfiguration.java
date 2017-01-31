@@ -123,6 +123,7 @@ public class KnownIssuesValidationConfiguration extends ValidationConfiguration 
         //Exclude the operations where reply-properties is known to have {type=OBJECT,value-type=UNDEFINED}
         config.allowNullValueTypeForOperationReplyProperties(ROOT_ADDR, READ_OPERATION_DESCRIPTION_OPERATION);
         config.allowNullValueTypeForOperationReplyProperties(ROOT_ADDR, READ_RESOURCE_DESCRIPTION_OPERATION);
+        config.allowNullValueTypeForOperationReplyProperties(ROOT_ADDR, READ_ATTRIBUTE_DESCRIPTION_OPERATION);
         config.allowNullValueTypeForOperationReplyProperties(ROOT_ADDR, READ_RESOURCE_OPERATION);
         config.allowNullValueTypeForOperationReplyProperties(ROOT_ADDR, READ_ATTRIBUTE_OPERATION);
         return config;

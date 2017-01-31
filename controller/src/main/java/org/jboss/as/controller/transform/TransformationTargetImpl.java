@@ -32,6 +32,7 @@ import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.controller.operations.global.QueryOperationHandler;
+import org.jboss.as.controller.operations.global.ReadAttrbuteDescriptionHandler;
 import org.jboss.as.controller.registry.OperationTransformerRegistry;
 import org.jboss.as.controller.registry.OperationTransformerRegistry.PlaceholderResolver;
 
@@ -166,6 +167,9 @@ public class TransformationTargetImpl implements TransformationTarget {
         }
         if (version.getMajor() < 3 && ModelDescriptionConstants.QUERY.equals(operationName)) { // TODO use transformer inheritance and register this normally
             return QueryOperationHandler.TRANSFORMER;
+        }
+        if (version.getMajor() < 5 && ModelDescriptionConstants.READ_ATTRIBUTE_DESCRIPTION_OPERATION.equals(operationName)) { // TODO use transformer inheritance and register this normally
+            return ReadAttrbuteDescriptionHandler.TRANSFORMER;
         }
         final OperationTransformerRegistry.OperationTransformerEntry entry = registry.resolveOperationTransformer(address, operationName, placeholderResolver);
         return entry.getTransformer();

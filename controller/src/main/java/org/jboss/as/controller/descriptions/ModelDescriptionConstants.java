@@ -364,6 +364,7 @@ public class ModelDescriptionConstants {
     public static final String QUERY = "query";
     public static final String READ = "read";
     public static final String READ_ATTRIBUTE_OPERATION = "read-attribute";
+    public static final String READ_ATTRIBUTE_DESCRIPTION_OPERATION = "read-attribute-description";
     public static final String READ_ATTRIBUTE_GROUP_OPERATION = "read-attribute-group";
     public static final String READ_ATTRIBUTE_GROUP_NAMES_OPERATION = "read-attribute-group-names";
     public static final String READ_CHILDREN_NAMES_OPERATION = "read-children-names";

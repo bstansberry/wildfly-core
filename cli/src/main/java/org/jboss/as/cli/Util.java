@@ -140,6 +140,7 @@ public class Util {
     public static final String PROFILE = "profile";
     public static final String READ = "read";
     public static final String READ_ATTRIBUTE = "read-attribute";
+    public static final String READ_ATTRIBUTE_DESCRIPTION = "read-attribute-description";
     public static final String READ_CHILDREN_NAMES = "read-children-names";
     public static final String READ_CHILDREN_RESOURCES = "read-children-resources";
     public static final String READ_CHILDREN_TYPES = "read-children-types";

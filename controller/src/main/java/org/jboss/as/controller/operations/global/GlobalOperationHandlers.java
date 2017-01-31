@@ -101,6 +101,7 @@ public class GlobalOperationHandlers {
         }
 
         root.registerOperationHandler(ReadResourceDescriptionHandler.DEFINITION, ReadResourceDescriptionHandler.INSTANCE, true);
+        root.registerOperationHandler(ReadAttrbuteDescriptionHandler.DEFINITION, ReadAttrbuteDescriptionHandler.INSTANCE, true);
         root.registerOperationHandler(ReadAttributeGroupNamesHandler.DEFINITION, ReadAttributeGroupNamesHandler.INSTANCE, true);
         root.registerOperationHandler(ReadChildrenNamesHandler.DEFINITION, ReadChildrenNamesHandler.INSTANCE, true);
         root.registerOperationHandler(ReadChildrenTypesHandler.DEFINITION, ReadChildrenTypesHandler.INSTANCE, true);

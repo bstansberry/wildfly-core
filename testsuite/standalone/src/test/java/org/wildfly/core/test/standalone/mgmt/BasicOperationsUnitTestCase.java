@@ -23,31 +23,44 @@
 package org.wildfly.core.test.standalone.mgmt;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.ACCESS;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.ACCESS_CONTROL;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.ADD;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.ANY_ADDRESS;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.ATTRIBUTES;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.AUDIT;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.CHILD_TYPE;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.COMPOSITE;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.CORE_SERVICE;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.DESCRIPTION;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.FAILED;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.FAILURE_DESCRIPTION;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.FILE_HANDLER;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.HTTP_INTERFACE;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.INCLUDE_RUNTIME;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.INTERFACE;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.MANAGEMENT;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.MANAGEMENT_INTERFACE;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.NAME;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OPERATION_HEADERS;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP_ADDR;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OUTCOME;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.PORT;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.READ_ATTRIBUTE_DESCRIPTION_OPERATION;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.READ_ATTRIBUTE_OPERATION;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.READ_CHILDREN_NAMES_OPERATION;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.READ_RESOURCE_DESCRIPTION_OPERATION;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.READ_RESOURCE_OPERATION;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.RECURSIVE;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.RECURSIVE_DEPTH;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.RELATIVE_TO;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.REMOVE;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.RESULT;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.ROLES;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.ROLLBACK_ON_RUNTIME_FAILURE;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SOCKET_BINDING;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SOCKET_BINDING_GROUP;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.STEPS;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SUBSYSTEM;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SUCCESS;
@@ -83,9 +96,12 @@ import javax.inject.Inject;
 
 import org.jboss.as.controller.CompositeOperationHandler;
 import org.jboss.as.controller.PathAddress;
+import org.jboss.as.controller.PathElement;
+import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.controller.client.helpers.Operations;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.as.controller.operations.common.Util;
+import org.jboss.as.controller.operations.global.ReadResourceDescriptionHandler;
 import org.jboss.as.test.deployment.trivial.ServiceActivatorDeploymentUtil;
 import org.jboss.as.test.integration.management.util.MgmtOperationException;
 import org.jboss.as.test.integration.management.util.ServerReload;
@@ -542,6 +558,113 @@ public class BasicOperationsUnitTestCase {
         } finally {
             managementClient.getControllerClient().execute(removePropertyOp);
         }
+    }
+
+    @Test
+    public void testReadAttributeDescription() throws IOException {
+        PathAddress address = PathAddress.pathAddress(CORE_SERVICE, MANAGEMENT).append(MANAGEMENT_INTERFACE, HTTP_INTERFACE);
+        ModelNode radResp = testReadAttributeDescription(address, SOCKET_BINDING, null);
+        assertEquals(radResp.toString(), SUCCESS, radResp.get(OUTCOME).asString());
+    }
+
+    @Test
+    public void testReadAttributeDescriptionBadAddress() throws IOException {
+        PathAddress address = PathAddress.pathAddress(CORE_SERVICE, MANAGEMENT).append(MANAGEMENT_INTERFACE, "bogus");
+        ModelNode radResp = testReadAttributeDescription(address, SOCKET_BINDING, null);
+        assertEquals(radResp.toString(), FAILED, radResp.get(OUTCOME).asString());
+    }
+
+    @Test
+    public void testReadAttributeDescriptionBadAttribute() throws IOException {
+        PathAddress address = PathAddress.pathAddress(CORE_SERVICE, MANAGEMENT).append(MANAGEMENT_INTERFACE, HTTP_INTERFACE);
+        ModelNode ra = Util.createEmptyOperation(READ_ATTRIBUTE_OPERATION, address);
+        ra.get(NAME).set("bogus");
+        ModelNode rad = Util.createEmptyOperation(READ_ATTRIBUTE_DESCRIPTION_OPERATION, address);
+        rad.get(NAME).set("bogus");
+
+        ModelControllerClient mcc = managementClient.getControllerClient();
+
+        ModelNode raResp = mcc.execute(ra);
+        ModelNode radResp = mcc.execute(rad);
+        assertEquals(radResp.toString(), FAILED, radResp.get(OUTCOME).asString());
+        ModelNode fd = radResp.get(FAILURE_DESCRIPTION);
+        assertTrue(radResp.toString(), fd.toString().contains("bogus"));
+        assertEquals(radResp.toString(), radResp.get(FAILURE_DESCRIPTION), fd);
+        assertTrue(radResp.toString(), fd.toString().contains("bogus"));
+
+    }
+
+    @Test
+    public void testReadAttributeDescriptionSecureResource() throws IOException {
+        PathAddress address = PathAddress.pathAddress(CORE_SERVICE, MANAGEMENT).append(ACCESS, AUDIT).append(FILE_HANDLER);
+        ModelNode radResp = testReadAttributeDescription(address, RELATIVE_TO, "Monitor");
+        assertEquals(radResp.toString(), SUCCESS, radResp.get(OUTCOME).asString());
+
+    }
+
+    @Test
+    public void testReadAttributeDescriptionMultipleWildCards() throws IOException {
+        PathAddress address = PathAddress.pathAddress(PathElement.pathElement(SOCKET_BINDING_GROUP)).append(SOCKET_BINDING);
+        ModelNode radResp = testReadAttributeDescription(address, PORT, null);
+        assertEquals(radResp.toString(), SUCCESS, radResp.get(OUTCOME).asString());
+    }
+
+    @Test
+    public void testReadAttributeDescriptionBadAttributeWildcard() throws IOException {
+        PathAddress address = PathAddress.pathAddress(PathElement.pathElement(SOCKET_BINDING_GROUP)).append(SOCKET_BINDING);
+        ModelNode rad = Util.createEmptyOperation(READ_ATTRIBUTE_DESCRIPTION_OPERATION, address);
+        rad.get(NAME).set("bogus");
+
+        ModelControllerClient mcc = managementClient.getControllerClient();
+
+        ModelNode radResp = mcc.execute(rad);
+        assertEquals(radResp.toString(), SUCCESS, radResp.get(OUTCOME).asString());
+        assertEquals(radResp.toString(), ModelType.LIST, radResp.get(RESULT).getType());
+        assertEquals(radResp.toString(), 0, radResp.get(RESULT).asInt());
+    }
+
+    private static ModelNode testReadAttributeDescription(PathAddress address, String attribute, String role) throws IOException {
+        ModelNode rrd = Util.createEmptyOperation(READ_RESOURCE_DESCRIPTION_OPERATION, address);
+        rrd.get(ACCESS_CONTROL).set(ReadResourceDescriptionHandler.AccessControl.COMBINED_DESCRIPTIONS.toString());
+        ModelNode rad = Util.createEmptyOperation(READ_ATTRIBUTE_DESCRIPTION_OPERATION, address);
+        rad.get(NAME).set(attribute);
+
+        if (role != null) {
+            rrd.get(OPERATION_HEADERS, ROLES).add(role);
+            rad.get(OPERATION_HEADERS, ROLES).add(role);
+        }
+
+        ModelControllerClient mcc = managementClient.getControllerClient();
+
+        ModelNode rrdResp = mcc.execute(rrd);
+        ModelNode radResp = mcc.execute(rad);
+
+        if (SUCCESS.equals(rrdResp.get(OUTCOME).asString())) {
+            assertEquals(radResp.toString(), SUCCESS, radResp.get(OUTCOME).asString());
+            ModelNode rrdResult = rrdResp.get(RESULT);
+            ModelNode radResult = radResp.get(RESULT);
+            if (address.isMultiTarget()) {
+                assertEquals(rrdResult.toString(), ModelType.LIST, rrdResult.getType());
+                assertEquals(radResult.toString(), ModelType.LIST, radResult.getType());
+                for (int i = 0; i < rrdResult.asInt(); i++) {
+                    ModelNode rrdItem = rrdResult.get(i);
+                    ModelNode radItem = radResult.get(i);
+                    assertEquals(radResult.toString(), rrdItem.get(OP_ADDR), radItem.get(OP_ADDR));
+                    assertEquals(radResult.toString(), rrdItem.get(OUTCOME), radItem.get(OUTCOME));
+                    assertEquals(radResult.toString(), rrdItem.get(RESULT, ATTRIBUTES, attribute), radItem.get(RESULT));
+                }
+            } else {
+                ModelNode rrdDesc =rrdResp.get(RESULT, ATTRIBUTES, attribute);
+                assertEquals(radResp.toString(), rrdDesc, radResp.get(RESULT));
+            }
+        } else {
+            assertEquals(radResp.toString(), FAILED, radResp.get(OUTCOME).asString());
+            ModelNode rrdFD = rrdResp.get(FAILURE_DESCRIPTION);
+            assertTrue(rrdResp.toString(), rrdFD.isDefined());
+            assertEquals(radResp.toString(), rrdFD, radResp.get(FAILURE_DESCRIPTION));
+        }
+
+        return radResp;
     }
 
     private static int countSystemProperties() throws IOException {
