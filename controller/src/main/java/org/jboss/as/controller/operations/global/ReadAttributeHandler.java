@@ -143,6 +143,11 @@ public class ReadAttributeHandler extends GlobalOperationHandlers.AbstractMultiT
                 PathAddress pa = context.getCurrentAddress();
                 filteredData.addReadRestrictedAttribute(pa, operation.get(NAME).asString());
                 context.getResult().set(new ModelNode());
+            } catch (GlobalOperationHandlers.NoSuchAttributeException nsae) {
+                if (!ignoreMissingResource) {
+                    throw nsae;
+                } // else Invalid attribute on the resource is equivalent to no resource
+                context.getResult().set(new ModelNode());
             }
         }
     }
@@ -161,7 +166,7 @@ public class ReadAttributeHandler extends GlobalOperationHandlers.AbstractMultiT
         final AttributeAccess attributeAccess = registry.getAttributeAccess(PathAddress.EMPTY_ADDRESS, attributeName);
 
         if (attributeAccess == null) {
-            throw new OperationFailedException(ControllerLogger.ROOT_LOGGER.unknownAttribute(attributeName));
+            throw new GlobalOperationHandlers.NoSuchAttributeException(attributeName);
         }
         assert attributeAccess.getAttributeDefinition() != null;
 

@@ -1128,6 +1128,12 @@ public class GlobalOperationHandlers {
         //context.report(MessageSeverity.WARN, msg);
     }
 
+    static class NoSuchAttributeException extends OperationFailedException {
+        NoSuchAttributeException(String attributeName) {
+            super(ControllerLogger.ROOT_LOGGER.unknownAttribute(attributeName));
+        }
+    }
+
 
     private static final class NoSuchResourceTypeException extends OperationFailedRuntimeException {
         private final PathAddress pathAddress;
