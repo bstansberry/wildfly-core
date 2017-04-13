@@ -90,7 +90,13 @@ public class RemotingModelControllerClient extends AbstractModelControllerClient
             // Then the endpoint
             if (endpoint != null) {
                 try {
-                    endpoint.closeAsync();
+                    // The WFCORE-1573 change of closing this async means there is no
+                    // way to ensure the endpoint is fully closed before the classloader
+                    // that loaded Enpoint etc is gc'd. No other code has a ref to this
+                    // endpoint that is in a position to wait for the async close to complete.
+                    // (It's instantiated in this object and not exposed to callers of it.)
+                    //endpoint.closeAsync();
+                    StreamUtils.safeClose(endpoint);
                 } catch (UnsupportedOperationException ignored) {
                 }
                 endpoint = null;
