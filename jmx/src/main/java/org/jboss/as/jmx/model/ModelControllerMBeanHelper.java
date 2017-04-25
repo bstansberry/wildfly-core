@@ -127,8 +127,9 @@ public class ModelControllerMBeanHelper {
     }
 
     Set<ObjectInstance> queryMBeans(final MBeanServer mbeanServer, final ObjectName name, final QueryExp query) {
-        Set<ObjectInstance> basic = new RootResourceIterator<Set<ObjectInstance>>(accessControlUtil, getRootResourceAndRegistration().getResource(),
-                new ObjectNameMatchResourceAction<Set<ObjectInstance>>(name) {
+        ManagementModelIntegration.ResourceAndRegistration resourceAndReg = getRootResourceAndRegistration();
+        Set<ObjectInstance> basic = new RootResourceIterator<Set<ObjectInstance>>(accessControlUtil, resourceAndReg.getResource(),
+                new ObjectNameMatchResourceAction<Set<ObjectInstance>>(name, resourceAndReg.getRegistration()) {
 
             Set<ObjectInstance> set = new HashSet<ObjectInstance>();
 
@@ -174,8 +175,9 @@ public class ModelControllerMBeanHelper {
     }
 
     Set<ObjectName> queryNames(MBeanServer mbeanServer, final ObjectName name, final QueryExp query) {
-        Set<ObjectName> basic = new RootResourceIterator<Set<ObjectName>>(accessControlUtil, getRootResourceAndRegistration().getResource(),
-                new ObjectNameMatchResourceAction<Set<ObjectName>>(name) {
+        ManagementModelIntegration.ResourceAndRegistration resourceAndReg = getRootResourceAndRegistration();
+        Set<ObjectName> basic = new RootResourceIterator<Set<ObjectName>>(accessControlUtil, resourceAndReg.getResource(),
+                new ObjectNameMatchResourceAction<Set<ObjectName>>(name, resourceAndReg.getRegistration()) {
 
             Set<ObjectName> set = new HashSet<ObjectName>();
 
@@ -604,8 +606,9 @@ public class ModelControllerMBeanHelper {
         private final Map<String, String> properties;
         private final ObjectName domainOnlyName;
         private final boolean propertyListPattern;
+        private final TypeTree typeTree;
 
-        protected ObjectNameMatchResourceAction(ObjectName baseName) {
+        ObjectNameMatchResourceAction(ObjectName baseName, ImmutableManagementResourceRegistration rootMRR) {
             this.baseName = baseName;
             this.properties = baseName == null ? Collections.<String, String>emptyMap() : baseName.getKeyPropertyList();
             try {
@@ -614,6 +617,11 @@ public class ModelControllerMBeanHelper {
                 throw new IllegalStateException(e);
             }
             this.propertyListPattern = baseName != null && baseName.isPropertyListPattern();
+            // A property list pattern means we'd need to visit every resource including runtime-only,
+            // which has unknown cost for runtime-only. So if there are properties that can limit what's
+            // valid, use those and the MRR tree to first identify valid address patterns so we can
+            // limit resource checking based on that
+            this.typeTree = this.propertyListPattern && !properties.isEmpty() ? TypeTree.create(rootMRR, properties) : null;
         }
 
         @Override
@@ -640,7 +648,7 @@ public class ModelControllerMBeanHelper {
                 }
             } else {
                 // Address may be a parent of an interesting address, so see if it matches all elements it has
-                boolean matches = domainOnlyName.apply(toMatch);
+                boolean matches = domainOnlyName.apply(toMatch) && (typeTree == null || typeTree.matches(address));
                 if (matches) {
                     for (Map.Entry<String, String> entry : toMatch.getKeyPropertyList().entrySet()) {
 
@@ -659,6 +667,164 @@ public class ModelControllerMBeanHelper {
                 }
             }
             return result;
+        }
+    }
+
+    /**
+     * Stripped down variety of an MRR tree that only stores path element information. Can prune itself
+     * of branches where the keys in the branch addresses don't match all of the keys in a provided set
+     * of ObjectName parameter keys.
+     *
+     * The idea here is if a JMX query uses an ObjectName with a property list pattern and a property value pattern
+     * (see the ObjectNameclass javadoc for the meaning of those) then we can only know if a given branch may
+     * match the pattern by navigating all the way to the leaves of the branch. Only then do we know whether a
+     * particular property's key will match an element in a branch.
+     *
+     * So, what this does is create a matching MRR tree that only stores path element data, simultaneously
+     * identifying all the leaves in the tree. Then we ask all leaves if their path includes
+     * all the keys in the ObjectName properties, with leaves that do not pruning themselves from the tree,
+     * with parent nodes pruning themselves if they have no children. When this is done, the tree only includes
+     * branches that are useful for matching the ObjectName pattern.
+     *
+     * Once the tree is pruned, then resource PathAddresses can be matched against it with addresses
+     * not corresponding to the tree identified as not matching the query. This avoids the need to load
+     * resources, the cost of which may be high in the case of runtime-only resources.
+     *
+     * TODO the MRR.getChildAddresses and mrr.getSubModel calls we use here can be pretty expensive. More
+     * efficient *might* be:
+     *
+     * 1) Add a method to MRR to have it provide all the leaves under its node in the tree.
+     * Make that efficient internally (which is the key thing).
+     * 2) Call that on the MRR root to get all the leaf MRRs and their addresses.
+     * 3) Check those addresses against the ObjectName property keys, discarding mismatches.
+     * 4) Build the "type tree" from the remnants. The tree build should be more efficient too since
+     * the set of branches should be much smaller.
+     */
+    private static class TypeTree {
+
+        static TypeTree create(ImmutableManagementResourceRegistration rootMRR, Map<String, String> properties) {
+            assert rootMRR != null;
+            assert properties != null;
+            Set<TypeTree> leaves = new HashSet<>();
+            TypeTree result = new TypeTree(rootMRR, leaves);
+            result.setParents();
+            for (TypeTree leaf : leaves) {
+                leaf.prune(properties);
+            }
+            return result;
+        }
+
+        private TypeTree parent;
+        private int level;
+        private String objectNameType;
+        private final PathElement pathElement;
+        private final Set<TypeTree> children;
+        private int childCount;
+
+        private TypeTree(ImmutableManagementResourceRegistration mrr, Set<TypeTree> leaves) {
+            PathAddress pa = mrr.getPathAddress();
+            this.pathElement = pa.size() == 0 ? null : pa.getLastElement();
+            // TODO if we could just get the leaves from the root MRR letting it calculate those internally,
+            // that *could* be more efficient. MRR.getChildAddresses and mrr.getSubModel can be costly
+            Set<PathElement> childElements = mrr.getChildAddresses(PathAddress.EMPTY_ADDRESS);
+            if (childElements.size() == 0) {
+                children = Collections.emptySet();
+            } else {
+                children = new HashSet<>(childElements.size());
+                for (PathElement pe : childElements) {
+                    ImmutableManagementResourceRegistration child = mrr.getSubModel(PathAddress.pathAddress(pe));
+                    if (child != null && !child.isRemote()) {
+                        TypeTree childTree = new TypeTree(child, leaves);
+                        children.add(childTree);
+                        if (childTree.childCount == 0) {
+                            leaves.add(childTree);
+                        }
+                    }
+                }
+                childCount = children.size();
+            }
+        }
+
+        void setParents()  {
+            assert pathElement == null;
+            setParent(null, -1);
+        }
+
+        private void setParent(TypeTree parent, int level) {
+            this.parent = parent;
+            this.level = level;
+            int childLevel = level + 1;
+            for (TypeTree child : children) {
+                child.setParent(this, childLevel);
+            }
+        }
+
+        void prune(Map<String, String> properties) {
+            assert childCount == 0;
+            Set<String> types = new HashSet<>(properties.keySet());
+            match(types);
+            // Any remaining types means this path is not a valid match
+            if (!types.isEmpty() && parent != null) {
+                parent.removeChild(this);
+            }
+        }
+
+        private void match(Set<String> types) {
+            if (pathElement != null) {
+                if (objectNameType == null) {
+                    objectNameType = ObjectNameAddressUtil.escapeKey(pathElement.getKey());
+                }
+
+                types.removeIf(objectNameType::equals);
+                if (types.size() > 0 && parent != null) {
+                    parent.match(types);
+                }
+            }
+        }
+
+        private void removeChild(TypeTree child) {
+            if (children.remove(child)) {
+                if (children.size() == 0 && parent != null) {
+                    parent.removeChild(this);
+                } else {
+                    childCount--;
+                }
+            }
+        }
+
+        boolean matches(PathAddress address) {
+            assert parent == null;
+            int addrSize = address.size();
+            if (addrSize == 0) {
+                return true;
+            }
+            for (TypeTree child : children) {
+                if (child.match(address, addrSize)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private boolean match(PathAddress address, int addrSize) {
+            assert level >= 0;
+            // Skip the string check if there are no children and address is bigger than ours
+            if (childCount == 0 && addrSize > level + 1 ) {
+                return false;
+            }
+            PathElement matchElement = address.getElement(level);
+            if (!pathElement.getKey().equals(matchElement.getKey()) || (!pathElement.isWildcard() && !pathElement.getValue().equals(matchElement.getValue()))) {
+                return false;
+            }
+            if (addrSize == level + 1) {
+                return true;
+            }
+            for (TypeTree child : children) {
+                if (child.match(address, addrSize)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }

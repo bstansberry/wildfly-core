@@ -161,9 +161,16 @@ class ObjectNameAddressUtil {
         return null;
     }
 
+    static String escapeKey(String key) {
+        for (EscapedCharacter escapedCharacter : ESCAPED_KEY_CHARACTERS) {
+            key = key.replace(escapedCharacter.getChar(), escapedCharacter.getEscaped());
+        }
+        return key;
+    }
+
     private static void escapeKey(EscapedCharacter[] escapedCharacters, StringBuilder sb, String value) {
         for (EscapedCharacter escapedCharacter : escapedCharacters) {
-            value = value.replace(escapedCharacter.getChar().toString(), escapedCharacter.getEscaped());
+            value = value.replace(escapedCharacter.getChar(), escapedCharacter.getEscaped());
         }
         sb.append(value);
     }
