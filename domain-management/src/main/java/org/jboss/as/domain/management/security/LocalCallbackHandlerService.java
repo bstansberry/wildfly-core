@@ -204,6 +204,13 @@ class LocalCallbackHandlerService implements Service<CallbackHandlerService>, Ca
                     allowedUsersSet.add(current);
                 }
             }
+        } else if (defaultUser != null) {
+            // No configured allowedUsers but the presence of a default user
+            // means an anonymous caller could auth (because the default user
+            // would be used) but callers that provide an id could not. That
+            // makes no sense so we treat this situation the same as saying
+            // any user can auth
+            allowAll = true;
         }
     }
 
