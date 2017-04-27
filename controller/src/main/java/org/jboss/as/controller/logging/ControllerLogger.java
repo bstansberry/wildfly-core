@@ -3510,4 +3510,7 @@ public interface ControllerLogger extends BasicLogger {
 
     @Message(id = 446, value = "%s or alternative(s) %s is required")
     OperationFailedException requiredWithAlternatives(String name, Set<String> alternatives);
+
+    @Message(id = 447, value = "The handler for operation %s at address %s attempted to add a Stage,RUNTIME step for address %s. Adding runtime steps outside ones own subsystem is not allowed.")
+    IllegalStateException illegalCrossSubsystemOperation(String operation, PathAddress adderAddress, PathAddress addedAddress);
 }

@@ -147,7 +147,7 @@ public class ParallelBootOperationStepHandler implements OperationStepHandler {
             List<ParsedBootOp> bootOps = entry.getValue();
             ParallelBootOperationContext pboc = bootOps.size() == 0
                     ? null
-                    : createOperationContext(primaryContext, bootSecurityDomain, txControl, subsystemRuntimeOps);
+                    : createOperationContext(primaryContext, subsystemName, bootSecurityDomain, txControl, subsystemRuntimeOps);
             ParallelBootTask subsystemTask = new ParallelBootTask(subsystemName, bootOps, OperationContext.Stage.MODEL, txControl, pboc);
             executor.execute(subsystemTask);
         }
@@ -214,10 +214,11 @@ public class ParallelBootOperationStepHandler implements OperationStepHandler {
     }
 
     private ParallelBootOperationContext createOperationContext(final OperationContextImpl primaryContext,
+                                                                final String subsystemName,
                                                                 final SecurityDomain bootSecurityDomain,
                                                                 final ParallelBootTransactionControl txControl,
                                                                 final List<ParsedBootOp> runtimeOps) {
-        return new ParallelBootOperationContext(txControl, processState,
+        return new ParallelBootOperationContext(subsystemName, txControl, processState,
                 primaryContext, runtimeOps, controller, operationId, controller.getAuditLogger(),
                 extraValidationStepHandler, bootSecurityDomain::getAnonymousSecurityIdentity);
     }
@@ -298,7 +299,7 @@ public class ParallelBootOperationStepHandler implements OperationStepHandler {
                     List<ParsedBootOp> bootOps = entry.getValue();
                     ParallelBootOperationContext pboc = bootOps.size() == 0
                         ? null
-                        : createOperationContext(primaryContext, bootSecurityDomain, txControl, null);
+                        : createOperationContext(primaryContext, subsystemName, bootSecurityDomain, txControl, null);
                     ParallelBootTask subsystemTask = new ParallelBootTask(subsystemName, bootOps, OperationContext.Stage.RUNTIME, txControl, pboc);
                     executor.execute(subsystemTask);
                 }

@@ -22,6 +22,10 @@
 
 package org.jboss.as.controller;
 
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP_ADDR;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SUBSYSTEM;
+
 import java.io.InputStream;
 import java.util.List;
 import java.util.Set;
@@ -58,17 +62,19 @@ class ParallelBootOperationContext extends AbstractOperationContext {
     private final OperationContextImpl primaryContext;
     private final List<ParsedBootOp> runtimeOps;
     private final Thread controllingThread;
+    private final String subsystemName;
     private Step lockStep;
     private final int operationId;
     private final ModelControllerImpl controller;
 
-    ParallelBootOperationContext(final ModelController.OperationTransactionControl transactionControl,
+    ParallelBootOperationContext(final String subsystemName, final ModelController.OperationTransactionControl transactionControl,
                                  final ControlledProcessState processState, final OperationContextImpl primaryContext,
                                  final List<ParsedBootOp> runtimeOps,
                                  final ModelControllerImpl controller, final int operationId, final AuditLogger auditLogger,
                                  final OperationStepHandler extraValidationStepHandler, final Supplier<SecurityIdentity> securityIdentitySupplier) {
         super(primaryContext.getProcessType(), primaryContext.getRunningMode(), transactionControl, processState, true, auditLogger,
                 controller.getNotificationSupport(), controller, true, extraValidationStepHandler, null, securityIdentitySupplier);
+        this.subsystemName = subsystemName;
         this.primaryContext = primaryContext;
         this.runtimeOps = runtimeOps;
         this.controller = controller;
@@ -110,10 +116,23 @@ class ParallelBootOperationContext extends AbstractOperationContext {
 
     @Override
     public void addStep(ModelNode response, ModelNode operation, OperationStepHandler step, Stage stage) throws IllegalArgumentException {
+        PathAddress pa = PathAddress.pathAddress(operation.get(OP_ADDR));
+        boolean foreign = pa.size() == 0 || !pa.getElement(0).getKey().equals(SUBSYSTEM) || !pa.getElement(0).getValue().equals(subsystemName);
         if (stage == Stage.MODEL) {
-            super.addStep(response, operation, step, stage);
+            if (foreign) {
+                // Add it after the parallel steps
+                primaryContext.addStep(response, operation, step, stage);
+            } else {
+                super.addStep(response, operation, step, stage);
+            }
         } else if (stage == Stage.RUNTIME) {
-            if (runtimeOps != null) {
+            if (foreign) {
+                // Not allowed since 1) it's just ugly, so don't do it and 2) the odds are high
+                // that the added step will execute in the wrong sequence since the normal runtime
+                // steps from the foreign address may very well not be added yet
+                String op = activeStep.operation.get(OP).asString();
+                throw ControllerLogger.MGMT_OP_LOGGER.illegalCrossSubsystemOperation(op, activeStep.address, pa);
+            } else if (runtimeOps != null) {
                 // Cache for use by the runtime step from ParallelBootOperationStepHandler
                 ParsedBootOp parsedOp = new ParsedBootOp(operation, step, response);
                 runtimeOps.add(parsedOp);
