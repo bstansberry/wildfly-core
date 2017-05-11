@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.ServiceLoader;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.jboss.as.controller.OperationContext.Stage;
 import org.jboss.as.controller.access.management.DelegatingConfigurableAuthorizer;
@@ -144,6 +145,15 @@ public abstract class AbstractControllerService implements Service<ModelControll
      */
     public static final RuntimeCapability<Void> EXECUTOR_CAPABILITY =
             RuntimeCapability.Builder.of("org.wildfly.management.executor", ExecutorService.class)
+                    .build();
+
+    /**
+     * Capability users of the controller use to perform scheduled asynchronous management tasks.
+     * This capability isn't necessarily directly related to this class but we declare it
+     * here as it's as good a place as any at this time.
+     */
+    public static final RuntimeCapability<Void> SCHEDULED_EXECUTOR_CAPABILITY =
+            RuntimeCapability.Builder.of("org.wildfly.management.scheduled-executor", ScheduledExecutorService.class)
                     .build();
 
     private static final OperationDefinition INIT_CONTROLLER_OP = new SimpleOperationDefinitionBuilder("boottime-controller-initializer-step", null)

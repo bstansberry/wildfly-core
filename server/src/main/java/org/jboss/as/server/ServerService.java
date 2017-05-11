@@ -35,9 +35,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -153,7 +150,7 @@ public final class ServerService extends AbstractControllerService {
     /** Service is not for general use, so the service name is not declared in the more visible {@code Services} */
     public static final ServiceName JBOSS_SERVER_NOTIFICATION_REGISTRY = NOTIFICATION_REGISTRY_CAPABILITY.getCapabilityServiceName();
     /** Service is not for general use, so the service name is not declared in the more visible {@code Services} */
-    public static final ServiceName JBOSS_SERVER_SCHEDULED_EXECUTOR = EXECUTOR_CAPABILITY.getCapabilityServiceName().append("scheduled");
+    public static final ServiceName JBOSS_SERVER_SCHEDULED_EXECUTOR = SCHEDULED_EXECUTOR_CAPABILITY.getCapabilityServiceName();
     static final ServiceName MANAGEMENT_EXECUTOR = EXECUTOR_CAPABILITY.getCapabilityServiceName();
 
     private final InjectedValue<DeploymentMountProvider> injectedDeploymentRepository = new InjectedValue<DeploymentMountProvider>();
@@ -242,12 +239,9 @@ public final class ServerService extends AbstractControllerService {
         serviceTarget.addService(MANAGEMENT_EXECUTOR, serverExecutorService)
                 .addAliases(Services.JBOSS_SERVER_EXECUTOR, ManagementRemotingServices.SHUTDOWN_EXECUTOR_NAME) // Use this executor for mgmt shutdown for now
                 .install();
-        final ServerScheduledExecutorService serverScheduledExecutorService = new ServerScheduledExecutorService(threadFactory);
-        serviceTarget.addService(JBOSS_SERVER_SCHEDULED_EXECUTOR, serverScheduledExecutorService)
-                .addAliases(JBOSS_SERVER_SCHEDULED_EXECUTOR)
-                .addDependency(MANAGEMENT_EXECUTOR, ExecutorService.class, serverScheduledExecutorService.executorInjector)
-                .install();
-        ExternalManagementRequestExecutor.install(serviceTarget, threadGroup, EXECUTOR_CAPABILITY.getCapabilityServiceName());
+        ServerScheduledExecutorService.addService(serviceTarget, threadGroup, "ServerService Scheduled Thread Pool -- %t");
+
+        ExternalManagementRequestExecutor.install(serviceTarget, threadGroup, MANAGEMENT_EXECUTOR);
 
         final CapabilityRegistry capabilityRegistry = configuration.getCapabilityRegistry();
         ServerService service = new ServerService(configuration, processState, null, bootstrapListener, new ServerDelegatingResourceDefinition(),
@@ -467,11 +461,14 @@ public final class ServerService extends AbstractControllerService {
                 new RuntimeCapabilityRegistration(PATH_MANAGER_CAPABILITY, CapabilityScope.GLOBAL, new RegistrationPoint(PathAddress.EMPTY_ADDRESS, null)));
         capabilityRegistry.registerCapability(
                 new RuntimeCapabilityRegistration(EXECUTOR_CAPABILITY, CapabilityScope.GLOBAL, new RegistrationPoint(PathAddress.EMPTY_ADDRESS, null)));
+        capabilityRegistry.registerCapability(
+                new RuntimeCapabilityRegistration(SCHEDULED_EXECUTOR_CAPABILITY, CapabilityScope.GLOBAL, new RegistrationPoint(PathAddress.EMPTY_ADDRESS, null)));
 
         // TODO consider having ManagementModel provide CapabilityRegistry instead of just RuntimeCapabilityRegistry
         if (capabilityRegistry instanceof PossibleCapabilityRegistry) {
             ((PossibleCapabilityRegistry) capabilityRegistry).registerPossibleCapability(PATH_MANAGER_CAPABILITY, PathAddress.EMPTY_ADDRESS);
             ((PossibleCapabilityRegistry) capabilityRegistry).registerPossibleCapability(EXECUTOR_CAPABILITY, PathAddress.EMPTY_ADDRESS);
+            ((PossibleCapabilityRegistry) capabilityRegistry).registerPossibleCapability(SCHEDULED_EXECUTOR_CAPABILITY, PathAddress.EMPTY_ADDRESS);
         }
 
     }
@@ -560,46 +557,4 @@ public final class ServerService extends AbstractControllerService {
         }
     }
 
-    static final class ServerScheduledExecutorService implements Service<ScheduledExecutorService> {
-        private final ThreadFactory threadFactory;
-        private ScheduledThreadPoolExecutor scheduledExecutorService;
-        private final InjectedValue<ExecutorService> executorInjector = new InjectedValue<>();
-
-        private ServerScheduledExecutorService(ThreadFactory threadFactory) {
-            this.threadFactory = threadFactory;
-        }
-
-        @Override
-        public synchronized void start(final StartContext context) throws StartException {
-            scheduledExecutorService = new ScheduledThreadPoolExecutor(4 , threadFactory);
-            scheduledExecutorService.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
-        }
-
-        @Override
-        public synchronized void stop(final StopContext context) {
-            Runnable r = new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        scheduledExecutorService.shutdown();
-                    } finally {
-                        scheduledExecutorService = null;
-                        context.complete();
-                    }
-                }
-            };
-            try {
-                executorInjector.getValue().execute(r);
-            } catch (RejectedExecutionException e) {
-                r.run();
-            } finally {
-                context.asynchronous();
-            }
-        }
-
-        @Override
-        public synchronized ScheduledExecutorService getValue() throws IllegalStateException {
-            return scheduledExecutorService;
-        }
-    }
 }
