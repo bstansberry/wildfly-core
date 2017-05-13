@@ -55,7 +55,7 @@ class DeploymentScannerRemove extends AbstractRemoveStepHandler {
 
     protected void recoverServices(OperationContext context, ModelNode operation, ModelNode model) {
         try {
-            DeploymentScannerAdd.performRuntime(context, operation, model, DeploymentScannerAdd.createScannerExecutorService(), null);
+            DeploymentScannerAdd.performRuntime(context, operation, model, null);
         } catch (OperationFailedException e) {
             // The operation context will handle it
             throw new RuntimeException(e);

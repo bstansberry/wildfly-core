@@ -58,11 +58,9 @@ public final class ServerScheduledExecutorService implements Service<ScheduledEx
     private ExecutorImpl scheduledExecutorService;
 
     public static void addService(ServiceTarget serviceTarget, ThreadGroup threadGroup, String threadNamePattern) {
-        final ServiceName executorName = EXECUTOR_CAPABILITY.getCapabilityServiceName();
-        final ServiceName serviceName = executorName.append("scheduled");
         final ServerScheduledExecutorService serverScheduledExecutorService = new ServerScheduledExecutorService(threadGroup, threadNamePattern);
-        serviceTarget.addService(serviceName, serverScheduledExecutorService)
-                .addDependency(executorName, ExecutorService.class, serverScheduledExecutorService.executorInjector)
+        serviceTarget.addService(ServerService.JBOSS_SERVER_SCHEDULED_EXECUTOR, serverScheduledExecutorService)
+                .addDependency(ServerService.MANAGEMENT_EXECUTOR, ExecutorService.class, serverScheduledExecutorService.executorInjector)
                 .install();
     }
 

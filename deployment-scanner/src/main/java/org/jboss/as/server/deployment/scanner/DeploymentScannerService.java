@@ -28,6 +28,7 @@ import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OWN
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SERVER_BOOTING;
 import static org.jboss.as.controller.registry.NotificationHandlerRegistration.ANY_ADDRESS;
 import static org.jboss.as.server.deployment.scanner.DeploymentScannerDefinition.PATH_MANAGER_CAPABILITY;
+import static org.jboss.as.server.deployment.scanner.DeploymentScannerDefinition.SCANNER_CAPABILITY;
 
 import java.io.File;
 import java.util.List;
@@ -123,26 +124,25 @@ public class DeploymentScannerService implements Service<DeploymentScanner> {
      * @param deploymentTimeout the deployment timeout
      * @param rollbackOnRuntimeFailure rollback on runtime failures
      * @param bootTimeService   the deployment scanner used in the boot time scan
-     * @param scheduledExecutorService executor to use for asynchronous tasks
      * @return the controller for the deployment scanner service
      */
     public static ServiceController<DeploymentScanner> addService(final OperationContext context, final PathAddress resourceAddress, final String relativeTo, final String path,
                                                                   final int scanInterval, TimeUnit unit, final boolean autoDeployZip,
                                                                   final boolean autoDeployExploded, final boolean autoDeployXml, final boolean scanEnabled, final long deploymentTimeout, boolean rollbackOnRuntimeFailure,
-                                                                  final FileSystemDeploymentService bootTimeService, final ScheduledExecutorService scheduledExecutorService) {
+                                                                  final FileSystemDeploymentService bootTimeService) {
         final DeploymentScannerService service = new DeploymentScannerService(resourceAddress, relativeTo, path, scanInterval, unit, autoDeployZip,
                 autoDeployExploded, autoDeployXml, scanEnabled, deploymentTimeout, rollbackOnRuntimeFailure, bootTimeService);
-        final ServiceName serviceName = getServiceName(resourceAddress.getLastElement().getValue());
 
-        return context.getServiceTarget().addService(serviceName, service)
-                .addDependency(context.getCapabilityServiceName(PATH_MANAGER_CAPABILITY, PathManager.class), PathManager.class, service.pathManagerValue)
-                .addDependency(context.getCapabilityServiceName("org.wildfly.management.notification-handler-registry", null),
+        return context.getCapabilityServiceTarget().addCapability(SCANNER_CAPABILITY, service)
+                .addCapabilityRequirement(PATH_MANAGER_CAPABILITY, PathManager.class, service.pathManagerValue)
+                .addCapabilityRequirement("org.wildfly.management.notification-handler-registry",
                         NotificationHandlerRegistry.class, service.notificationRegistryValue)
-                .addDependency(context.getCapabilityServiceName("org.wildfly.management.model-controller-client-factory", null),
+                .addCapabilityRequirement("org.wildfly.management.model-controller-client-factory",
                         ModelControllerClientFactory.class, service.clientFactoryValue)
+                .addCapabilityRequirement("org.wildfly.management.scheduled-executor",
+                        ScheduledExecutorService.class, service.scheduledExecutorValue)
                 .addDependency(org.jboss.as.server.deployment.Services.JBOSS_DEPLOYMENT_CHAINS)
                 .addDependency(ControlledProcessStateService.SERVICE_NAME, ControlledProcessStateService.class, service.controlledProcessStateServiceValue)
-                .addInjection(service.scheduledExecutorValue, scheduledExecutorService)
                 .setInitialMode(Mode.ACTIVE)
                 .install();
     }
@@ -221,7 +221,6 @@ public class DeploymentScannerService implements Service<DeploymentScanner> {
         notificationRegistryValue.getValue().unregisterNotificationHandler(ANY_ADDRESS, this.scanner, DEPLOYMENT_FILTER);
         this.scanner = null;
         scanner.stopScanner();
-        scheduledExecutorValue.getValue().shutdown();
         if (callbackHandle != null) {
             callbackHandle.remove();
         }

@@ -22,7 +22,6 @@
 
 package org.jboss.as.server.deployment.scanner;
 
-import static java.security.AccessController.doPrivileged;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP_ADDR;
 import static org.jboss.as.server.deployment.scanner.DeploymentScannerDefinition.ALL_ATTRIBUTES;
@@ -37,18 +36,15 @@ import static org.jboss.as.server.deployment.scanner.DeploymentScannerDefinition
 
 import java.io.File;
 import java.io.IOException;
-import java.security.PrivilegedAction;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -62,10 +58,10 @@ import org.jboss.as.controller.SimpleAttributeDefinition;
 import org.jboss.as.controller.capability.RuntimeCapability;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.as.controller.services.path.PathManager;
+import org.jboss.as.server.ServerService;
 import org.jboss.as.server.deployment.scanner.api.DeploymentOperations;
 import org.jboss.as.server.deployment.scanner.logging.DeploymentScannerLogger;
 import org.jboss.dmr.ModelNode;
-import org.jboss.threads.JBossThreadFactory;
 
 /**
  * Operation adding a new {@link DeploymentScannerService}.
@@ -79,7 +75,7 @@ class DeploymentScannerAdd implements OperationStepHandler {
 
     private final PathManager pathManager;
 
-    public DeploymentScannerAdd(final PathManager pathManager) {
+    DeploymentScannerAdd(final PathManager pathManager) {
         this.pathManager = pathManager;
     }
 
@@ -114,10 +110,10 @@ class DeploymentScannerAdd implements OperationStepHandler {
             final int scanInterval = SCAN_INTERVAL.resolveModelAttribute(context, operation).asInt();
             final boolean rollback = RUNTIME_FAILURE_CAUSES_ROLLBACK.resolveModelAttribute(context, operation).asBoolean();
 
-            final ScheduledExecutorService scheduledExecutorService = createScannerExecutorService();
-
             final FileSystemDeploymentService bootTimeScanner;
+            ScheduledExecutorService scheduledExecutorService;
             if (bootTimeScan) {
+                scheduledExecutorService = (ScheduledExecutorService) context.getServiceRegistry(true).getService(ServerService.JBOSS_SERVER_SCHEDULED_EXECUTOR).getValue();
                 final String pathName = pathManager.resolveRelativePathEntry(path, relativeTo);
                 File relativePath = null;
                 if (relativeTo != null) {
@@ -134,11 +130,12 @@ class DeploymentScannerAdd implements OperationStepHandler {
                 bootTimeScanner.setRuntimeFailureCausesRollback(rollback);
             } else {
                 bootTimeScanner = null;
+                scheduledExecutorService = null;
             }
 
             context.addStep(new OperationStepHandler() {
                 public void execute(final OperationContext context, final ModelNode operation) throws OperationFailedException {
-                    performRuntime(context, operation, model, scheduledExecutorService, bootTimeScanner);
+                    performRuntime(context, operation, model, bootTimeScanner);
 
                     // We count on the context's automatic service removal on rollback
                     context.completeStep(OperationContext.ResultHandler.NOOP_RESULT_HANDLER);
@@ -232,17 +229,7 @@ class DeploymentScannerAdd implements OperationStepHandler {
         }
     }
 
-    static ScheduledExecutorService createScannerExecutorService() {
-        final ThreadFactory threadFactory = doPrivileged(new PrivilegedAction<ThreadFactory>() {
-            public ThreadFactory run() {
-                return new JBossThreadFactory(new ThreadGroup("DeploymentScanner-threads"), Boolean.FALSE, null, "%G - %t", null, null);
-            }
-        });
-        return Executors.newScheduledThreadPool(2, threadFactory);
-    }
-
     static void performRuntime(final OperationContext context, ModelNode operation, ModelNode model,
-                                final ScheduledExecutorService executorService,
                                 final FileSystemDeploymentService bootTimeScanner) throws OperationFailedException {
         final PathAddress address = context.getCurrentAddress();
         final String path = DeploymentScannerDefinition.PATH.resolveModelAttribute(context, model).asString();
@@ -255,7 +242,7 @@ class DeploymentScannerAdd implements OperationStepHandler {
         final Long deploymentTimeout = DEPLOYMENT_TIMEOUT.resolveModelAttribute(context, model).asLong();
         final Boolean rollback = RUNTIME_FAILURE_CAUSES_ROLLBACK.resolveModelAttribute(context, model).asBoolean();
         DeploymentScannerService.addService(context, address, relativeTo, path, interval, TimeUnit.MILLISECONDS,
-                autoDeployZip, autoDeployExp, autoDeployXml, enabled, deploymentTimeout, rollback, bootTimeScanner, executorService);
+                autoDeployZip, autoDeployExp, autoDeployXml, enabled, deploymentTimeout, rollback, bootTimeScanner);
 
     }
 
@@ -265,7 +252,7 @@ class DeploymentScannerAdd implements OperationStepHandler {
         private final AtomicReference<ModelNode> deploymentResults;
         private final CountDownLatch scanDoneLatch;
 
-        public BootTimeScannerDeployment(final AtomicReference<ModelNode> deploymentOperation, final CountDownLatch deploymentDoneLatch, final AtomicReference<ModelNode> deploymentResults, final CountDownLatch scanDoneLatch) {
+        BootTimeScannerDeployment(final AtomicReference<ModelNode> deploymentOperation, final CountDownLatch deploymentDoneLatch, final AtomicReference<ModelNode> deploymentResults, final CountDownLatch scanDoneLatch) {
             this.deploymentOperation = deploymentOperation;
             this.deploymentDoneLatch = deploymentDoneLatch;
             this.deploymentResults = deploymentResults;

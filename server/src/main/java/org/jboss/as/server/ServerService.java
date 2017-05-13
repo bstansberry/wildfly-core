@@ -260,7 +260,7 @@ public final class ServerService extends AbstractControllerService {
             serviceBuilder.addDependency(HostControllerConnectionService.SERVICE_NAME, ControllerInstabilityListener.class,
                     service.getContainerInstabilityInjector());
         }
-
+        serviceBuilder.addDependency(JBOSS_SERVER_SCHEDULED_EXECUTOR); // so OSHs can count on its presence
         serviceBuilder.install();
     }
 
