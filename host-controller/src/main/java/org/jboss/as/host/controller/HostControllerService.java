@@ -24,6 +24,7 @@ package org.jboss.as.host.controller;
 
 import static java.security.AccessController.doPrivileged;
 import static org.jboss.as.controller.AbstractControllerService.EXECUTOR_CAPABILITY;
+import static org.jboss.as.controller.AbstractControllerService.SCHEDULED_EXECUTOR_CAPABILITY;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
@@ -34,9 +35,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -50,6 +48,7 @@ import org.jboss.as.remoting.management.ManagementRemotingServices;
 import org.jboss.as.server.BootstrapListener;
 import org.jboss.as.server.ExternalManagementRequestExecutor;
 import org.jboss.as.server.FutureServiceContainer;
+import org.jboss.as.server.ServerScheduledExecutorService;
 import org.jboss.as.server.Services;
 import org.jboss.as.server.logging.ServerLogger;
 import org.jboss.as.version.ProductConfig;
@@ -63,7 +62,6 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.service.ValueService;
 import org.jboss.msc.value.ImmediateValue;
-import org.jboss.msc.value.InjectedValue;
 import org.jboss.msc.value.Value;
 import org.jboss.threads.AsyncFuture;
 import org.jboss.threads.JBossThreadFactory;
@@ -79,7 +77,7 @@ public class HostControllerService implements Service<AsyncFuture<ServiceContain
     /** @deprecated Use the org.wildfly.management.executor capability */
     @Deprecated
     public static final ServiceName HC_EXECUTOR_SERVICE_NAME = HC_SERVICE_NAME.append("executor");
-    public static final ServiceName HC_SCHEDULED_EXECUTOR_SERVICE_NAME = HC_SERVICE_NAME.append("scheduled", "executor");
+    public static final ServiceName HC_SCHEDULED_EXECUTOR_SERVICE_NAME = SCHEDULED_EXECUTOR_CAPABILITY.getCapabilityServiceName();
 
     private final ThreadGroup threadGroup = new ThreadGroup("Host Controller Service Threads");
     private final ThreadFactory threadFactory = doPrivileged(new PrivilegedAction<JBossThreadFactory>() {
@@ -176,10 +174,8 @@ public class HostControllerService implements Service<AsyncFuture<ServiceContain
                 .addAliases(HC_EXECUTOR_SERVICE_NAME, ManagementRemotingServices.SHUTDOWN_EXECUTOR_NAME) // Use this executor for mgmt shutdown for now
                 .install();
 
-        final HostControllerScheduledExecutorService scheduledExecutorService = new HostControllerScheduledExecutorService(threadFactory);
-        serviceTarget.addService(HC_SCHEDULED_EXECUTOR_SERVICE_NAME, scheduledExecutorService)
-                .addDependency(EXECUTOR_CAPABILITY.getCapabilityServiceName(), ExecutorService.class, scheduledExecutorService.executorInjector)
-                .install();
+        ServerScheduledExecutorService.addService(serviceTarget, threadGroup, "HostControllerService Scheduled Thread Pool -- %t");
+
 
         ExternalManagementRequestExecutor.install(serviceTarget, threadGroup, EXECUTOR_CAPABILITY.getCapabilityServiceName());
 
@@ -262,49 +258,6 @@ public class HostControllerService implements Service<AsyncFuture<ServiceContain
         @Override
         public synchronized ExecutorService getValue() throws IllegalStateException {
             return executorService;
-        }
-    }
-
-    static final class HostControllerScheduledExecutorService implements Service<ScheduledExecutorService> {
-        private final ThreadFactory threadFactory;
-        private ScheduledThreadPoolExecutor scheduledExecutorService;
-        private final InjectedValue<ExecutorService> executorInjector = new InjectedValue<>();
-
-        private HostControllerScheduledExecutorService(ThreadFactory threadFactory) {
-            this.threadFactory = threadFactory;
-        }
-
-        @Override
-        public synchronized void start(final StartContext context) throws StartException {
-            scheduledExecutorService = new ScheduledThreadPoolExecutor(4 , threadFactory);
-            scheduledExecutorService.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
-        }
-
-        @Override
-        public synchronized void stop(final StopContext context) {
-            Runnable r = new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        scheduledExecutorService.shutdown();
-                    } finally {
-                        scheduledExecutorService = null;
-                        context.complete();
-                    }
-                }
-            };
-            try {
-                executorInjector.getValue().execute(r);
-            } catch (RejectedExecutionException e) {
-                r.run();
-            } finally {
-                context.asynchronous();
-            }
-        }
-
-        @Override
-        public synchronized ScheduledExecutorService getValue() throws IllegalStateException {
-            return scheduledExecutorService;
         }
     }
 }
