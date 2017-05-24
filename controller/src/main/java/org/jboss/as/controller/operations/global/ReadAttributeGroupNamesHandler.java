@@ -47,7 +47,7 @@ public class ReadAttributeGroupNamesHandler implements OperationStepHandler {
 
     static final OperationDefinition DEFINITION = new SimpleOperationDefinitionBuilder(READ_ATTRIBUTE_GROUP_NAMES_OPERATION, ControllerResolver.getResolver("global"))
             .setReadOnly()
-            .setRuntimeOnly()
+            //.setRuntimeOnly()
             .setReplyType(ModelType.LIST)
             .setReplyValueType(ModelType.STRING)
             .build();

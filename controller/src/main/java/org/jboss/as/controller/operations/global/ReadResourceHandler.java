@@ -94,7 +94,7 @@ public class ReadResourceHandler extends GlobalOperationHandlers.AbstractMultiTa
     public static final OperationDefinition DEFINITION = new SimpleOperationDefinitionBuilder(READ_RESOURCE_OPERATION, ControllerResolver.getResolver("global"))
             .setParameters(RECURSIVE, RECURSIVE_DEPTH, PROXIES, INCLUDE_RUNTIME, INCLUDE_DEFAULTS, ATTRIBUTES_ONLY, INCLUDE_ALIASES)
             .setReadOnly()
-            .setRuntimeOnly()
+            //.setRuntimeOnly()
             .setReplyType(ModelType.OBJECT)
             .build();
 
@@ -108,7 +108,7 @@ public class ReadResourceHandler extends GlobalOperationHandlers.AbstractMultiTa
     public static final OperationDefinition RESOLVE_DEFINITION = new SimpleOperationDefinitionBuilder(READ_RESOURCE_OPERATION, ControllerResolver.getResolver("global"))
             .setParameters(RESOLVE, RECURSIVE, RECURSIVE_DEPTH, PROXIES, INCLUDE_RUNTIME, INCLUDE_DEFAULTS, ATTRIBUTES_ONLY, INCLUDE_ALIASES)
             .setReadOnly()
-            .setRuntimeOnly()
+            //.setRuntimeOnly()
             .setReplyType(ModelType.OBJECT)
             .build();
 

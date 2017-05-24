@@ -125,7 +125,7 @@ public class ReadResourceDescriptionHandler extends GlobalOperationHandlers.Abst
     static final OperationDefinition DEFINITION = new SimpleOperationDefinitionBuilder(READ_RESOURCE_DESCRIPTION_OPERATION, ControllerResolver.getResolver("global"))
             .setParameters(OPERATIONS, NOTIFICATIONS, INHERITED, RECURSIVE, RECURSIVE_DEPTH, PROXIES, INCLUDE_ALIASES, ACCESS_CONTROL, LOCALE)
             .setReadOnly()
-            .setRuntimeOnly()
+            //.setRuntimeOnly()
             .setReplyType(ModelType.OBJECT)
             .build();
 
