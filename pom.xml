@@ -201,6 +201,7 @@
         <module>embedded</module>
         <module>host-controller</module>
         <module>logging</module>
+        <module>management-api</module>
         <module>management-client-content</module>
         <module>io</module>
         <module>jmx</module>
@@ -810,6 +811,12 @@
             <dependency>
                 <groupId>org.wildfly.core</groupId>
                 <artifactId>wildfly-core-management-subsystem</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.wildfly.core</groupId>
+                <artifactId>wildfly-management-api</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

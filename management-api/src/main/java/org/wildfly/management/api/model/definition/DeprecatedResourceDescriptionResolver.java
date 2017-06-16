@@ -1,0 +1,74 @@
+/*
+ * JBoss, Home of Professional Open Source
+ * Copyright 2015, JBoss Inc., and individual contributors as indicated
+ * by the @authors tag.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.wildfly.management.api.model.definition;
+
+
+import java.util.Locale;
+import java.util.ResourceBundle;
+
+/**
+ * Resource resolver that in case that doesn't find deprecated description uses subsystem-name.deprecated key.
+ * This is useful when you need to deprecate whole subsystem and don't want to add deprecated key entries for each any every resource / attribute / operation
+ * @author Tomaz Cerar (c) 2015 Red Hat Inc.
+ */
+public class DeprecatedResourceDescriptionResolver extends StandardResourceDescriptionResolver {
+    private final String DEPRECATED_KEY;
+
+    public DeprecatedResourceDescriptionResolver(String subsystemName, String keyPrefix, String bundleBaseName, ClassLoader bundleLoader) {
+        super(keyPrefix, bundleBaseName, bundleLoader);
+        this.DEPRECATED_KEY = subsystemName +"." + "deprecated";
+    }
+
+    public DeprecatedResourceDescriptionResolver(String subsystemName, String keyPrefix, String bundleBaseName, ClassLoader bundleLoader, boolean reuseAttributesForAdd, boolean useUnprefixedChildTypes) {
+        super(keyPrefix, bundleBaseName, bundleLoader, reuseAttributesForAdd, useUnprefixedChildTypes);
+        this.DEPRECATED_KEY = subsystemName +"." + "deprecated";
+    }
+
+    @Override
+    public String getOperationDeprecatedDescription(String operationName, Locale locale, ResourceBundle bundle) {
+        if (bundle.containsKey(getBundleKey(operationName, "deprecated"))) {
+            return super.getOperationDeprecatedDescription(operationName, locale, bundle);
+        }
+        return bundle.getString(DEPRECATED_KEY);
+    }
+
+    @Override
+    public String getOperationParameterDeprecatedDescription(String operationName, String paramName, Locale locale, ResourceBundle bundle) {
+        if (bundle.containsKey(getBundleKey(paramName, "deprecated"))) {
+            return super.getOperationParameterDeprecatedDescription(operationName, paramName, locale, bundle);
+        }
+        return bundle.getString(DEPRECATED_KEY);
+    }
+
+    @Override
+    public String getResourceDeprecatedDescription(Locale locale, ResourceBundle bundle) {
+        if (bundle.containsKey(getBundleKey("deprecated"))) {
+            return super.getResourceDeprecatedDescription(locale, bundle);
+        }
+        return bundle.getString(DEPRECATED_KEY);
+    }
+
+    @Override
+    public String getResourceAttributeDeprecatedDescription(String attributeName, Locale locale, ResourceBundle bundle) {
+        if (bundle.containsKey(getBundleKey(attributeName, "deprecated"))) {
+            return super.getResourceAttributeDeprecatedDescription(attributeName, locale, bundle);
+        }
+        return bundle.getString(DEPRECATED_KEY);
+    }
+}
