@@ -106,7 +106,7 @@ public interface ResourceDefinition {
     /**
      * Whether this is an ordered child or not
      *
-     * @return {@code true} if this child is ordered within the parent, false otherwise
+     * @return {@code true} if this child is ordered within the parent, {@code false} otherwise
      */
     boolean isOrderedChild();
 
