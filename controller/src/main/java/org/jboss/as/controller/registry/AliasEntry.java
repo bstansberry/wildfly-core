@@ -184,7 +184,7 @@ public abstract class AliasEntry {
 
         /**
          * Gets the operation being called. The operation is protected, so you cannot modify it.
-         * For the global operations when processing children recurively it will be a placeholder operation whose name is
+         * For the global operations when processing children recursively it will be a placeholder operation whose name is
          * {@link #RECURSIVE_GLOBAL_OP} and the address is the address of the requested aliased resource.
          *
          * @return the operation

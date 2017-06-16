@@ -288,7 +288,7 @@ public interface ImmutableManagementResourceRegistration {
      * Return @code true} if a child resource registration was registered using
      * {@link ManagementResourceRegistration#registerSubModel(ResourceDefinition)}, and {@code false} otherwise
      *
-     * @return whether this is an ordered child or not
+     * @return {@code true} if this child is ordered within the parent, {@code false} otherwise
      */
     boolean isOrderedChildResource();
 
