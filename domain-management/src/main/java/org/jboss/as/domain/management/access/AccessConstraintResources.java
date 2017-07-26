@@ -30,11 +30,14 @@ import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.VAU
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
+import org.jboss.as.controller.OperationContext;
+import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.access.constraint.ApplicationTypeConfig;
 import org.jboss.as.controller.access.constraint.ApplicationTypeConstraint;
@@ -52,20 +55,59 @@ import org.jboss.as.controller.registry.Resource;
 public class AccessConstraintResources {
 
     // Application Classification Resource
-    public static final PathElement APPLICATION_PATH_ELEMENT = PathElement.pathElement(CONSTRAINT, APPLICATION_CLASSIFICATION);
-    public static Resource getApplicationConfigResource(AccessConstraintUtilizationRegistry registry) {
+    static final PathElement APPLICATION_PATH_ELEMENT = PathElement.pathElement(CONSTRAINT, APPLICATION_CLASSIFICATION);
+    static Resource getApplicationConfigResource(AccessConstraintUtilizationRegistry registry) {
         return new ApplicationClassificationResource(registry);
     }
     // Sensitivity Classification Resource
     public static final PathElement SENSITIVITY_PATH_ELEMENT = PathElement.pathElement(CONSTRAINT, SENSITIVITY_CLASSIFICATION);
-    public static Resource getSensitivityResource(AccessConstraintUtilizationRegistry registry) {
+    static Resource getSensitivityResource(AccessConstraintUtilizationRegistry registry) {
         return new SensitivityClassificationResource(registry);
     }
 
     // Vault Expression Resource
-    public static final PathElement VAULT_PATH_ELEMENT = PathElement.pathElement(CONSTRAINT, VAULT_EXPRESSION);
-    public static final Resource VAULT_RESOURCE = SensitivityResourceDefinition.createVaultExpressionResource(VaultExpressionSensitivityConfig.INSTANCE, VAULT_PATH_ELEMENT);
+    static final PathElement VAULT_PATH_ELEMENT = PathElement.pathElement(CONSTRAINT, VAULT_EXPRESSION);
+    static final Resource VAULT_RESOURCE = SensitivityResourceDefinition.createVaultExpressionResource(VaultExpressionSensitivityConfig.INSTANCE, VAULT_PATH_ELEMENT);
 
+    // Attachment indicating an op is executing on a slave HC on behalf of the coordinator
+    private static final OperationContext.AttachmentKey<Set> SLAVE_IGNORED_KEY = OperationContext.AttachmentKey.create(Set.class);
+
+    public static void allowIgnoringRbacConfigOps(OperationContext context) {
+        context.attach(SLAVE_IGNORED_KEY, Collections.emptySet());
+    }
+
+    public static boolean isRbacConfigOpIgnored(OperationContext context, PathAddress address) {
+        Set ignoredBySlave = context.getAttachment(AccessConstraintResources.SLAVE_IGNORED_KEY);
+        return ignoredBySlave != null && ignoredBySlave.contains(address);
+    }
+
+    static <T extends Resource> T readConfigResourceForUpdate(Class<T> clazz, OperationContext context) {
+        Resource result = null;
+        try {
+            result = context.readResourceForUpdate(PathAddress.EMPTY_ADDRESS);
+        } catch (Resource.ResourceEntry.NoSuchResourceException nsre) {
+            if (!AccessConstraintResources.isMissingResourceIgnorable(context)) {
+                throw nsre;
+            }
+        }
+        return clazz.cast(result);
+    }
+
+    private static boolean isMissingResourceIgnorable(OperationContext context) {
+        boolean result = false;
+        Set ignorable = context.getAttachment(SLAVE_IGNORED_KEY);
+        if (ignorable != null) {
+            result = true;
+            if (ignorable.size() == 0) {
+                // upgrade the set
+                Set<PathAddress> newSet = new HashSet<>(1);
+                context.attach(SLAVE_IGNORED_KEY, newSet);
+            }
+            //noinspection unchecked
+            ignorable.add(context.getCurrentAddress());
+        }
+        return result;
+    }
     private static volatile Map<String, Map<String, SensitivityClassification>> classifications;
     private static volatile Map<String, Map<String, ApplicationTypeConfig>> applicationTypes;
 

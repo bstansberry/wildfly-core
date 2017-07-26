@@ -30,6 +30,7 @@ import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.VAU
 import static org.jboss.as.controller.parsing.Attribute.REQUIRES_ADDRESSABLE;
 import static org.jboss.as.controller.parsing.Attribute.REQUIRES_READ;
 import static org.jboss.as.controller.parsing.Attribute.REQUIRES_WRITE;
+import static org.jboss.as.domain.management.access.AccessConstraintResources.readConfigResourceForUpdate;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -170,7 +171,7 @@ public class SensitivityResourceDefinition extends SimpleResourceDefinition {
         @Override
         public void execute(OperationContext context, ModelNode operation) throws OperationFailedException {
             final String attribute = operation.require(NAME).asString();
-            final SensitivityClassificationResource resource = (SensitivityClassificationResource)context.readResource(PathAddress.EMPTY_ADDRESS);
+            final SensitivityClassificationResource resource = (SensitivityClassificationResource) context.readResource(PathAddress.EMPTY_ADDRESS);
             final AbstractSensitivity classification = resource.classification;
             Boolean result;
             if (attribute.equals(DEFAULT_REQUIRES_ADDRESSABLE.getName()) && includeAddressable) {
@@ -211,7 +212,10 @@ public class SensitivityResourceDefinition extends SimpleResourceDefinition {
         public void execute(OperationContext context, ModelNode operation) throws OperationFailedException {
             final String attribute = operation.require(NAME).asString();
             final ModelNode value = operation.require(VALUE);
-            final SensitivityClassificationResource resource = (SensitivityClassificationResource)context.readResourceForUpdate(PathAddress.EMPTY_ADDRESS);
+            final SensitivityClassificationResource resource = readConfigResourceForUpdate(SensitivityClassificationResource.class, context);
+            if (resource == null) {
+                return;
+            }
             final AbstractSensitivity classification = resource.classification;
             if (attribute.equals(CONFIGURED_REQUIRES_ADDRESSABLE.getName()) && includeAddressable) {
                 classification.setConfiguredRequiresAccessPermission(readValue(context, value, CONFIGURED_REQUIRES_ADDRESSABLE));

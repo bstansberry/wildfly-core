@@ -90,6 +90,7 @@ import org.jboss.as.controller.registry.ImmutableManagementResourceRegistration;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.as.domain.controller.logging.DomainControllerLogger;
 import org.jboss.as.domain.controller.operations.deployment.SyncModelParameters;
+import org.jboss.as.domain.management.access.AccessConstraintResources;
 import org.jboss.as.host.controller.mgmt.HostControllerRegistrationHandler;
 import org.jboss.dmr.ModelNode;
 
@@ -220,6 +221,10 @@ class SyncModelOperationHandler implements OperationStepHandler {
                     OperationContext.Stage.MODEL,
                     true);
         }
+
+        // As the steps we've added execute, allow ignoring RBAC config ops for constraints
+        // not available on this host
+        AccessConstraintResources.allowIgnoringRbacConfigOps(context);
     }
 
     private void processAttributes(final Node current, final Node remote, final OrderedOperationsCollection operations, final ImmutableManagementResourceRegistration registration) {

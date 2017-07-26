@@ -25,6 +25,7 @@ import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.CLA
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.NAME;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.VALUE;
 import static org.jboss.as.controller.parsing.Attribute.APPLICATION;
+import static org.jboss.as.domain.management.access.AccessConstraintResources.readConfigResourceForUpdate;
 
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -59,7 +60,7 @@ public class ApplicationClassificationConfigResourceDefinition extends SimpleRes
 
     public static PathElement PATH_ELEMENT = PathElement.pathElement(CLASSIFICATION);
 
-    public static SimpleAttributeDefinition DEFAULT_APPLICATION = SimpleAttributeDefinitionBuilder.create(ModelDescriptionConstants.DEFAULT_APPLICATION, ModelType.BOOLEAN, false)
+    static SimpleAttributeDefinition DEFAULT_APPLICATION = SimpleAttributeDefinitionBuilder.create(ModelDescriptionConstants.DEFAULT_APPLICATION, ModelType.BOOLEAN, false)
             .setStorageRuntime()
             .setRuntimeServiceNotRequired()
             .build();
@@ -96,7 +97,7 @@ public class ApplicationClassificationConfigResourceDefinition extends SimpleRes
         @Override
         public void execute(OperationContext context, ModelNode operation) throws OperationFailedException {
             final String attribute = operation.require(NAME).asString();
-            final ApplicationTypeConfigResource resource = (ApplicationTypeConfigResource)context.readResource(PathAddress.EMPTY_ADDRESS);
+            final ApplicationTypeConfigResource resource = (ApplicationTypeConfigResource) context.readResource(PathAddress.EMPTY_ADDRESS);
             final ApplicationTypeConfig applicationType = resource.applicationType;
             Boolean result;
             if (attribute.equals(DEFAULT_APPLICATION.getName())) {
@@ -123,7 +124,10 @@ public class ApplicationClassificationConfigResourceDefinition extends SimpleRes
         public void execute(OperationContext context, ModelNode operation) throws OperationFailedException {
             final String attribute = operation.require(NAME).asString();
             final ModelNode value = operation.require(VALUE);
-            final ApplicationTypeConfigResource resource = (ApplicationTypeConfigResource)context.readResourceForUpdate(PathAddress.EMPTY_ADDRESS);
+            final ApplicationTypeConfigResource resource = readConfigResourceForUpdate(ApplicationTypeConfigResource.class, context);
+            if (resource == null) {
+                return;
+            }
             final ApplicationTypeConfig classification = resource.applicationType;
             if (attribute.equals(CONFIGURED_APPLICATION.getName())) {
                 Boolean confValue = readValue(context, value, CONFIGURED_APPLICATION);

@@ -46,6 +46,7 @@ import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.controller.registry.ImmutableManagementResourceRegistration;
 import org.jboss.as.controller.registry.OperationEntry;
 import org.jboss.as.domain.controller.LocalHostControllerInfo;
+import org.jboss.as.domain.management.access.AccessConstraintResources;
 import org.jboss.as.host.controller.ignored.IgnoredDomainResourceRegistry;
 import org.jboss.dmr.ModelNode;
 
@@ -79,6 +80,10 @@ public class PrepareStepHandler  implements OperationStepHandler {
                 && operation.get(OPERATION_HEADERS).hasDefined(EXECUTE_FOR_COORDINATOR)
                 && operation.get(OPERATION_HEADERS).get(EXECUTE_FOR_COORDINATOR).asBoolean()) {
             // Coordinator wants us to execute locally and send result including the steps needed for execution on the servers
+
+            // WFCORE-1649 -- allow ignoring ops against rbac constraint resources not locally present
+            AccessConstraintResources.allowIgnoringRbacConfigOps(context);
+
             slaveHandler.execute(context, operation);
         } else {
             // Assign a unique id to this operation to allow tying together of audit logs from various hosts/servers
