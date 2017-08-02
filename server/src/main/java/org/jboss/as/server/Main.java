@@ -34,6 +34,7 @@ import java.util.Properties;
 import java.util.StringTokenizer;
 
 import org.jboss.as.controller.RunningMode;
+import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.controller.persistence.ConfigurationFile;
 import org.jboss.as.process.CommandLineConstants;
 import org.jboss.as.process.ExitCodes;
@@ -74,6 +75,7 @@ public final class Main {
      * @param args the command-line arguments
      */
     public static void main(String[] args) {
+        ControllerLogger.ROOT_LOGGER.bootTimeStamp("main start");
         try {
             if (java.util.logging.LogManager.getLogManager().getClass().getName().equals("org.jboss.logmanager.LogManager")) {
                 // Make sure our original stdio is properly captured.
@@ -92,9 +94,11 @@ public final class Main {
             }
 
             Module.registerURLStreamHandlerFactoryModule(Module.getBootModuleLoader().loadModule(ModuleIdentifier.create("org.jboss.vfs")));
+            ControllerLogger.ROOT_LOGGER.bootTimeStamp("determineEnvironment start");
             ServerEnvironmentWrapper serverEnvironmentWrapper = determineEnvironment(args, WildFlySecurityManager.getSystemPropertiesPrivileged(),
                     WildFlySecurityManager.getSystemEnvironmentPrivileged(), ServerEnvironment.LaunchType.STANDALONE,
                     Module.getStartTime());
+            ControllerLogger.ROOT_LOGGER.bootTimeStamp("determineEnvironment finish");
             if (serverEnvironmentWrapper.getServerEnvironment() == null) {
                 if (serverEnvironmentWrapper.getServerEnvironmentStatus() == ServerEnvironmentWrapper.ServerEnvironmentStatus.ERROR) {
                     abort(null);

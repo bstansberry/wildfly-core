@@ -31,6 +31,7 @@ import javax.management.ObjectName;
 
 import org.jboss.as.controller.ControlledProcessState;
 import org.jboss.as.controller.ControlledProcessStateService;
+import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.server.jmx.RunningStateJmx;
 import org.jboss.as.server.logging.ServerLogger;
 import org.jboss.as.server.suspend.SuspendController;
@@ -79,6 +80,7 @@ final class BootstrapImpl implements Bootstrap {
     }
 
     private AsyncFuture<ServiceContainer> internalBootstrap(final Configuration configuration, final List<ServiceActivator> extraServices) {
+        ControllerLogger.ROOT_LOGGER.bootTimeStamp("bootstrap start");
         try {
             final Object value = ManagementFactory.getPlatformMBeanServer().getAttribute(new ObjectName("java.lang", "type", "OperatingSystem"), "MaxFileDescriptorCount");
             final long fdCount = Long.valueOf(value.toString()).longValue();
@@ -221,7 +223,9 @@ final class BootstrapImpl implements Bootstrap {
             Runtime.getRuntime().addShutdownHook(this);
             synchronized (this) {
                 if (!down) {
+                    ControllerLogger.ROOT_LOGGER.bootTimeStamp("ServiceContainer create start");
                     container = ServiceContainer.Factory.create("jboss-as", MAX_THREADS, 30, TimeUnit.SECONDS, false);
+                    ControllerLogger.ROOT_LOGGER.bootTimeStamp("ServiceContainer create finish");
                     return container;
                 } else {
                     throw new IllegalStateException();

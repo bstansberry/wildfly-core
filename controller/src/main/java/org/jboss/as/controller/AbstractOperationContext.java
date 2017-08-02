@@ -797,6 +797,7 @@ abstract class AbstractOperationContext implements OperationContext {
             if (resultAction != ResultAction.ROLLBACK) {
                 try {
                     persistenceResource = createPersistenceResource();
+                    if (persistenceResource != null && isBooting()) ControllerLogger.ROOT_LOGGER.bootTimeStamp("Persistence resource creation finish");
                 } catch (ConfigurationPersistenceException e) {
                     MGMT_OP_LOGGER.failedToPersistConfigurationChange(e);
                     primaryResponse.get(OUTCOME).set(FAILED);
@@ -831,7 +832,9 @@ abstract class AbstractOperationContext implements OperationContext {
                 if (resultAction == ResultAction.ROLLBACK) {
                     persistenceResource.rollback();
                 } else {
+                    if (isBooting()) ControllerLogger.ROOT_LOGGER.bootTimeStamp("Persistence resource commit start");
                     persistenceResource.commit();
+                    if (isBooting()) ControllerLogger.ROOT_LOGGER.bootTimeStamp("Persistence resource commit finish");
                 }
             }
         } catch (Throwable t) {

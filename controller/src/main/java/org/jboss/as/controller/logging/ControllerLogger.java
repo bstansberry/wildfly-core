@@ -3500,4 +3500,12 @@ public interface ControllerLogger extends BasicLogger {
     @LogMessage(level = Level.WARN)
     @Message(id = 443, value = "Error getting the password from the supplier %s")
     void errorObtainingPassword(@Cause Exception cause, String message);
+
+    @LogMessage(level = Level.WARN)
+    @Message(id = NONE, value = "TIMESTAMP: %s %d")
+    void bootTimeStamp(String spot, long nanoTime);
+
+    default void bootTimeStamp(String spot) {
+        bootTimeStamp(spot, System.nanoTime()/(1000000L));
+    }
 }

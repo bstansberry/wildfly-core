@@ -103,6 +103,8 @@ public class ExtensionXml {
         final Map<String, Future<XMLStreamException>> loadFutures = bootExecutor != null
                 ? new LinkedHashMap<String, Future<XMLStreamException>>() : null;
 
+        ControllerLogger.ROOT_LOGGER.bootTimeStamp("Extension parse start");
+
         while (reader.hasNext() && reader.nextTag() != END_ELEMENT) {
             requireNamespace(reader, expectedNs);
             final Element element = Element.forName(reader.getLocalName());
@@ -158,6 +160,8 @@ public class ExtensionXml {
             }
         }
 
+
+        ControllerLogger.ROOT_LOGGER.bootTimeStamp("Extension parse finish");
         long elapsed = System.currentTimeMillis() - start;
         if (ROOT_LOGGER.isDebugEnabled()) {
             ROOT_LOGGER.debugf("Parsed extensions in [%d] ms", elapsed);

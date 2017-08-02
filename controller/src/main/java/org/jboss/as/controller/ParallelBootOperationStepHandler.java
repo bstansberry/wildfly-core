@@ -110,6 +110,7 @@ public class ParallelBootOperationStepHandler implements OperationStepHandler {
         }
 
         long start = System.currentTimeMillis();
+        ControllerLogger.ROOT_LOGGER.bootTimeStamp("Parallel subsystem MODEL start");
 
         // Make sure the lock has been taken
         context.getResourceRegistrationForUpdate();
@@ -145,6 +146,7 @@ public class ParallelBootOperationStepHandler implements OperationStepHandler {
         // Wait for all subsystem ops to complete
         try {
             preparedLatch.await();
+            ControllerLogger.ROOT_LOGGER.bootTimeStamp("Parallel subsystem MODEL finish");
 
             // See if all subsystems succeeded; if not report a failure to context
             checkForSubsystemFailures(context, transactionControls, OperationContext.Stage.MODEL);
@@ -255,6 +257,8 @@ public class ParallelBootOperationStepHandler implements OperationStepHandler {
             public void execute(OperationContext context, ModelNode operation) throws OperationFailedException {
 
                 long start = System.currentTimeMillis();
+
+                ControllerLogger.ROOT_LOGGER.bootTimeStamp("Parallel subsystem RUNTIME start");
                 // make sure the registry lock is held
                 context.getServiceRegistry(true);
 
@@ -283,6 +287,7 @@ public class ParallelBootOperationStepHandler implements OperationStepHandler {
                 // Wait for all subsystem ops to complete
                 try {
                     preparedLatch.await();
+                    ControllerLogger.ROOT_LOGGER.bootTimeStamp("Parallel subsystem RUNTIME finish");
 
                     // See if all subsystems succeeded; if not report a failure to context
                     checkForSubsystemFailures(context, transactionControls, OperationContext.Stage.RUNTIME);

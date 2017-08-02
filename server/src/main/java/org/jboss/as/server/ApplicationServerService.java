@@ -35,6 +35,7 @@ import java.util.TreeSet;
 
 import org.jboss.as.controller.ControlledProcessState;
 import org.jboss.as.controller.RunningModeControl;
+import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.repository.ContentRepository;
 import org.jboss.as.server.deployment.ContentCleanerService;
 import org.jboss.as.server.deployment.DeploymentMountProvider;
@@ -93,6 +94,7 @@ final class ApplicationServerService implements Service<AsyncFuture<ServiceConta
     @Override
     public synchronized void start(final StartContext context) throws StartException {
 
+        ControllerLogger.ROOT_LOGGER.bootTimeStamp("ApplicationServerService start");
         //Moved to AbstractControllerService.start()
         //processState.setStarting();
         final Bootstrap.Configuration configuration = this.configuration;

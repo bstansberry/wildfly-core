@@ -93,6 +93,8 @@ public class ParallelExtensionAddHandler implements OperationStepHandler {
             public void execute(OperationContext context, ModelNode operation) throws OperationFailedException {
 
                 long start = System.currentTimeMillis();
+
+                ControllerLogger.ROOT_LOGGER.bootTimeStamp("Extension initialize start");
                 final Map<String, Future<OperationFailedRuntimeException>> futures = new LinkedHashMap<String, Future<OperationFailedRuntimeException>>();
                 final ManagementResourceRegistration rootResourceRegistration = rootResourceRegistrationProvider.getRootResourceRegistrationForUpdate(context);
                 for (ParsedBootOp op : extensionAdds) {
@@ -115,6 +117,7 @@ public class ParallelExtensionAddHandler implements OperationStepHandler {
                         throw ControllerLogger.ROOT_LOGGER.failedInitializingModule(e, entry.getKey());
                     }
                 }
+                ControllerLogger.ROOT_LOGGER.bootTimeStamp("Extension initialize finish");
 
                 if (MGMT_OP_LOGGER.isDebugEnabled()) {
                     long elapsed = System.currentTimeMillis() - start;

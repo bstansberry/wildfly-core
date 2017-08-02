@@ -374,6 +374,8 @@ public abstract class AbstractControllerService implements Service<ModelControll
                         });
                     } finally {
                         processState.setRunning();
+                        ControllerLogger.ROOT_LOGGER.bootTimeStamp("Server is running");
+
                     }
                 } catch (Throwable t) {
                     container.shutdown();
