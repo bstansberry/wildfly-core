@@ -41,6 +41,7 @@ import org.jboss.as.controller.RunningModeControl;
 import org.jboss.as.controller.audit.ManagedAuditLogger;
 import org.jboss.as.controller.audit.ManagedAuditLoggerImpl;
 import org.jboss.as.controller.interfaces.InetAddressUtil;
+import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.controller.operations.common.ProcessEnvironment;
 import org.jboss.as.controller.persistence.ConfigurationFile;
 import org.jboss.as.network.NetworkUtils;
@@ -451,7 +452,9 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
             }
 
             String defaultServerConfig = WildFlySecurityManager.getPropertyPrivileged(JBOSS_SERVER_DEFAULT_CONFIG, "standalone.xml");
+            ControllerLogger.ROOT_LOGGER.bootTimeStamp("ConfigurationFile init start");
             serverConfigurationFile = standalone ? new ConfigurationFile(serverConfigurationDir, defaultServerConfig, serverConfig, configInteractionPolicy) : null;
+            ControllerLogger.ROOT_LOGGER.bootTimeStamp("ConfigurationFile init finish");
             // Adds a system property to indicate whether or not the server configuration should be persisted
             @SuppressWarnings("deprecation")
             final String propertyKey = JBOSS_PERSIST_SERVER_CONFIG;

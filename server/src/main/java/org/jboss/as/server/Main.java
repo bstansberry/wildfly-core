@@ -145,6 +145,7 @@ public final class Main {
      */
     public static ServerEnvironmentWrapper determineEnvironment(String[] args, Properties systemProperties, Map<String, String> systemEnvironment,
                                                          ServerEnvironment.LaunchType launchType, long startTime) {
+        ControllerLogger.ROOT_LOGGER.bootTimeStamp("cmd line arg processing start");
         final int argsLength = args.length;
         String serverConfig = null;
         RunningMode runningMode = RunningMode.NORMAL;
@@ -337,9 +338,12 @@ public final class Main {
                 return new ServerEnvironmentWrapper(ServerEnvironmentWrapper.ServerEnvironmentStatus.ERROR);
             }
         }
+        ControllerLogger.ROOT_LOGGER.bootTimeStamp("cmd line arg processing finish");
 
         String hostControllerName = null; // No host controller unless in domain mode.
+        ControllerLogger.ROOT_LOGGER.bootTimeStamp("ProductConfig start");
         productConfig = ProductConfig.fromFilesystemSlot(Module.getBootModuleLoader(), WildFlySecurityManager.getPropertyPrivileged(ServerEnvironment.HOME_DIR, null), systemProperties);
+        ControllerLogger.ROOT_LOGGER.bootTimeStamp("ProductConfig finish");
         return new ServerEnvironmentWrapper(new ServerEnvironment(hostControllerName, systemProperties, systemEnvironment,
                 serverConfig, configInteractionPolicy, launchType, runningMode, productConfig, startTime, startSuspended));
     }
