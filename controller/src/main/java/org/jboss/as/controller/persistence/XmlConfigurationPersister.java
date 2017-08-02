@@ -123,10 +123,12 @@ public class XmlConfigurationPersister extends AbstractConfigurationPersister {
             try {
                 BufferedInputStream input = new BufferedInputStream(fis);
                 XMLStreamReader streamReader = XMLInputFactory.newInstance().createXMLStreamReader(input);
+                ControllerLogger.ROOT_LOGGER.bootTimeStamp("XML parse start");
                 mapper.parseDocument(updates, streamReader);
                 streamReader.close();
                 input.close();
                 fis.close();
+                ControllerLogger.ROOT_LOGGER.bootTimeStamp("XML parse end");
             } finally {
                 safeClose(fis);
             }

@@ -224,7 +224,9 @@ final class StandaloneXml_5 extends CommonXml implements ManagementXmlDelegate {
         }
         // Single profile
         if (element == Element.PROFILE) {
+            ControllerLogger.ROOT_LOGGER.bootTimeStamp("Profile parse start");
             parseServerProfile(reader, address, list);
+            ControllerLogger.ROOT_LOGGER.bootTimeStamp("Profile parse finish");
             element = nextElement(reader, namespace);
         }
 
@@ -591,7 +593,9 @@ final class StandaloneXml_5 extends CommonXml implements ManagementXmlDelegate {
             // parse subsystem
             final List<ModelNode> subsystems = new ArrayList<ModelNode>();
             try {
+                long start = System.currentTimeMillis();
                 reader.handleAny(subsystems);
+                ControllerLogger.ROOT_LOGGER.warnf("TIMESTAMP: %s parse time: %d", namespace, (System.currentTimeMillis() - start));
             } catch (XMLStreamException e) {
                 if(StandaloneXml.ParsingOption.IGNORE_SUBSYSTEM_FAILURES.isSet(this.parsingOptions)) {
                     QName element = new QName(reader.getNamespaceURI(), reader.getLocalName());

@@ -105,12 +105,12 @@ import org.jboss.as.controller.transform.ContextAttachments;
 import org.jboss.as.core.security.AccessMechanism;
 import org.jboss.dmr.ModelNode;
 import org.jboss.msc.inject.Injector;
-import org.jboss.msc.service.LifecycleEvent;
-import org.jboss.msc.service.LifecycleListener;
 import org.jboss.msc.service.DelegatingServiceBuilder;
 import org.jboss.msc.service.DelegatingServiceController;
 import org.jboss.msc.service.DelegatingServiceRegistry;
 import org.jboss.msc.service.DelegatingServiceTarget;
+import org.jboss.msc.service.LifecycleEvent;
+import org.jboss.msc.service.LifecycleListener;
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController;
@@ -255,6 +255,7 @@ final class OperationContextImpl extends AbstractOperationContext {
 
     @Override
     boolean stageCompleted(Stage stage) {
+        if (isBooting()) ControllerLogger.ROOT_LOGGER.bootTimeStamp("Stage " + currentStage +" finish");
         return (stage != Stage.MODEL || validateCapabilities());
     }
 
@@ -268,9 +269,11 @@ final class OperationContextImpl extends AbstractOperationContext {
             return true;
         }
 
+        if (isBooting()) ControllerLogger.ROOT_LOGGER.bootTimeStamp("Capability validation start");
         // Validate that all required capabilities are available and fail any steps that broke this
         boolean hostXmlOnly = !getProcessType().isServer() && partialModel;
         CapabilityRegistry.CapabilityValidation validation = managementModel.validateCapabilityRegistry(false, hostXmlOnly);
+        if (isBooting()) ControllerLogger.ROOT_LOGGER.bootTimeStamp("Capability validation finish");
         boolean ok = validation.isValid();
         final boolean adminOnly = this.getRunningMode() == RunningMode.ADMIN_ONLY;
         //if we are in admin only mode and everything is already broken then we don't care about failures
@@ -467,6 +470,7 @@ final class OperationContextImpl extends AbstractOperationContext {
                 waitForRemovals();
                 ContainerStateMonitor.ContainerStateChangeReport changeReport =
                         modelController.awaitContainerStateChangeReport(timeout, TimeUnit.MILLISECONDS);
+                if (isBooting()) ControllerLogger.ROOT_LOGGER.bootTimeStamp("Service container stable");
                 if (changeReport != null && changeReport.hasNewProblems()) {
                     // If any services are missing, add a verification handler to see if we caused it
                     if (!changeReport.getMissingServices().isEmpty()) {
@@ -526,6 +530,7 @@ final class OperationContextImpl extends AbstractOperationContext {
 
     @Override
     ConfigurationPersister.PersistenceResource createPersistenceResource() throws ConfigurationPersistenceException {
+        if (isBooting()) ControllerLogger.ROOT_LOGGER.bootTimeStamp("Persistence resource creation start");
         return
             (affectsResourceTree || affectsCapabilityRegistry || affectsResourceRegistration)
                 ? modelController.writeModel(managementModel, affectsModel.keySet(), affectsResourceTree,

@@ -492,7 +492,9 @@ class ModelControllerImpl implements ModelController {
             for (ParsedBootOp initialOp : bootOperations.initialOps) {
                 context.addBootStep(initialOp);
             }
+            ControllerLogger.ROOT_LOGGER.bootTimeStamp("Initial boot ops start");
             resultAction = context.executeOperation();
+            ControllerLogger.ROOT_LOGGER.bootTimeStamp("Initial boot ops finish");
         }
         if (resultAction == OperationContext.ResultAction.KEEP && bootOperations.postExtensionOps != null) {
             // Success. Now any extension handlers are registered. Continue with remaining ops
@@ -518,9 +520,12 @@ class ModelControllerImpl implements ModelController {
                 }
             }
 
+            ControllerLogger.ROOT_LOGGER.bootTimeStamp("Post-extension boot ops start");
             resultAction = postExtContext.executeOperation();
+            ControllerLogger.ROOT_LOGGER.bootTimeStamp("Post-extension boot ops finish");
 
             if (!skipModelValidation && resultAction == OperationContext.ResultAction.KEEP && bootOperations.postExtensionOps != null) {
+                ControllerLogger.ROOT_LOGGER.bootTimeStamp("Model validation op start");
                 //Get the modified resources from the initial operations and add to the resources to be validated by the post operations
                 Set<PathAddress> validateAddresses = new HashSet<PathAddress>();
                 Resource root = managementModel.get().getRootResource();
@@ -533,6 +538,8 @@ class ModelControllerImpl implements ModelController {
                                 extraValidationStepHandler, partialModel, securityIdentitySupplier);
                 validateContext.addModifiedResourcesForModelValidation(validateAddresses);
                 resultAction = validateContext.executeOperation();
+                ControllerLogger.ROOT_LOGGER.bootTimeStamp("Model validation op finish");
+
             }
         }
 

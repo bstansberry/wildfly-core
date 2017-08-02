@@ -316,6 +316,7 @@ public abstract class AbstractControllerService implements Service<ModelControll
 
     @Override
     public void start(final StartContext context) throws StartException {
+        ControllerLogger.ROOT_LOGGER.bootTimeStamp("AbstractControllerService start start");
         assert capabilityRegistry.getPossibleCapabilities().isEmpty(): "registry is not empty";
 
         if (configurationPersister == null) {
@@ -329,7 +330,9 @@ public abstract class AbstractControllerService implements Service<ModelControll
         final NotificationSupport notificationSupport = NotificationSupport.Factory.create(executorService);
         WritableAuthorizerConfiguration authorizerConfig = authorizer.getWritableAuthorizerConfiguration();
         authorizerConfig.reset();
+        ControllerLogger.ROOT_LOGGER.bootTimeStamp("MRR create start");
         ManagementResourceRegistration rootResourceRegistration = ManagementResourceRegistration.Factory.forProcessType(processType).createRegistration(rootResourceDefinition, authorizerConfig, capabilityRegistry);
+        ControllerLogger.ROOT_LOGGER.bootTimeStamp("ModelControllerImpl init start");
         final ModelControllerImpl controller = new ModelControllerImpl(container, target,
                 rootResourceRegistration,
                 new ContainerStateMonitor(container, getStabilityMonitor()),
@@ -339,7 +342,9 @@ public abstract class AbstractControllerService implements Service<ModelControll
                 injectedInstabilityListener.getOptionalValue());
 
         // Initialize the model
+        ControllerLogger.ROOT_LOGGER.bootTimeStamp("AbstractControllerService initModel start");
         initModel(controller.getManagementModel(), controller.getModelControllerResource());
+        ControllerLogger.ROOT_LOGGER.bootTimeStamp("AbstractControllerService initModel finish");
 
         // Expose the client factory
         if (isExposingClientServicesAllowed()) {
@@ -376,6 +381,8 @@ public abstract class AbstractControllerService implements Service<ModelControll
                         });
                     } finally {
                         processState.setRunning();
+                        ControllerLogger.ROOT_LOGGER.bootTimeStamp("Server is running");
+
                     }
                 } catch (Throwable t) {
                     container.shutdown();

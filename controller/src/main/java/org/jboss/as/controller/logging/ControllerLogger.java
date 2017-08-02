@@ -3552,4 +3552,14 @@ public interface ControllerLogger extends BasicLogger {
 
     @Message(id = 455, value = "Can't take snapshot %s because it already exists")
     ConfigurationPersistenceException snapshotAlreadyExistError(String name);
+
+
+
+    @LogMessage(level = Level.WARN)
+    @Message(id = NONE, value = "TIMESTAMP: %s %d")
+    void bootTimeStamp(String spot, long nanoTime);
+
+    default void bootTimeStamp(String spot) {
+        bootTimeStamp(spot, System.nanoTime()/(1000000L));
+    }
 }

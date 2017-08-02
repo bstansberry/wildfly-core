@@ -128,7 +128,9 @@ public class ExtensionAddHandler implements OperationStepHandler {
                         // now that we know the registry was unaware of the module
                         unknownModule = true;
                     }
+                    long start = System.nanoTime();
                     extension.initialize(extensionRegistry.getExtensionContext(module, rootRegistration, extensionRegistryType));
+                    ControllerLogger.ROOT_LOGGER.infof("Initialized %s in %d ns", extension.getClass().getSimpleName(), (System.nanoTime() - start));
                 } finally {
                     WildFlySecurityManager.setCurrentContextClassLoaderPrivileged(oldTccl);
                 }

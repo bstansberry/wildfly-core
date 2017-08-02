@@ -34,6 +34,7 @@ import org.jboss.as.controller.access.management.ManagementSecurityIdentitySuppl
 import org.jboss.as.controller.audit.ManagedAuditLogger;
 import org.jboss.as.controller.extension.ExtensionRegistry;
 import org.jboss.as.controller.extension.RuntimeHostControllerInfoAccessor;
+import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.controller.parsing.Namespace;
 import org.jboss.as.controller.persistence.BackupXmlConfigurationPersister;
 import org.jboss.as.controller.persistence.ConfigurationFile;
@@ -106,7 +107,9 @@ public interface Bootstrap {
             this.runningModeControl = serverEnvironment.getRunningModeControl();
             this.auditLogger = serverEnvironment.createAuditLogger();
             this.authorizer = new DelegatingConfigurableAuthorizer();
+            ControllerLogger.ROOT_LOGGER.bootTimeStamp("ManagementSecurityIdentitySupplier start");
             this.securityIdentitySupplier = new ManagementSecurityIdentitySupplier();
+            ControllerLogger.ROOT_LOGGER.bootTimeStamp("ManagementSecurityIdentitySupplier finish");
             this.extensionRegistry = new ExtensionRegistry(serverEnvironment.getLaunchType().getProcessType(), runningModeControl, this.auditLogger, authorizer, securityIdentitySupplier, RuntimeHostControllerInfoAccessor.SERVER);
             this.capabilityRegistry = new CapabilityRegistry(true);
             this.startTime = serverEnvironment.getStartTime();

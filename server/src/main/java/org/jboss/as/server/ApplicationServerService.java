@@ -35,6 +35,7 @@ import java.util.TreeSet;
 
 import org.jboss.as.controller.ControlledProcessState;
 import org.jboss.as.controller.RunningModeControl;
+import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.repository.ContentRepository;
 import org.jboss.as.server.controller.git.GitContentRepository;
 import org.jboss.as.server.deployment.ContentCleanerService;
@@ -93,6 +94,7 @@ final class ApplicationServerService implements Service<AsyncFuture<ServiceConta
     @Override
     public synchronized void start(final StartContext context) throws StartException {
 
+        ControllerLogger.ROOT_LOGGER.bootTimeStamp("ApplicationServerService start start");
         //Moved to AbstractControllerService.start()
         //processState.setStarting();
         final Bootstrap.Configuration configuration = this.configuration;
@@ -156,11 +158,15 @@ final class ApplicationServerService implements Service<AsyncFuture<ServiceConta
         ServiceModuleLoader.addService(serviceTarget, configuration);
         ExternalModuleService.addService(serviceTarget);
         //Add server path manager service
+        ControllerLogger.ROOT_LOGGER.bootTimeStamp("ServerPathManagerService init start");
         ServerPathManagerService.addService(serviceTarget, new ServerPathManagerService(configuration.getCapabilityRegistry()), serverEnvironment);
+        ControllerLogger.ROOT_LOGGER.bootTimeStamp("ServerPathManagerService init finish");
         final AbstractVaultReader vaultReader = loadVaultReaderService();
         ServerLogger.AS_ROOT_LOGGER.debugf("Using VaultReader %s", vaultReader);
+        ControllerLogger.ROOT_LOGGER.bootTimeStamp("ServerService init start");
         ServerService.addService(serviceTarget, configuration, processState, bootstrapListener, runningModeControl, vaultReader, configuration.getAuditLogger(),
                 configuration.getAuthorizer(), configuration.getSecurityIdentitySupplier(), suspendController);
+        ControllerLogger.ROOT_LOGGER.bootTimeStamp("ServerService init finish");
         final ServiceActivatorContext serviceActivatorContext = new ServiceActivatorContext() {
             @Override
             public ServiceTarget getServiceTarget() {
@@ -197,6 +203,7 @@ final class ApplicationServerService implements Service<AsyncFuture<ServiceConta
             ServerLogger.AS_ROOT_LOGGER.debugf(prettyVersion + " root service started in %d.%06d ms",
                     Long.valueOf(nanos / 1000000L), Long.valueOf(nanos % 1000000L));
         }
+        ControllerLogger.ROOT_LOGGER.bootTimeStamp("ApplicationServerService start finish");
     }
 
     @Override

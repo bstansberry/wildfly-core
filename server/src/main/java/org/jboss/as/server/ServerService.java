@@ -65,6 +65,7 @@ import org.jboss.as.controller.capability.registry.RegistrationPoint;
 import org.jboss.as.controller.capability.registry.RuntimeCapabilityRegistration;
 import org.jboss.as.controller.capability.registry.RuntimeCapabilityRegistry;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
+import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.controller.notification.Notification;
 import org.jboss.as.controller.notification.NotificationHandlerRegistry;
 import org.jboss.as.controller.persistence.ConfigurationPersistenceException;
@@ -260,6 +261,7 @@ public final class ServerService extends AbstractControllerService {
     }
 
     public synchronized void start(final StartContext context) throws StartException {
+        ControllerLogger.ROOT_LOGGER.bootTimeStamp("ServerService start start");
         ServerEnvironment serverEnvironment = configuration.getServerEnvironment();
         Bootstrap.ConfigurationPersisterFactory configurationPersisterFactory = configuration.getConfigurationPersisterFactory();
         extensibleConfigurationPersister = configurationPersisterFactory.createConfigurationPersister(serverEnvironment, getExecutorServiceInjector().getOptionalValue());
@@ -283,9 +285,11 @@ public final class ServerService extends AbstractControllerService {
                         super.getBootErrorCollector(),
                         configuration.getCapabilityRegistry()));
         super.start(context);
+        ControllerLogger.ROOT_LOGGER.bootTimeStamp("ServerService start finish");
     }
 
     protected void boot(final BootContext context) throws ConfigurationPersistenceException {
+        ControllerLogger.ROOT_LOGGER.bootTimeStamp("ServerService boot start");
         boolean ok;
         try {
             final ServerEnvironment serverEnvironment = configuration.getServerEnvironment();
@@ -416,6 +420,7 @@ public final class ServerService extends AbstractControllerService {
 
     protected void finishBoot(boolean suspend) throws ConfigurationPersistenceException {
         super.finishBoot();
+        ControllerLogger.ROOT_LOGGER.bootTimeStamp("Finish suspended boot");
         if (!suspend) {
             suspendController.resume();
         }

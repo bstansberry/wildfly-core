@@ -61,6 +61,8 @@ class ParallelBootOperationContext extends AbstractOperationContext {
     private Step lockStep;
     private final int operationId;
     private final ModelControllerImpl controller;
+    private long executionStart;
+    private PathAddress contextAddress;
 
     ParallelBootOperationContext(final ModelController.OperationTransactionControl transactionControl,
                                  final ControlledProcessState processState, final OperationContextImpl primaryContext,
@@ -124,6 +126,16 @@ class ParallelBootOperationContext extends AbstractOperationContext {
             // Handle VERIFY in the primary context, after parallel work is done
             primaryContext.addStep(response, operation, step, stage);
         }
+
+        if (contextAddress == null) {
+            contextAddress = PathAddress.pathAddress(operation.get("address"));
+        }
+    }
+
+    @Override
+    ResultAction executeOperation() {
+        executionStart = System.nanoTime();
+        return super.executeOperation();
     }
 
     // Methods unimplemented by superclass
@@ -320,6 +332,8 @@ class ParallelBootOperationContext extends AbstractOperationContext {
 
     @Override
     void awaitServiceContainerStability() throws InterruptedException {
+        Stage type = runtimeOps == null ? Stage.RUNTIME : Stage.MODEL;
+        ControllerLogger.ROOT_LOGGER.infof("Executed %s for %s in %d ns", type, contextAddress.toCLIStyleString(), (System.nanoTime() - executionStart));
         // ignored
     }
 

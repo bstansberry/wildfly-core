@@ -31,6 +31,7 @@ import javax.management.ObjectName;
 
 import org.jboss.as.controller.ControlledProcessState;
 import org.jboss.as.controller.ControlledProcessStateService;
+import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.server.jmx.RunningStateJmx;
 import org.jboss.as.server.logging.ServerLogger;
 import org.jboss.as.server.suspend.OperationListener;
@@ -83,6 +84,7 @@ final class BootstrapImpl implements Bootstrap {
     }
 
     private AsyncFuture<ServiceContainer> internalBootstrap(final Configuration configuration, final List<ServiceActivator> extraServices) {
+        ControllerLogger.ROOT_LOGGER.bootTimeStamp("bootstrap start");
         try {
             final Object value = ManagementFactory.getPlatformMBeanServer().getAttribute(new ObjectName("java.lang", "type", "OperatingSystem"), "MaxFileDescriptorCount");
             final long fdCount = Long.valueOf(value.toString()).longValue();
@@ -116,10 +118,12 @@ final class BootstrapImpl implements Bootstrap {
         final SuspendController suspendController = new SuspendController();
         //Instantiating the suspendcontroller here to be able to get a reference to it in RunningStateJmx
         //Note that the SuspendController service will be started in the ServerService during the boot of the server.
+        ControllerLogger.ROOT_LOGGER.bootTimeStamp("RunningStateJmx.registerMBean start");
         RunningStateJmx.registerMBean(
                 controlledProcessStateService, suspendController,
                 configuration.getRunningModeControl(),
                 configuration.getServerEnvironment().getLaunchType() != ServerEnvironment.LaunchType.APPCLIENT);
+        ControllerLogger.ROOT_LOGGER.bootTimeStamp("RunningStateJmx.registerMBean finish");
         final Service<?> applicationServerService = new ApplicationServerService(extraServices, configuration, processState, suspendController);
         tracker.addService(Services.JBOSS_AS, applicationServerService)
             .install();
@@ -226,7 +230,9 @@ final class BootstrapImpl implements Bootstrap {
             Runtime.getRuntime().addShutdownHook(this);
             synchronized (this) {
                 if (!down) {
+                    ControllerLogger.ROOT_LOGGER.bootTimeStamp("ServiceContainer create start");
                     container = ServiceContainer.Factory.create("jboss-as", MAX_THREADS, 30, TimeUnit.SECONDS, false);
+                    ControllerLogger.ROOT_LOGGER.bootTimeStamp("ServiceContainer create finish");
                     return container;
                 } else {
                     throw new IllegalStateException();

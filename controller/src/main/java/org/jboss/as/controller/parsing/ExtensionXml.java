@@ -106,6 +106,8 @@ public class ExtensionXml {
 
         final XMLMapper xmlMapper = reader.getXMLMapper();
 
+        ControllerLogger.ROOT_LOGGER.bootTimeStamp("Extension parse start");
+
         while (reader.hasNext() && reader.nextTag() != END_ELEMENT) {
             requireNamespace(reader, expectedNs);
             final Element element = Element.forName(reader.getLocalName());
@@ -127,10 +129,13 @@ public class ExtensionXml {
         if(deferredExtensionContext == null) {
             ctx.load();
         }
+
+        ControllerLogger.ROOT_LOGGER.bootTimeStamp("Extension parse finish");
+
         long elapsed = System.currentTimeMillis() - start;
-        if (ROOT_LOGGER.isDebugEnabled()) {
-            ROOT_LOGGER.debugf("Parsed extensions in [%d] ms", elapsed);
-        }
+        //if (ROOT_LOGGER.isDebugEnabled()) {
+            ROOT_LOGGER.infof("Parsed extensions in [%d] ms", elapsed);
+        //}
     }
 
     private void addExtensionAddOperation(ModelNode address, List<ModelNode> list, String moduleName) {
