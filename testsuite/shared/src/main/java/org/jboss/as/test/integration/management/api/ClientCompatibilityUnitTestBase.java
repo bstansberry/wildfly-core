@@ -227,6 +227,16 @@ public abstract class ClientCompatibilityUnitTestBase {
     }
 
     @Test
+    public void testCore302Final() throws Exception {
+        testWF("3.0.2.Final", 9999);
+    }
+
+    @Test
+    public void testCore302FinalHttp() throws Exception {
+        testWF("3.0.2.Final", 9990);
+    }
+
+    @Test
     public void testCurrent() throws Exception {
         test(ModelControllerClient.Factory.create(CONTROLLER_ADDRESS, 9999));
     }
