@@ -28,10 +28,10 @@ import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SER
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
-import org.jboss.as.controller._private.OperationFailedRuntimeException;
 import org.jboss.dmr.ModelNode;
 import org.junit.Assert;
 import org.junit.Test;
+import org.wildfly.management.api._private.OperationFailedRuntimeException;
 
 /**
  *

@@ -16,7 +16,7 @@ limitations under the License.
 
 package org.wildfly.management.api.model.alias;
 
-import org.wildfly.management.api.PathAddress;
+import org.wildfly.management.api.ResourceAddress;
 
 /**
  * Performs resource address conversions for management resources that are aliases
@@ -34,5 +34,5 @@ public interface AliasAddressConverter {
      * @param aliasContext context that can be used
      * @return the target address
      */
-     PathAddress convertToTargetAddress(PathAddress aliasAddress, AliasContext aliasContext);
+     ResourceAddress convertToTargetAddress(ResourceAddress aliasAddress, AliasContext aliasContext);
 }

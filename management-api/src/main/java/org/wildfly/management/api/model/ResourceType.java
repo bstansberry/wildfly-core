@@ -18,8 +18,8 @@ package org.wildfly.management.api.model;
 
 import java.util.Set;
 
-import org.wildfly.management.api.PathAddress;
-import org.wildfly.management.api.PathElement;
+import org.wildfly.management.api.ResourceAddress;
+import org.wildfly.management.api.AddressElement;
 import org.wildfly.management.api.ProcessType;
 import org.wildfly.management.api.capability.RuntimeCapability;
 import org.wildfly.management.api.model.alias.AliasEntry;
@@ -37,7 +37,7 @@ public interface ResourceType {
      *
      * @return the address. Will not be {@code null}
      */
-    PathAddress getPathAddress();
+    ResourceAddress getPathAddress();
 
     /**
      * Gets the type of process in which this management resource type is registered.
@@ -48,7 +48,7 @@ public interface ResourceType {
     /**
      * Gets the registration for this resource type's parent, if there is one.
      * @return the parent, or {@code null} if {@link #getPathAddress()} returns an address with a
-     *         {@link PathAddress#size() size} of {@code 0}
+     *         {@link ResourceAddress#size() size} of {@code 0}
      */
     ResourceType getParent();
 
@@ -60,7 +60,7 @@ public interface ResourceType {
      * @return the minimum number of occurrences
      */
     default int getMaxOccurs() {
-        PathAddress pa = getPathAddress();
+        ResourceAddress pa = getPathAddress();
         return pa.size() == 0 || !pa.getLastElement().isWildcard() ? 1 : Integer.MAX_VALUE;
     }
 
@@ -127,7 +127,7 @@ public interface ResourceType {
      * @return the attribute names. If there are none an empty set is returned
      * @throws SecurityException if the caller does not have permission to invoke methods on a {@code ManagementResourceType}
      */
-    Set<String> getAttributeNames(PathAddress address);
+    Set<String> getAttributeNames(ResourceAddress address);
 
     /**
      * Get the names of the types of children exposed by resources of this type.
@@ -144,7 +144,7 @@ public interface ResourceType {
      * @return the child type names. If there are none an empty set is returned
      * @throws SecurityException if the caller does not have permission to invoke methods on a {@code ManagementResourceType}
      */
-    Set<String> getChildNames(PathAddress address);
+    Set<String> getChildNames(ResourceAddress address);
 
     /**
      * Gets the set of direct child address elements under the node at the passed in PathAddress
@@ -153,7 +153,7 @@ public interface ResourceType {
      * @return the set of direct child elements
      * @throws SecurityException if the caller does not have permission to invoke methods on a {@code ManagementResourceType}
      */
-    Set<PathElement> getChildAddresses(PathAddress address);
+    Set<AddressElement> getChildAddresses(ResourceAddress address);
 
     /**
      * Get a sub model registration.
@@ -162,7 +162,7 @@ public interface ResourceType {
      * @return the node registration, <code>null</code> if there is none
      * @throws SecurityException if the caller does not have permission to invoke methods on a {@code ManagementResourceType}
      */
-    ResourceType getChildResourceType(PathAddress address);
+    ResourceType getChildResourceType(ResourceAddress address);
 
     /**
      * Gets whether resources of this type are ordered within their parent resource.

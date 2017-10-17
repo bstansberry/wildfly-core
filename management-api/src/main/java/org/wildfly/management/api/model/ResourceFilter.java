@@ -22,7 +22,7 @@
 
 package org.wildfly.management.api.model;
 
-import org.wildfly.management.api.PathAddress;
+import org.wildfly.management.api.ResourceAddress;
 
 /**
  * A resource filter.
@@ -39,6 +39,6 @@ public interface ResourceFilter {
      * @param resource the resource
      * @return {@code true} when to include the resource
      */
-    boolean accepts(final PathAddress address, final Resource resource);
+    boolean accepts(final ResourceAddress address, final Resource resource);
 
 }

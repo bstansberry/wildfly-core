@@ -31,6 +31,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.jboss.dmr.ModelNode;
+import org.wildfly.management.api.AddressElement;
+import org.wildfly.management.api.ResourceAddress;
 import org.wildfly.management.api.access.AccessConstraintDefinition;
 import org.wildfly.management.api.model.Resource;
 import org.wildfly.management.api.runtime.RuntimeReadHandler;
@@ -62,8 +64,8 @@ public final class AttributeDefinition {
          */
         RUNTIME_SERVICE_NOT_REQUIRED,
         /**
-         * An attribute whose value is the same as the value part of the last {@link org.wildfly.management.api.PathElement element}
-         * in its containing resource's {@link org.wildfly.management.api.PathAddress}.
+         * An attribute whose value is the same as the value part of the last {@link AddressElement element}
+         * in its containing resource's {@link ResourceAddress}.
          */
         RESOURCE_NAME_ALIAS;
 
@@ -470,8 +472,8 @@ public final class AttributeDefinition {
 
         /**
          * Marks this attribute as one whose value is the same as the value part of the last
-         * {@link org.wildfly.management.api.PathElement element}
-         * in its containing resource's {@link org.wildfly.management.api.PathAddress}. The attribute
+         * {@link AddressElement element}
+         * in its containing resource's {@link ResourceAddress}. The attribute
          * is also configured as {@link #setReadOnly() read-only} and as {@link #setResourceOnly() resource-only}.
          *
          * @return a builder that can be used to continue building the attribute definition

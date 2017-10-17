@@ -22,9 +22,13 @@
 
 package org.jboss.as.controller;
 
-import org.jboss.as.controller.logging.ControllerLogger;
-import org.jboss.dmr.ModelNode;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import org.jboss.dmr.Property;
+import org.wildfly.common.Assert;
+import org.wildfly.management.api.AddressElement;
 
 /**
  * An element of a path specification for matching operations with addresses.
@@ -34,11 +38,9 @@ import org.jboss.dmr.Property;
 public class PathElement {
 
     public static final String WILDCARD_VALUE = "*";
+    private static final AddressElement[] EMPTY = new AddressElement[0];
 
-    private final String key;
-    private final String value;
-    private final boolean multiTarget;
-    private final int hashCode;
+    private final AddressElement wrapped;
 
     /**
      * Construct a new instance with a wildcard value.
@@ -60,10 +62,42 @@ public class PathElement {
     }
 
     /**
+     * Construct a new instance based on a {@link AddressElement}.
+     *
+     * @param basis the basis. Cannot be {@code null}
+     * @return the path element
+     */
+    public static PathElement pathElement(AddressElement basis) {
+        return new PathElement(basis);
+    }
+
+    static List<AddressElement> getUnwrappedList(List<PathElement> wrapped) {
+        if (wrapped == null || wrapped.size() == 0) {
+            return Collections.emptyList();
+        }
+        List<AddressElement> result = new ArrayList<>(wrapped.size());
+        for (PathElement pe : wrapped) {
+            result.add(pe.wrapped);
+        }
+        return result;
+    }
+
+    static AddressElement[] getUnwrappedElements(PathElement... wrapped) {
+        if (wrapped == null || wrapped.length == 0) {
+            return EMPTY;
+        }
+        AddressElement[] result = new AddressElement[wrapped.length];
+        for (int i = 0; i < wrapped.length; i++ ) {
+            result[i] = wrapped[i].wrapped;
+        }
+        return result;
+    }
+
+    /**
      * Construct a new instance with a wildcard value.
      * @param key the path key to match
      */
-    PathElement(final String key) {
+    private PathElement(final String key) {
         this(key, WILDCARD_VALUE);
     }
 
@@ -72,91 +106,21 @@ public class PathElement {
      * @param key the path key to match
      * @param value the path value or wildcard to match
      */
-    PathElement(final String key, final String value) {
-        if (!isValidKey(key)) {
-            final String element = key + "=" + value;
-            throw new OperationClientIllegalArgumentException(ControllerLogger.ROOT_LOGGER.invalidPathElementKey(element, key));
-        }
-        if (value == null || value.isEmpty()) {
-            final String element = key + "=" + value;
-            throw new OperationClientIllegalArgumentException(ControllerLogger.ROOT_LOGGER.invalidPathElementValue(element, value, ' '));
-        }
-        boolean multiTarget = false;
-        if(key.equals(WILDCARD_VALUE)) {
-            this.key = WILDCARD_VALUE;
-            multiTarget = true;
-        } else {
-            this.key = key;
-        }
-        if (value.equals(WILDCARD_VALUE)) {
-            this.value = WILDCARD_VALUE;
-            multiTarget = true;
-        } else if (value.charAt(0) == '[' && value.charAt(value.length() - 1) == ']') {
-            this.value = value.substring(1, value.length() - 1);
-            multiTarget |= value.indexOf(',') != -1;
-        } else {
-            this.value = value;
-        }
-        this.multiTarget = multiTarget;
-        hashCode = key.hashCode() * 19 + value.hashCode();
+    private PathElement(final String key, final String value) {
+        this.wrapped = AddressElement.pathElement(key, value);
     }
 
-    /**
-     * A valid key contains alphanumerics and underscores, cannot start with a
-     * number, and cannot start or end with {@code -}.
-     */
-    private static boolean isValidKey(final String s) {
-        // Equivalent to this regex \*|[_a-zA-Z](?:[-_a-zA-Z0-9]*[_a-zA-Z0-9]) but faster
-        if (s == null) {
-            return false;
-        }
-        if (s.equals(WILDCARD_VALUE)) {
-            return true;
-        }
-        int lastIndex = s.length() - 1;
-        if (lastIndex == -1) {
-            return false;
-        }
-        if (!isValidKeyStartCharacter(s.charAt(0))) {
-          return false;
-        }
-        for (int i = 1; i < lastIndex; i++) {
-          if (!isValidKeyCharacter(s.charAt(i))) {
-            return false;
-          }
-        }
-        if (lastIndex > 0 && !isValidKeyEndCharacter(s.charAt(lastIndex))) {
-          return false;
-        }
-        return true;
-      }
-
-      private static boolean isValidKeyStartCharacter(final char c) {
-        return c == '_'
-            || c >= 'a' && c <= 'z'
-            || c >= 'A' && c <= 'Z';
-      }
-
-      private static boolean isValidKeyEndCharacter(final char c) {
-        return c == '_'
-            || c >= '0' && c <= '9'
-            || c >= 'a' && c <= 'z'
-            || c >= 'A' && c <= 'Z';
-      }
-
-      private static boolean isValidKeyCharacter(char c) {
-        return c == '_' || c == '-'
-            || c >= '0' && c <= '9'
-            || c >= 'a' && c <= 'z'
-            || c >= 'A' && c <= 'Z';
-      }
+    PathElement(final AddressElement wrapped) {
+        Assert.assertNotNull(wrapped);
+        this.wrapped = wrapped;
+    }
 
     /**
      * Get the path key.
      * @return the path key
      */
     public String getKey() {
-        return key;
+        return wrapped.getKey();
     }
 
     /**
@@ -164,7 +128,7 @@ public class PathElement {
      * @return the path value
      */
     public String getValue() {
-        return value;
+        return wrapped.getValue();
     }
 
     /**
@@ -175,7 +139,7 @@ public class PathElement {
      * @return {@code true} if the property matches
      */
     public boolean matches(Property property) {
-        return property.getName().equals(key) && (value == WILDCARD_VALUE || property.getValue().asString().equals(value));
+        return wrapped.matches(property);
     }
 
     /**
@@ -186,7 +150,7 @@ public class PathElement {
      * @return {@code true} if the element matches
      */
     public boolean matches(PathElement pe) {
-        return pe.key.equals(key) && (isWildcard() || pe.value.equals(value));
+        return wrapped.matches(pe.wrapped);
     }
 
     /**
@@ -194,24 +158,32 @@ public class PathElement {
      * @return {@code true} if the value is the wildcard value
      */
     public boolean isWildcard() {
-        return WILDCARD_VALUE == value; //this is ok as we are expecting exact same object.
+        return wrapped.isWildcard();
     }
 
     public boolean isMultiTarget() {
-        return multiTarget;
+        return wrapped.isMultiTarget();
     }
 
     public String[] getSegments() {
-        return value.split(",");
+        return wrapped.getSegments();
     }
 
     public String[] getKeyValuePair(){
-        return new String[]{key,value};
+        return wrapped.getKeyValuePair();
+    }
+
+    /**
+     * Provides a {@link AddressElement} representation of this element.
+     * @return the address element representation. Will not be {@code null}
+     */
+    public final AddressElement asAddressElement() {
+        return wrapped;
     }
 
     @Override
     public int hashCode() {
-        return hashCode;
+        return wrapped.hashCode();
     }
 
     /**
@@ -229,31 +201,12 @@ public class PathElement {
      * @return {@code true} if they are equal, {@code false} otherwise
      */
     public boolean equals(PathElement other) {
-        return this == other || other != null && other.key.equals(key) && other.value.equals(value);
+        return this == other || other != null && other.wrapped.equals(wrapped) ;
     }
 
     @Override
     public String toString() {
-        return "\"" + key + "\" => \"" + value + "\"";
+        return wrapped.toString();
     }
 
-    /**
-     * AS7-2905. An IAE that implements OperationClientException. Allows PathElement to continue to throw IAE
-     * in case client code expects that failure type, but lets operation handling code detect that the
-     * IAE is a client error.
-     */
-    private static class OperationClientIllegalArgumentException extends IllegalArgumentException implements OperationClientException {
-
-        private static final long serialVersionUID = -9073168544821068948L;
-
-        private OperationClientIllegalArgumentException(final String msg) {
-            super(msg);
-            assert msg != null : "msg is null";
-        }
-
-        @Override
-        public ModelNode getFailureDescription() {
-            return new ModelNode(getLocalizedMessage());
-        }
-    }
 }

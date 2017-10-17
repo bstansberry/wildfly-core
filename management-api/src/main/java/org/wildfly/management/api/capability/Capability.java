@@ -20,7 +20,7 @@ package org.wildfly.management.api.capability;
 
 import java.util.Set;
 
-import org.wildfly.management.api.PathAddress;
+import org.wildfly.management.api.ResourceAddress;
 
 /**
  * @author Tomaz Cerar (c) 2015 Red Hat Inc.
@@ -42,5 +42,5 @@ public interface Capability {
 
     String getDynamicName(String dynamicNameElement);
 
-    String getDynamicName(PathAddress address);
+    String getDynamicName(ResourceAddress address);
 }

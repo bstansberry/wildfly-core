@@ -921,11 +921,11 @@ public class CapabilityRegistryTestCase extends AbstractControllerTestBase {
         CapabilityRegistry reg = new CapabilityRegistry(false);
         reg.registerPossibleCapability(RuntimeCapability.Builder.of("org.wildfly.obj",
                 true, Object.class).build(),
-                PathAddress.pathAddress(new PathElement("subsystem", "java:jboss"),
-                        new PathElement("foo", "*")));
+                PathAddress.pathAddress(PathElement.pathElement("subsystem", "java:jboss"),
+                        PathElement.pathElement("foo", "*")));
         RegistrationPoint rp
-                = new RegistrationPoint(PathAddress.pathAddress(new PathElement("subsystem", "java:jboss"),
-                        new PathElement("foo", "bar")), "bar");
+                = new RegistrationPoint(PathAddress.pathAddress(PathElement.pathElement("subsystem", "java:jboss"),
+                PathElement.pathElement("foo", "bar")), "bar");
         RuntimeCapabilityRegistration registration = new RuntimeCapabilityRegistration(RuntimeCapability.Builder.of("org.wildfly.obj.dyn",
                 true, Object.class).build(), CapabilityScope.GLOBAL, rp);
         reg.registerCapability(registration);

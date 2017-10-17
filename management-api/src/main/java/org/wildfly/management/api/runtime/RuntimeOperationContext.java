@@ -21,8 +21,8 @@ import java.util.logging.Level;
 
 import org.jboss.dmr.ModelNode;
 import org.jboss.msc.service.ServiceName;
-import org.wildfly.management.api.PathAddress;
-import org.wildfly.management.api.PathElement;
+import org.wildfly.management.api.ResourceAddress;
+import org.wildfly.management.api.AddressElement;
 import org.wildfly.management.api.ProcessType;
 import org.wildfly.management.api.RunningMode;
 import org.wildfly.management.api.capability.RuntimeCapability;
@@ -176,11 +176,11 @@ public interface RuntimeOperationContext {
      * Gets the address associated with the currently executing step.
      * @return the address. Will not be {@code null}
      */
-    PathAddress getCurrentAddress();
+    ResourceAddress getCurrentAddress();
 
     /**
-     * Gets the {@link PathElement#getValue() value} of the {@link #getCurrentAddress() current address'}
-     * {@link PathAddress#getLastElement() last element}.
+     * Gets the {@link AddressElement#getValue() value} of the {@link #getCurrentAddress() current address'}
+     * {@link ResourceAddress#getLastElement() last element}.
      *
      * @return the last element value
      *
@@ -230,13 +230,13 @@ public interface RuntimeOperationContext {
      * If a write action was previously performed, the value read will be from an uncommitted copy of the the management model.<br/>
      *
      * Note: By default the returned resource is read-only copy of the entire sub-model. In case this is not required use
-     * {@link RuntimeOperationContext#readResource(PathAddress, boolean)} instead.
+     * {@link RuntimeOperationContext#readResource(ResourceAddress, boolean)} instead.
      *
      * @param relativeAddress the (possibly empty) address where the resource should be added. The address is relative to the
      *                address of the operation being executed
      * @return the resource
      */
-    Resource readResource(PathAddress relativeAddress);
+    Resource readResource(ResourceAddress relativeAddress);
 
     /**
      * Get the resource for read only operations, relative to the executed operation address. Reads never block.
@@ -247,19 +247,19 @@ public interface RuntimeOperationContext {
      * @param recursive whether the model should be read recursively or not
      * @return the resource
      */
-    Resource readResource(PathAddress relativeAddress, boolean recursive);
+    Resource readResource(ResourceAddress relativeAddress, boolean recursive);
 
     /**
      * Read an addressable resource from the root of the model. Reads never block. If a write action was previously performed,
      * the value read will be from an uncommitted copy of the the management model.
      * <p>
      * Note: By default the returned resource is read-only copy of the entire sub-model. In case the entire sub-model
-     * is not required use {@link RuntimeOperationContext#readResourceFromRoot(PathAddress, boolean)} instead.
+     * is not required use {@link RuntimeOperationContext#readResourceFromRoot(ResourceAddress, boolean)} instead.
      *
      * @param address the (possibly empty) address
      * @return a read-only reference from the model
      */
-    Resource readResourceFromRoot(PathAddress address);
+    Resource readResourceFromRoot(ResourceAddress address);
 
     /**
      * Read an addressable resource from the root of the model. Reads never block. If a write action was previously performed,
@@ -275,7 +275,7 @@ public interface RuntimeOperationContext {
      * @param recursive whether the model should be read recursively or not
      * @return a read-only reference from the model
      */
-    Resource readResourceFromRoot(PathAddress address, boolean recursive);
+    Resource readResourceFromRoot(ResourceAddress address, boolean recursive);
 
     /**
      * Get a read-only reference of the entire management model BEFORE any changes were made by this context.

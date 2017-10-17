@@ -29,7 +29,7 @@ import java.util.function.Function;
 
 import org.jboss.msc.service.ServiceName;
 import org.wildfly.common.Assert;
-import org.wildfly.management.api.PathAddress;
+import org.wildfly.management.api.ResourceAddress;
 import org.wildfly.management.api._private.ControllerLoggerDuplicate;
 import org.wildfly.management.api.runtime.ServiceNameFactory;
 
@@ -91,7 +91,7 @@ public class RuntimeCapability<T> extends AbstractCapability  {
                               Set<String> runtimeOnlyRequirements, Set<String> dynamicRequirements,
                               Set<String> dynamicOptionalRequirements,
                               boolean allowMultipleRegistrations,
-                              Function<PathAddress, String[]> dynamicNameMapper, String... dynamicElement
+                              Function<ResourceAddress, String[]> dynamicNameMapper, String... dynamicElement
     ) {
         super(buildDynamicCapabilityName(baseName, dynamicElement), false, requirements,
                 optionalRequirements, runtimeOnlyRequirements, dynamicRequirements, dynamicOptionalRequirements, dynamicNameMapper);
@@ -164,7 +164,7 @@ public class RuntimeCapability<T> extends AbstractCapability  {
      * @throws IllegalArgumentException if the capability does not provide a service
      * @throws AssertionError if {@link #isDynamicallyNamed()} does not return {@code true}
      */
-    public ServiceName getCapabilityServiceName(PathAddress address) {
+    public ServiceName getCapabilityServiceName(ResourceAddress address) {
         return getCapabilityServiceName(address, null);
     }
 
@@ -204,7 +204,7 @@ public class RuntimeCapability<T> extends AbstractCapability  {
      *                                  is not assignable to {@code serviceValueType}
      * @throws IllegalStateException if {@link #isDynamicallyNamed()} does not return {@code true}
      */
-    public ServiceName getCapabilityServiceName(PathAddress address, Class<?> serviceValueType) {
+    public ServiceName getCapabilityServiceName(ResourceAddress address, Class<?> serviceValueType) {
         return fromBaseCapability(address).getCapabilityServiceName(serviceValueType);
     }
 
@@ -271,7 +271,7 @@ public class RuntimeCapability<T> extends AbstractCapability  {
      *
      * @throws AssertionError if {@link #isDynamicallyNamed()} returns {@code false}
      */
-    public RuntimeCapability<T> fromBaseCapability(PathAddress path) {
+    public RuntimeCapability<T> fromBaseCapability(ResourceAddress path) {
         assert isDynamicallyNamed();
         assert path != null;
         String[] dynamicElement = dynamicNameMapper.apply(path);
@@ -299,7 +299,7 @@ public class RuntimeCapability<T> extends AbstractCapability  {
         private Set<String> dynamicRequirements;
         private Set<String> dynamicOptionalRequirements;
         private boolean allowMultipleRegistrations = ALLOW_MULTIPLE;
-        private Function<PathAddress, String[]> dynamicNameMapper = AbstractCapability::addressValueToDynamicName;
+        private Function<ResourceAddress, String[]> dynamicNameMapper = AbstractCapability::addressValueToDynamicName;
 
         /**
          * Create a builder for a non-dynamic capability with no custom runtime API.
@@ -419,7 +419,7 @@ public class RuntimeCapability<T> extends AbstractCapability  {
          * @param mapper function
          * @return the builder
          */
-        public Builder<T> setDynamicNameMapper(Function<PathAddress,String[]> mapper) {
+        public Builder<T> setDynamicNameMapper(Function<ResourceAddress,String[]> mapper) {
             assert mapper != null;
             this.dynamicNameMapper = mapper;
             return this;

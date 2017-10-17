@@ -21,8 +21,8 @@ import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceRegistry;
 import org.wildfly.management.api.OperationFailedException;
-import org.wildfly.management.api.PathAddress;
-import org.wildfly.management.api.PathElement;
+import org.wildfly.management.api.ResourceAddress;
+import org.wildfly.management.api.AddressElement;
 import org.wildfly.management.api.capability.CapabilityServiceSupport;
 import org.wildfly.management.api.capability.RuntimeCapability;
 import org.wildfly.management.api.model.ResourceType;
@@ -185,7 +185,7 @@ public interface RuntimeUpdateContext extends RuntimeOperationContext {
      * @return the model node registration
      * @throws IllegalStateException if the {@link ResourceType} at the given address has a
      *                               {@link ResourceType#getPathAddress() registered address} that is not a
-     *                               {@link PathElement#isWildcard()} wildcard address or if it is a
+     *                               {@link AddressElement#isWildcard()} wildcard address or if it is a
      *                               {@link ResourceType#isRuntimeOnly() runtime-only} resource
      *
     OverridableManagementResourceType getResourceRegistrationForOverride(PathAddress pathAddress);
@@ -241,7 +241,7 @@ public interface RuntimeUpdateContext extends RuntimeOperationContext {
      * @return true if the mark was required and the service should be restarted,
      *         false if no action should be taken.
      */
-    boolean markResourceRestarted(PathAddress resource, Object owner);
+    boolean markResourceRestarted(ResourceAddress resource, Object owner);
 
     /**
      * Removes the restarted marking on the specified resource, provided the passed owner is the one
@@ -250,14 +250,14 @@ public interface RuntimeUpdateContext extends RuntimeOperationContext {
      * restarting it).When true is returned, the caller must take the required corrective
      * action by restarting the resource, when false is returned the caller should take no additional action.
      *
-     * The passed owner is compared by instance to the one provided in {@link #markResourceRestarted(PathAddress, Object)}
+     * The passed owner is compared by instance to the one provided in {@link #markResourceRestarted(ResourceAddress, Object)}
      *
      * @param resource the resource being reverted
      * @param owner the owner of the mark for the resource
      * @return true if the caller owns the mark and the service should be restored by restarting
      *         false if no action should be taken.
      */
-    boolean revertResourceRestarted(PathAddress resource, Object owner);
+    boolean revertResourceRestarted(ResourceAddress resource, Object owner);
 
     /**
      * Requests that one of a capability's optional requirements hereafter be treated as required, until the process is
