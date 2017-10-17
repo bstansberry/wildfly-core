@@ -19,8 +19,8 @@ package org.wildfly.management.api.model;
 import java.util.Set;
 
 import org.jboss.dmr.ModelNode;
-import org.wildfly.management.api.PathAddress;
-import org.wildfly.management.api.PathElement;
+import org.wildfly.management.api.AddressElement;
+import org.wildfly.management.api.ResourceAddress;
 
 /**
  * {@link Resource} implementation that simply delegates to another
@@ -77,8 +77,8 @@ public class DelegatingResource implements Resource {
     }
 
     @Override
-    public PathElement getPathElement() {
-        return getDelegate().getPathElement();
+    public AddressElement getAddressElement() {
+        return getDelegate().getAddressElement();
     }
 
     @Override
@@ -97,17 +97,17 @@ public class DelegatingResource implements Resource {
     }
 
     @Override
-    public boolean hasChild(PathElement element) {
+    public boolean hasChild(AddressElement element) {
         return getDelegate().hasChild(element);
     }
 
     @Override
-    public Resource getChild(PathElement element) {
+    public Resource getChild(AddressElement element) {
         return getDelegate().getChild(element);
     }
 
     @Override
-    public Resource requireChild(PathElement element) {
+    public Resource requireChild(AddressElement element) {
         return getDelegate().requireChild(element);
     }
 
@@ -117,7 +117,7 @@ public class DelegatingResource implements Resource {
     }
 
     @Override
-    public Resource navigate(PathAddress address) {
+    public Resource navigate(ResourceAddress address) {
         return getDelegate().navigate(address);
     }
 

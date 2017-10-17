@@ -17,12 +17,12 @@ limitations under the License.
 package org.wildfly.management.api.model.alias;
 
 import org.jboss.dmr.ModelNode;
-import org.wildfly.management.api.PathAddress;
+import org.wildfly.management.api.ResourceAddress;
 import org.wildfly.management.api.model.Resource;
 
 /**
  * Provides contextual information when
- * {@link AliasAddressConverter#convertToTargetAddress(PathAddress, AliasContext) converting alias addresses}.
+ * {@link AliasAddressConverter#convertToTargetAddress(ResourceAddress, AliasContext) converting alias addresses}.
  */
 @SuppressWarnings("unused")
 public interface AliasContext {
@@ -37,12 +37,12 @@ public interface AliasContext {
      * the value read will be from an uncommitted copy of the the management model.
      * <p>
      * Note: By default the returned resource is read-only copy of the entire sub-model. In case the entire sub-model
-     * is not required use {@link #readResourceFromRoot(PathAddress, boolean)} instead.
+     * is not required use {@link #readResourceFromRoot(ResourceAddress, boolean)} instead.
      *
      * @param address the (possibly empty) address
      * @return a read-only reference from the model
      */
-    Resource readResourceFromRoot(final PathAddress address);
+    Resource readResourceFromRoot(final ResourceAddress address);
 
     /**
      * Read an addressable resource from the root of the model. Reads never block. If a write action was previously performed,
@@ -58,7 +58,7 @@ public interface AliasContext {
      * @param recursive whether the model should be read recursively or not
      * @return a read-only reference from the model
      */
-    Resource readResourceFromRoot(final PathAddress address, final boolean recursive);
+    Resource readResourceFromRoot(final ResourceAddress address, final boolean recursive);
 
     /**
      * Gets the name of the operation associated with the currently executing operation step.
@@ -73,7 +73,7 @@ public interface AliasContext {
      * Gets the address associated with the currently executing operation step.
      * @return the address. Will not be {@code null}
      */
-    PathAddress getCurrentAddress();
+    ResourceAddress getCurrentAddress();
 
     /**
      * Gets the value of the parameter of the given name for the operation associated with the currently executing operation step.

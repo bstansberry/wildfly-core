@@ -17,8 +17,8 @@ limitations under the License.
 package org.wildfly.management.api.model;
 
 import org.jboss.msc.service.ServiceRegistry;
-import org.wildfly.management.api.PathAddress;
-import org.wildfly.management.api.PathElement;
+import org.wildfly.management.api.AddressElement;
+import org.wildfly.management.api.ResourceAddress;
 
 /**
  * Factory for creating a {@link Resource} during execution of a management operation that is adding a resource.
@@ -59,11 +59,11 @@ public interface ResourceFactory {
          * Gets the address associated with the currently executing operation step.
          * @return the address. Will not be {@code null}
          */
-        PathAddress getCurrentAddress();
+        ResourceAddress getCurrentAddress();
 
         /**
-         * Gets the {@link PathElement#getValue() value} of the {@link #getCurrentAddress() current address'}
-         * {@link PathAddress#getLastElement() last element}.
+         * Gets the {@link AddressElement#getValue() value} of the {@link #getCurrentAddress() current address'}
+         * {@link ResourceAddress#getLastElement() last element}.
          *
          * @return the last element value
          *

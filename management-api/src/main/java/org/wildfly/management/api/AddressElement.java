@@ -27,11 +27,14 @@ import org.jboss.dmr.Property;
 import org.wildfly.management.api._private.ControllerLoggerDuplicate;
 
 /**
- * An element of a path specification for matching operations with addresses.
+ * An element of a path specification that designates the {@link ResourceAddress address} of a
+ * {@link org.wildfly.management.api.model.Resource} or {@link org.wildfly.management.api.model.ResourceType}
+ * in a management model.
+ *
  * @author Brian Stansberry
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
  */
-public class PathElement {
+public final class AddressElement {
 
     public static final String WILDCARD_VALUE = "*";
 
@@ -45,8 +48,8 @@ public class PathElement {
      * @param key the path key to match
      * @return the new path element
      */
-    public static PathElement pathElement(final String key) {
-        return new PathElement(key);
+    public static AddressElement pathElement(final String key) {
+        return new AddressElement(key);
     }
 
     /**
@@ -55,15 +58,15 @@ public class PathElement {
      * @param value the path value or wildcard to match
      * @return the new path element
      */
-    public static PathElement pathElement(final String key, final String value) {
-        return new PathElement(key, value);
+    public static AddressElement pathElement(final String key, final String value) {
+        return new AddressElement(key, value);
     }
 
     /**
      * Construct a new instance with a wildcard value.
      * @param key the path key to match
      */
-    private PathElement(final String key) {
+    private AddressElement(final String key) {
         this(key, WILDCARD_VALUE);
     }
 
@@ -72,7 +75,7 @@ public class PathElement {
      * @param key the path key to match
      * @param value the path value or wildcard to match
      */
-    PathElement(final String key, final String value) {
+    AddressElement(final String key, final String value) {
         if (!isValidKey(key)) {
             final String element = key + "=" + value;
             throw new OperationClientIllegalArgumentException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidPathElementKey(element, key));
@@ -181,7 +184,7 @@ public class PathElement {
      * @param pe the element to check
      * @return {@code true} if the element matches
      */
-    public boolean matches(PathElement pe) {
+    public boolean matches(AddressElement pe) {
         return pe.key.equals(key) && (isWildcard() || pe.value.equals(value));
     }
 
@@ -217,7 +220,7 @@ public class PathElement {
      * @return {@code true} if they are equal, {@code false} otherwise
      */
     public boolean equals(Object other) {
-        return other instanceof PathElement && equals((PathElement) other);
+        return other instanceof AddressElement && equals((AddressElement) other);
     }
 
     /**
@@ -225,7 +228,7 @@ public class PathElement {
      * @param other the other object
      * @return {@code true} if they are equal, {@code false} otherwise
      */
-    public boolean equals(PathElement other) {
+    public boolean equals(AddressElement other) {
         return this == other || other != null && other.key.equals(key) && other.value.equals(value);
     }
 

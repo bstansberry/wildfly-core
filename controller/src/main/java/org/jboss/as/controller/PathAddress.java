@@ -21,25 +21,15 @@
  */
 package org.jboss.as.controller;
 
-import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.HOST;
-import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SERVER;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
-import java.util.Set;
 
-import org.jboss.as.controller._private.OperationFailedRuntimeException;
-import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.dmr.ModelNode;
-import org.jboss.dmr.ModelType;
-import org.jboss.dmr.Property;
 import org.wildfly.common.Assert;
+import org.wildfly.management.api.AddressElement;
+import org.wildfly.management.api.ResourceAddress;
 
 /**
  * A path address for an operation.
@@ -52,7 +42,7 @@ public class PathAddress implements Iterable<PathElement> {
     /**
      * An empty address.
      */
-    public static final PathAddress EMPTY_ADDRESS = new PathAddress(Collections.<PathElement>emptyList());
+    public static final PathAddress EMPTY_ADDRESS = new PathAddress(ResourceAddress.EMPTY_ADDRESS);
 
     /**
      * Creates a PathAddress from the given ModelNode address. The given node is expected to be an address node.
@@ -62,163 +52,49 @@ public class PathAddress implements Iterable<PathElement> {
      * @return the update identifier
      */
     public static PathAddress pathAddress(final ModelNode node) {
-        if (node.isDefined()) {
-
-//            final List<Property> props = node.asPropertyList();
-            // Following bit is crap TODO; uncomment above and delete below
-            // when bug is fixed
-            final List<Property> props = new ArrayList<Property>();
-            String key = null;
-            for (ModelNode element : node.asList()) {
-                Property prop = null;
-                if (element.getType() == ModelType.PROPERTY || element.getType() == ModelType.OBJECT) {
-                    prop = element.asProperty();
-                } else if (key == null) {
-                    key = element.asString();
-                } else {
-                    prop = new Property(key, element);
-                }
-                if (prop != null) {
-                    props.add(prop);
-                    key = null;
-                }
-
-            }
-            if (props.size() == 0) {
-                return EMPTY_ADDRESS;
-            } else {
-                final Set<String> seen = new HashSet<String>();
-                final List<PathElement> values = new ArrayList<PathElement>();
-                int index = 0;
-                for (final Property prop : props) {
-                    final String name = prop.getName();
-                    if (seen.add(name)) {
-                        values.add(new PathElement(name, prop.getValue().asString()));
-                    } else {
-                        throw duplicateElement(name);
-                    }
-                    if (index == 1 && name.equals(SERVER) && seen.contains(HOST)) {
-                        seen.clear();
-                    }
-                    index++;
-                }
-                return new PathAddress(Collections.unmodifiableList(values));
-            }
-        } else {
-            return EMPTY_ADDRESS;
-        }
+        ResourceAddress wrapped = ResourceAddress.pathAddress(node);
+        return wrapped == ResourceAddress.EMPTY_ADDRESS ? EMPTY_ADDRESS : new PathAddress(wrapped);
     }
 
     public static PathAddress pathAddress(List<PathElement> elements) {
         if (elements.size() == 0) {
             return EMPTY_ADDRESS;
         }
-        final ArrayList<PathElement> newList = new ArrayList<PathElement>(elements.size());
-        final Set<String> seen = new HashSet<String>();
-        int index = 0;
-        for (PathElement element : elements) {
-            final String name = element.getKey();
-            if (seen.add(name)) {
-                newList.add(element);
-            } else {
-                throw duplicateElement(name);
-            }
-            if (index == 1 && name.equals(SERVER) && seen.contains(HOST)) {
-                seen.clear();
-            }
-            index++;
 
-        }
-        return new PathAddress(Collections.unmodifiableList(newList));
+        return new PathAddress(ResourceAddress.pathAddress(PathElement.getUnwrappedList(elements)));
     }
 
     public static PathAddress pathAddress(PathElement... elements) {
-        return pathAddress(Arrays.<PathElement>asList(elements));
+        return elements == null || elements.length == 0
+                ? EMPTY_ADDRESS
+                : new PathAddress(ResourceAddress.pathAddress(PathElement.getUnwrappedElements(elements)));
+    }
+
+    static PathAddress pathAddress(AddressElement... elements) {
+        return new PathAddress(ResourceAddress.pathAddress(elements));
     }
 
     public static PathAddress pathAddress(String key, String value) {
-        return pathAddress(PathElement.pathElement(key, value));
+        return pathAddress(AddressElement.pathElement(key, value));
     }
 
     public static PathAddress pathAddress(PathAddress parent, PathElement... elements) {
-        List<PathElement> list = new ArrayList<PathElement>(parent.pathAddressList);
-        for (PathElement element : elements) {
-            list.add(element);
-        }
-        return pathAddress(list);
+        return new PathAddress(ResourceAddress.pathAddress(parent.wrapped, PathElement.getUnwrappedElements(elements)));
+    }
+
+    public static PathAddress pathAddress(ResourceAddress resourceAddress) {
+        return new PathAddress(resourceAddress);
     }
 
     public static PathAddress parseCLIStyleAddress(String address) throws IllegalArgumentException {
-        PathAddress parsedAddress = PathAddress.EMPTY_ADDRESS;
-        if (address == null || address.trim().isEmpty()) {
-            return parsedAddress;
-        }
-        String trimmedAddress = address.trim();
-        if (trimmedAddress.charAt(0) != '/' || !Character.isAlphabetic(trimmedAddress.charAt(1))) {
-            throw ControllerLogger.ROOT_LOGGER.illegalCLIStylePathAddress(address);
-        }
-        char[] characters = address.toCharArray();
-        boolean escaped = false;
-        StringBuilder keyBuffer = new StringBuilder();
-        StringBuilder valueBuffer = new StringBuilder();
-        StringBuilder currentBuffer = keyBuffer;
-        for (int i = 1; i < characters.length; i++) {
-            switch (characters[i]) {
-                case '/':
-                    if (escaped) {
-                        escaped = false;
-                        currentBuffer.append(characters[i]);
-                    } else {
-                        parsedAddress = addpathAddressElement(parsedAddress, address, keyBuffer, valueBuffer);
-                        keyBuffer = new StringBuilder();
-                        valueBuffer = new StringBuilder();
-                        currentBuffer = keyBuffer;
-                    }
-                    break;
-                case '\\':
-                    if (escaped) {
-                        escaped = false;
-                        currentBuffer.append(characters[i]);
-                    } else {
-                        escaped = true;
-                    }
-                    break;
-                case '=':
-                    if (escaped) {
-                        escaped = false;
-                        currentBuffer.append(characters[i]);
-                    } else {
-                        currentBuffer = valueBuffer;
-                    }
-                    break;
-                default:
-                    currentBuffer.append(characters[i]);
-                    break;
-            }
-        }
-        parsedAddress = addpathAddressElement(parsedAddress, address, keyBuffer, valueBuffer);
-        return parsedAddress;
+        return new PathAddress(ResourceAddress.parseCLIStyleAddress(address));
     }
 
-    private static PathAddress addpathAddressElement(PathAddress parsedAddress, String address, StringBuilder keyBuffer, StringBuilder valueBuffer) {
-        if (keyBuffer.length() > 0) {
-            if (valueBuffer.length() > 0) {
-                return parsedAddress.append(PathElement.pathElement(keyBuffer.toString(), valueBuffer.toString()));
-            }
-            throw ControllerLogger.ROOT_LOGGER.illegalCLIStylePathAddress(address);
-        }
-        return parsedAddress;
-    }
+    private final ResourceAddress wrapped;
 
-    private static OperationFailedRuntimeException duplicateElement(final String name) {
-        return ControllerLogger.ROOT_LOGGER.duplicateElement(name);
-    }
-
-    private final List<PathElement> pathAddressList;
-
-    PathAddress(final List<PathElement> pathAddressList) {
-        Assert.assertNotNull(pathAddressList);
-        this.pathAddressList = pathAddressList;
+    PathAddress(final ResourceAddress wrapped) {
+        Assert.assertNotNull(wrapped);
+        this.wrapped = wrapped;
     }
 
     /**
@@ -230,8 +106,7 @@ public class PathAddress implements Iterable<PathElement> {
      * @throws IndexOutOfBoundsException if the index is out of range (<tt>index &lt; 0 || index &gt;= size()</tt>)
      */
     public PathElement getElement(int index) {
-        final List<PathElement> list = pathAddressList;
-        return list.get(index);
+        return new PathElement(wrapped.getElement(index));
     }
 
     /**
@@ -240,8 +115,8 @@ public class PathAddress implements Iterable<PathElement> {
      * @return the element, or {@code null} if {@link #size()} is zero.
      */
     public PathElement getLastElement() {
-        final List<PathElement> list = pathAddressList;
-        return list.size() == 0 ? null : list.get(list.size() - 1);
+        final AddressElement toWrap = wrapped.getLastElement();
+        return toWrap == null ? null : new PathElement(toWrap);
     }
 
     /**
@@ -251,8 +126,7 @@ public class PathAddress implements Iterable<PathElement> {
      * @return the partial address
      */
     public PathAddress subAddress(int start) {
-        final List<PathElement> list = pathAddressList;
-        return new PathAddress(list.subList(start, list.size()));
+        return new PathAddress(wrapped.subAddress(start));
     }
 
     /**
@@ -263,7 +137,7 @@ public class PathAddress implements Iterable<PathElement> {
      * @return the partial address
      */
     public PathAddress subAddress(int start, int end) {
-        return new PathAddress(pathAddressList.subList(start, end));
+        return new PathAddress(wrapped.subAddress(start, end));
     }
 
     /**
@@ -273,10 +147,7 @@ public class PathAddress implements Iterable<PathElement> {
      * @return the new path address
      */
     public PathAddress append(List<PathElement> additionalElements) {
-        final ArrayList<PathElement> newList = new ArrayList<PathElement>(pathAddressList.size() + additionalElements.size());
-        newList.addAll(pathAddressList);
-        newList.addAll(additionalElements);
-        return pathAddress(newList);
+        return new PathAddress(wrapped.append(PathElement.getUnwrappedList(additionalElements)));
     }
 
     /**
@@ -286,7 +157,7 @@ public class PathAddress implements Iterable<PathElement> {
      * @return the new path address
      */
     public PathAddress append(PathElement... additionalElements) {
-        return append(Arrays.asList(additionalElements));
+        return new PathAddress(wrapped.append(PathElement.getUnwrappedElements(additionalElements)));
     }
 
     /**
@@ -296,7 +167,7 @@ public class PathAddress implements Iterable<PathElement> {
      * @return the new path address
      */
     public PathAddress append(PathAddress address) {
-        return append(address.pathAddressList);
+        return new PathAddress(wrapped.append(address.wrapped));
     }
 
     public PathAddress append(String key, String value) {
@@ -320,9 +191,9 @@ public class PathAddress implements Iterable<PathElement> {
      */
     @Deprecated
     public ModelNode navigate(ModelNode model, boolean create) throws NoSuchElementException {
-        final Iterator<PathElement> i = pathAddressList.iterator();
+        final Iterator<AddressElement> i = wrapped.iterator();
         while (i.hasNext()) {
-            final PathElement element = i.next();
+            final AddressElement element = i.next();
             if (create && !i.hasNext()) {
                 if (element.isMultiTarget()) {
                     throw new IllegalStateException();
@@ -347,9 +218,9 @@ public class PathAddress implements Iterable<PathElement> {
      */
     @Deprecated
     public ModelNode remove(ModelNode model) throws NoSuchElementException {
-        final Iterator<PathElement> i = pathAddressList.iterator();
+        final Iterator<AddressElement> i = wrapped.iterator();
         while (i.hasNext()) {
-            final PathElement element = i.next();
+            final AddressElement element = i.next();
             if (i.hasNext()) {
                 model = model.require(element.getKey()).require(element.getValue());
             } else {
@@ -366,17 +237,7 @@ public class PathAddress implements Iterable<PathElement> {
      * @return the model node list of properties
      */
     public ModelNode toModelNode() {
-        final ModelNode node = new ModelNode().setEmptyList();
-        for (PathElement element : pathAddressList) {
-            final String value;
-            if (element.isMultiTarget() && !element.isWildcard()) {
-                value = '[' + element.getValue() + ']';
-            } else {
-                value = element.getValue();
-            }
-            node.add(element.getKey(), value);
-        }
-        return node;
+        return wrapped.toModelNode();
     }
 
     /**
@@ -385,12 +246,7 @@ public class PathAddress implements Iterable<PathElement> {
      * @return <code>true</code> if the address can apply to multiple targets, <code>false</code> otherwise
      */
     public boolean isMultiTarget() {
-        for (final PathElement element : pathAddressList) {
-            if (element.isMultiTarget()) {
-                return true;
-            }
-        }
-        return false;
+        return  wrapped.isMultiTarget();
     }
 
     /**
@@ -399,7 +255,7 @@ public class PathAddress implements Iterable<PathElement> {
      * @return the size
      */
     public int size() {
-        return pathAddressList.size();
+        return wrapped.size();
     }
 
     /**
@@ -409,16 +265,72 @@ public class PathAddress implements Iterable<PathElement> {
      */
     @Override
     public ListIterator<PathElement> iterator() {
-        return pathAddressList.listIterator();
+        final ListIterator<AddressElement> iter = wrapped.iterator();
+        return new ListIterator<PathElement>() {
+            @Override
+            public boolean hasNext() {
+                return iter.hasNext();
+            }
+
+            @Override
+            public PathElement next() {
+                AddressElement next = iter.next();
+                return next == null ? null : new PathElement(next);
+            }
+
+            @Override
+            public boolean hasPrevious() {
+                return iter.hasPrevious();
+            }
+
+            @Override
+            public PathElement previous() {
+                AddressElement previous = iter.previous();
+                return previous == null ? null : new PathElement(previous);
+            }
+
+            @Override
+            public int nextIndex() {
+                return iter.nextIndex();
+            }
+
+            @Override
+            public int previousIndex() {
+                return iter.previousIndex();
+            }
+
+            @Override
+            public void remove() {
+                iter.remove();
+            }
+
+            @Override
+            public void set(PathElement pathElement) {
+                iter.set(pathElement == null ? null : pathElement.asAddressElement());
+            }
+
+            @Override
+            public void add(PathElement pathElement) {
+                iter.add(pathElement == null ? null : pathElement.asAddressElement());
+            }
+        };
     }
 
     public PathAddress getParent() {
         return subAddress(0, size() - 1);
     }
 
+    /**
+     * Provides a {@link ResourceAddress} representation of this address.
+     * @return the resourc address representation. Will not be {@code null}
+     */
+    public final ResourceAddress asResourceAddress() {
+        return wrapped;
+    }
+
     @Override
     public int hashCode() {
-        return pathAddressList.hashCode();
+        return wrapped.hashCode();
     }
 
     /**
@@ -439,24 +351,24 @@ public class PathAddress implements Iterable<PathElement> {
      * @return {@code true} if they are equal, {@code false} otherwise
      */
     public boolean equals(PathAddress other) {
-        return this == other || other != null && pathAddressList.equals(other.pathAddressList);
+        return this == other || other != null && wrapped.equals(other.wrapped);
     }
 
     @Override
     public String toString() {
-        return toModelNode().toString();
+        return wrapped.toString();
     }
 
     public String toCLIStyleString() {
-        return toString('=');
+        return wrapped.toCLIStyleString();
     }
 
     public String toHttpStyleString() {
-        return toString('/');
+        return wrapped.toHttpStyleString();
     }
 
     public String toPathStyleString() {
-        return toString('/');
+        return wrapped.toPathStyleString();
     }
 
     /**
@@ -469,50 +381,6 @@ public class PathAddress implements Iterable<PathElement> {
      * @return true if the provided path matches, false otherwise.
      */
     public boolean matches(PathAddress address) {
-        if (address == null) {
-            return false;
-        }
-        if (equals(address)) {
-            return true;
-        }
-        if (size() != address.size()) {
-            return false;
-        }
-        for (int i = 0; i < size(); i++) {
-            PathElement pe = getElement(i);
-            PathElement other = address.getElement(i);
-            if (!pe.matches(other)) {
-                // Could be a multiTarget with segments
-                if (pe.isMultiTarget() && !pe.isWildcard()) {
-                    boolean matched = false;
-                    for (String segment : pe.getSegments()) {
-                        if (segment.equals(other.getValue())) {
-                            matched = true;
-                            break;
-                        }
-                    }
-                    if (!matched) {
-                        return false;
-                    }
-                } else {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    private String toString(char keyValSeparator) {
-        if (pathAddressList.size() == 0) {
-            return "/";
-        }
-        StringBuilder sb = new StringBuilder();
-        for (PathElement pe : pathAddressList) {
-            sb.append('/');
-            sb.append(pe.getKey());
-            sb.append(keyValSeparator);
-            sb.append(pe.getValue());
-        }
-        return sb.toString();
+        return address != null && wrapped.matches(address.wrapped);
     }
 }

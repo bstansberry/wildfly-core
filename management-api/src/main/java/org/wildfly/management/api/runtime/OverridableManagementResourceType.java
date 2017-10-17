@@ -16,11 +16,11 @@ limitations under the License.
 
 package org.wildfly.management.api.runtime;
 
-import org.wildfly.management.api.PathElement;
+import org.wildfly.management.api.AddressElement;
 import org.wildfly.management.api.model.ResourceType;
 
 /**
- * View onto a {@link ResourceType} that has a {@link PathElement#WILDCARD_VALUE wildcard registration} that
+ * View onto a {@link ResourceType} that has a {@link AddressElement#WILDCARD_VALUE wildcard registration} that
  * allows that base type to be overridden for specific concrete addresses.
  *
  * @author Brian Stansberry
@@ -29,7 +29,7 @@ import org.wildfly.management.api.model.ResourceType;
 public interface OverridableManagementResourceType extends ResourceType {
 
     /**
-     * Register a specifically named resource that overrides this {@link PathElement#WILDCARD_VALUE wildcard registration}
+     * Register a specifically named resource that overrides this {@link AddressElement#WILDCARD_VALUE wildcard registration}
      * by adding additional attributes or child types.
      *
      * @param overrideDefinition the definition of the override resource type. Cannot be {@code null}
@@ -42,10 +42,10 @@ public interface OverridableManagementResourceType extends ResourceType {
     ResourceType registerOverrideModel(final OverrideResourceDefinition overrideDefinition);
 
     /**
-     * Unregister a specifically named resource that overrides a {@link PathElement#WILDCARD_VALUE wildcard registration}
+     * Unregister a specifically named resource that overrides a {@link AddressElement#WILDCARD_VALUE wildcard registration}
      * by adding additional attributes, operations or child types.
      *
-     * @param name the specific name of the resource. Cannot be {@code null} or {@link PathElement#WILDCARD_VALUE}
+     * @param name the specific name of the resource. Cannot be {@code null} or {@link AddressElement#WILDCARD_VALUE}
      *
      * @throws SecurityException if the caller does not have permission to invoke methods on a {@code ManagementResourceType}
      */

@@ -20,6 +20,7 @@ package org.wildfly.management.api._private;
 import org.jboss.logging.BasicLogger;
 import org.jboss.logging.Logger;
 import org.jboss.logging.annotations.MessageLogger;
+
 /**
  * Provides internationalized log messages and exceptions for the classes in the extension API.
  *
@@ -32,5 +33,5 @@ public interface ManagementApiLogger extends BasicLogger {
      * Default root logger with category of the package name.
      */
     ManagementApiLogger ROOT_LOGGER = Logger.getMessageLogger(ManagementApiLogger.class, "org.wildfly.management");
-
+    
 }

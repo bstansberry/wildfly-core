@@ -16,8 +16,8 @@ limitations under the License.
 
 package org.wildfly.management.api.capability;
 
-import org.wildfly.management.api.PathAddress;
-import org.wildfly.management.api.PathElement;
+import org.wildfly.management.api.AddressElement;
+import org.wildfly.management.api.ResourceAddress;
 import org.wildfly.management.api.model.Resource;
 import org.wildfly.management.api.model.definition.AttributeDefinition;
 
@@ -79,11 +79,11 @@ public interface CapabilityRegistrar {
          * Gets the address associated with the currently executing operation step.
          * @return the address. Will not be {@code null}
          */
-        PathAddress getCurrentAddress();
+        ResourceAddress getCurrentAddress();
 
         /**
-         * Gets the {@link PathElement#getValue() value} of the {@link #getCurrentAddress() current address'}
-         * {@link PathAddress#getLastElement() last element}.
+         * Gets the {@link AddressElement#getValue() value} of the {@link #getCurrentAddress() current address'}
+         * {@link ResourceAddress#getLastElement() last element}.
          *
          * @return the last element value
          *
