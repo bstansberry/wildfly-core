@@ -27,9 +27,9 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 import org.jboss.dmr.ModelNode;
+import org.wildfly.management.api.AddressElement;
 import org.wildfly.management.api.OperationClientException;
-import org.wildfly.management.api.PathAddress;
-import org.wildfly.management.api.PathElement;
+import org.wildfly.management.api.ResourceAddress;
 import org.wildfly.management.api._private.ControllerLoggerDuplicate;
 
 /**
@@ -52,7 +52,7 @@ public interface Resource extends Cloneable {
      *
      * @return the path element
      */
-    PathElement getPathElement();
+    AddressElement getAddressElement();
 
     /**
      * Get the configuration model.
@@ -85,7 +85,7 @@ public interface Resource extends Cloneable {
      * @param element the path element
      * @return {@code true} if there is child with the given address
      */
-    boolean hasChild(PathElement element);
+    boolean hasChild(AddressElement element);
 
     /**
      * Get a single child of this resource with the given address. If no such child exists this will return {@code null}.
@@ -93,7 +93,7 @@ public interface Resource extends Cloneable {
      * @param element the path element
      * @return the resource, {@code null} if there is no such child resource
      */
-    Resource getChild(PathElement element);
+    Resource getChild(AddressElement element);
 
     /**
      * Get a single child of this resource with the given address. If no such child exists, an exception is thrown.
@@ -102,7 +102,7 @@ public interface Resource extends Cloneable {
      * @return the resource
      * @throws NoSuchResourceException if the child does not exist
      */
-    Resource requireChild(PathElement element);
+    Resource requireChild(AddressElement element);
 
     /**
      * Determine whether this resource has any child of a given type.
@@ -119,7 +119,7 @@ public interface Resource extends Cloneable {
      * @return the resource
      * @throws NoSuchResourceException if any resource in the path does not exist
      */
-    Resource navigate(PathAddress address);
+    Resource navigate(ResourceAddress address);
 
     /**
      * Get a list of registered child types for this resource.
@@ -176,7 +176,7 @@ public interface Resource extends Cloneable {
          */
         public static final ResourceFilter ALL_BUT_RUNTIME_AND_PROXIES_FILTER = new ResourceFilter() {
             @Override
-            public boolean accepts(PathAddress address, Resource resource) {
+            public boolean accepts(ResourceAddress address, Resource resource) {
                 return !resource.isRuntime() && !resource.isProxy();
             }
         };
@@ -248,14 +248,14 @@ public interface Resource extends Cloneable {
 
         private static ModelNode readModel(final Resource resource, final int level,
                                            final ResourceType mrr, final ResourceFilter filter) {
-            if (filter.accepts(PathAddress.EMPTY_ADDRESS, resource)) {
-                return readModel(PathAddress.EMPTY_ADDRESS, resource, level, mrr, filter);
+            if (filter.accepts(ResourceAddress.EMPTY_ADDRESS, resource)) {
+                return readModel(ResourceAddress.EMPTY_ADDRESS, resource, level, mrr, filter);
             } else {
                 return new ModelNode();
             }
         }
 
-        private static ModelNode readModel(final PathAddress address, final Resource resource, final int level,
+        private static ModelNode readModel(final ResourceAddress address, final Resource resource, final int level,
                                            final ResourceType mrr, final ResourceFilter filter) {
             final ModelNode model = resource.getModel().clone();
             final boolean recursive = level == -1 || level > 0;
@@ -268,9 +268,9 @@ public interface Resource extends Cloneable {
                     }
                     model.get(childType).setEmptyObject();
                     for (final Resource child : resource.getChildren(childType)) {
-                        if (filter.accepts(address.append(child.getPathElement()), resource)) {
+                        if (filter.accepts(address.append(child.getAddressElement()), resource)) {
                             ResourceType childMrr =
-                                    mrr == null ? null : mrr.getChildResourceType(address.append(child.getPathElement()));
+                                    mrr == null ? null : mrr.getChildResourceType(address.append(child.getAddressElement()));
                             model.get(childType, child.getName()).set(readModel(child, newLevel, childMrr, filter));
                         }
                     }
@@ -281,8 +281,8 @@ public interface Resource extends Cloneable {
 
         private static Set<String> getNonIgnoredChildTypes(ResourceType mrr) {
             Set<String> result = new HashSet<>();
-            for (PathElement pe : mrr.getChildAddresses(PathAddress.EMPTY_ADDRESS)) {
-                ResourceType childMrr = mrr.getChildResourceType(PathAddress.pathAddress(pe));
+            for (AddressElement pe : mrr.getChildAddresses(ResourceAddress.EMPTY_ADDRESS)) {
+                ResourceType childMrr = mrr.getChildResourceType(ResourceAddress.pathAddress(pe));
                 if (childMrr != null && !childMrr.isRemote() && !childMrr.isRuntimeOnly()) {
                     result.add(pe.getKey());
                 }
@@ -292,15 +292,15 @@ public interface Resource extends Cloneable {
     }
 
     /**
-     * A {@link NoSuchElementException} variant that can be thrown by {@link Resource#requireChild(PathElement)} and
-     * {@link Resource#navigate(PathAddress)} implementations to indicate a client error when invoking a
+     * A {@link NoSuchElementException} variant that can be thrown by {@link Resource#requireChild(AddressElement)} and
+     * {@link Resource#navigate(ResourceAddress)} implementations to indicate a client error when invoking a
      * management operation.
      */
     class NoSuchResourceException extends NoSuchElementException implements OperationClientException {
 
         private static final long serialVersionUID = -2409240663987141424L;
 
-        public NoSuchResourceException(PathElement childPath) {
+        public NoSuchResourceException(AddressElement childPath) {
             this(ControllerLoggerDuplicate.ROOT_LOGGER.childResourceNotFound(childPath));
         }
 

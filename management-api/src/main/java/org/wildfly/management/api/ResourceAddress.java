@@ -28,10 +28,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.NoSuchElementException;
 import java.util.Set;
 
 import org.jboss.dmr.ModelNode;
@@ -42,17 +40,20 @@ import org.wildfly.management.api._private.ControllerLoggerDuplicate;
 import org.wildfly.management.api._private.OperationFailedRuntimeException;
 
 /**
- * A path address for an operation.
+ * An address of a resource in the management model. An address is composed of a list
+ * of {@link AddressElement} objects each of which represents a node in the management
+ * resource tree, with the final element representing the resource's own node.
+ * An address with no elements represents the root of the tree.
  *
  * @author Brian Stansberry
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
  */
-public class PathAddress implements Iterable<PathElement> {
+public final class ResourceAddress implements Iterable<AddressElement> {
 
     /**
      * An empty address.
      */
-    public static final PathAddress EMPTY_ADDRESS = new PathAddress(Collections.<PathElement>emptyList());
+    public static final ResourceAddress EMPTY_ADDRESS = new ResourceAddress(Collections.<AddressElement>emptyList());
 
     /**
      * Creates a PathAddress from the given ModelNode address. The given node is expected to be an address node.
@@ -61,7 +62,7 @@ public class PathAddress implements Iterable<PathElement> {
      *
      * @return the update identifier
      */
-    public static PathAddress pathAddress(final ModelNode node) {
+    public static ResourceAddress pathAddress(final ModelNode node) {
         if (node.isDefined()) {
 
 //            final List<Property> props = node.asPropertyList();
@@ -88,12 +89,12 @@ public class PathAddress implements Iterable<PathElement> {
                 return EMPTY_ADDRESS;
             } else {
                 final Set<String> seen = new HashSet<String>();
-                final List<PathElement> values = new ArrayList<PathElement>();
+                final List<AddressElement> values = new ArrayList<AddressElement>();
                 int index = 0;
                 for (final Property prop : props) {
                     final String name = prop.getName();
                     if (seen.add(name)) {
-                        values.add(new PathElement(name, prop.getValue().asString()));
+                        values.add(new AddressElement(name, prop.getValue().asString()));
                     } else {
                         throw duplicateElement(name);
                     }
@@ -102,21 +103,21 @@ public class PathAddress implements Iterable<PathElement> {
                     }
                     index++;
                 }
-                return new PathAddress(Collections.unmodifiableList(values));
+                return new ResourceAddress(Collections.unmodifiableList(values));
             }
         } else {
             return EMPTY_ADDRESS;
         }
     }
 
-    public static PathAddress pathAddress(List<PathElement> elements) {
+    public static ResourceAddress pathAddress(List<AddressElement> elements) {
         if (elements.size() == 0) {
             return EMPTY_ADDRESS;
         }
-        final ArrayList<PathElement> newList = new ArrayList<PathElement>(elements.size());
+        final ArrayList<AddressElement> newList = new ArrayList<AddressElement>(elements.size());
         final Set<String> seen = new HashSet<String>();
         int index = 0;
-        for (PathElement element : elements) {
+        for (AddressElement element : elements) {
             final String name = element.getKey();
             if (seen.add(name)) {
                 newList.add(element);
@@ -129,25 +130,25 @@ public class PathAddress implements Iterable<PathElement> {
             index++;
 
         }
-        return new PathAddress(Collections.unmodifiableList(newList));
+        return new ResourceAddress(Collections.unmodifiableList(newList));
     }
 
-    public static PathAddress pathAddress(PathElement... elements) {
-        return pathAddress(Arrays.<PathElement>asList(elements));
+    public static ResourceAddress pathAddress(AddressElement... elements) {
+        return pathAddress(Arrays.<AddressElement>asList(elements));
     }
 
-    public static PathAddress pathAddress(String key, String value) {
-        return pathAddress(PathElement.pathElement(key, value));
+    public static ResourceAddress pathAddress(String key, String value) {
+        return pathAddress(AddressElement.pathElement(key, value));
     }
 
-    public static PathAddress pathAddress(PathAddress parent, PathElement... elements) {
-        List<PathElement> list = new ArrayList<PathElement>(parent.pathAddressList);
+    public static ResourceAddress pathAddress(ResourceAddress parent, AddressElement... elements) {
+        List<AddressElement> list = new ArrayList<AddressElement>(parent.pathAddressList);
         Collections.addAll(list, elements);
         return pathAddress(list);
     }
 
-    public static PathAddress parseCLIStyleAddress(String address) throws IllegalArgumentException {
-        PathAddress parsedAddress = PathAddress.EMPTY_ADDRESS;
+    public static ResourceAddress parseCLIStyleAddress(String address) throws IllegalArgumentException {
+        ResourceAddress parsedAddress = ResourceAddress.EMPTY_ADDRESS;
         if (address == null || address.trim().isEmpty()) {
             return parsedAddress;
         }
@@ -198,10 +199,10 @@ public class PathAddress implements Iterable<PathElement> {
         return parsedAddress;
     }
 
-    private static PathAddress addpathAddressElement(PathAddress parsedAddress, String address, StringBuilder keyBuffer, StringBuilder valueBuffer) {
+    private static ResourceAddress addpathAddressElement(ResourceAddress parsedAddress, String address, StringBuilder keyBuffer, StringBuilder valueBuffer) {
         if (keyBuffer.length() > 0) {
             if (valueBuffer.length() > 0) {
-                return parsedAddress.append(PathElement.pathElement(keyBuffer.toString(), valueBuffer.toString()));
+                return parsedAddress.append(AddressElement.pathElement(keyBuffer.toString(), valueBuffer.toString()));
             }
             throw ControllerLoggerDuplicate.ROOT_LOGGER.illegalCLIStylePathAddress(address);
         }
@@ -212,9 +213,9 @@ public class PathAddress implements Iterable<PathElement> {
         return ControllerLoggerDuplicate.ROOT_LOGGER.duplicateElement(name);
     }
 
-    private final List<PathElement> pathAddressList;
+    private final List<AddressElement> pathAddressList;
 
-    private PathAddress(final List<PathElement> pathAddressList) {
+    private ResourceAddress(final List<AddressElement> pathAddressList) {
         Assert.assertNotNull(pathAddressList);
         this.pathAddressList = pathAddressList;
     }
@@ -227,7 +228,7 @@ public class PathAddress implements Iterable<PathElement> {
      *
      * @throws IndexOutOfBoundsException if the index is out of range (<tt>index &lt; 0 || index &gt;= size()</tt>)
      */
-    public PathElement getElement(int index) {
+    public AddressElement getElement(int index) {
         return pathAddressList.get(index);
     }
 
@@ -236,7 +237,7 @@ public class PathAddress implements Iterable<PathElement> {
      *
      * @return the element, or {@code null} if {@link #size()} is zero.
      */
-    public PathElement getLastElement() {
+    public AddressElement getLastElement() {
         final int size = pathAddressList.size();
         return size == 0 ? null : pathAddressList.get(size - 1);
     }
@@ -247,8 +248,8 @@ public class PathAddress implements Iterable<PathElement> {
      * @param start the start index
      * @return the partial address
      */
-    public PathAddress subAddress(int start) {
-        return new PathAddress(pathAddressList.subList(start, pathAddressList.size()));
+    public ResourceAddress subAddress(int start) {
+        return new ResourceAddress(pathAddressList.subList(start, pathAddressList.size()));
     }
 
     /**
@@ -258,8 +259,8 @@ public class PathAddress implements Iterable<PathElement> {
      * @param end the end index
      * @return the partial address
      */
-    public PathAddress subAddress(int start, int end) {
-        return new PathAddress(pathAddressList.subList(start, end));
+    public ResourceAddress subAddress(int start, int end) {
+        return new ResourceAddress(pathAddressList.subList(start, end));
     }
 
     /**
@@ -268,8 +269,8 @@ public class PathAddress implements Iterable<PathElement> {
      * @param additionalElements the elements to append
      * @return the new path address
      */
-    public PathAddress append(List<PathElement> additionalElements) {
-        final ArrayList<PathElement> newList = new ArrayList<PathElement>(pathAddressList.size() + additionalElements.size());
+    public ResourceAddress append(List<AddressElement> additionalElements) {
+        final ArrayList<AddressElement> newList = new ArrayList<AddressElement>(pathAddressList.size() + additionalElements.size());
         newList.addAll(pathAddressList);
         newList.addAll(additionalElements);
         return pathAddress(newList);
@@ -281,7 +282,7 @@ public class PathAddress implements Iterable<PathElement> {
      * @param additionalElements the elements to append
      * @return the new path address
      */
-    public PathAddress append(PathElement... additionalElements) {
+    public ResourceAddress append(AddressElement... additionalElements) {
         return append(Arrays.asList(additionalElements));
     }
 
@@ -291,61 +292,16 @@ public class PathAddress implements Iterable<PathElement> {
      * @param address the address to append
      * @return the new path address
      */
-    public PathAddress append(PathAddress address) {
+    public ResourceAddress append(ResourceAddress address) {
         return append(address.pathAddressList);
     }
 
-    public PathAddress append(String key, String value) {
-        return append(PathElement.pathElement(key, value));
+    public ResourceAddress append(String key, String value) {
+        return append(AddressElement.pathElement(key, value));
     }
 
-    public PathAddress append(String key) {
-        return append(PathElement.pathElement(key));
-    }
-
-    /**
-     * Navigate to this address in the given model node.
-     *
-     * @param model the model node
-     * @param create {@code true} to create the last part of the node if it does not exist
-     * @return the submodel
-     * @throws NoSuchElementException if the model contains no such element
-     */
-    public ModelNode navigate(ModelNode model, boolean create) throws NoSuchElementException {
-        final Iterator<PathElement> i = pathAddressList.iterator();
-        while (i.hasNext()) {
-            final PathElement element = i.next();
-            if (create && !i.hasNext()) {
-                if (element.isMultiTarget()) {
-                    throw new IllegalStateException();
-                }
-                model = model.require(element.getKey()).get(element.getValue());
-            } else {
-                model = model.require(element.getKey()).require(element.getValue());
-            }
-        }
-        return model;
-    }
-
-    /**
-     * Navigate to, and remove, this address in the given model node.
-     *
-     * @param model the model node
-     * @return the submodel
-     * @throws NoSuchElementException if the model contains no such element
-     */
-    public ModelNode remove(ModelNode model) throws NoSuchElementException {
-        final Iterator<PathElement> i = pathAddressList.iterator();
-        while (i.hasNext()) {
-            final PathElement element = i.next();
-            if (i.hasNext()) {
-                model = model.require(element.getKey()).require(element.getValue());
-            } else {
-                final ModelNode parent = model.require(element.getKey());
-                model = parent.remove(element.getValue()).clone();
-            }
-        }
-        return model;
+    public ResourceAddress append(String key) {
+        return append(AddressElement.pathElement(key));
     }
 
     /**
@@ -355,7 +311,7 @@ public class PathAddress implements Iterable<PathElement> {
      */
     public ModelNode toModelNode() {
         final ModelNode node = new ModelNode().setEmptyList();
-        for (PathElement element : pathAddressList) {
+        for (AddressElement element : pathAddressList) {
             final String value;
             if (element.isMultiTarget() && !element.isWildcard()) {
                 value = '[' + element.getValue() + ']';
@@ -373,7 +329,7 @@ public class PathAddress implements Iterable<PathElement> {
      * @return <code>true</code> if the address can apply to multiple targets, <code>false</code> otherwise
      */
     public boolean isMultiTarget() {
-        for (final PathElement element : pathAddressList) {
+        for (final AddressElement element : pathAddressList) {
             if (element.isMultiTarget()) {
                 return true;
             }
@@ -396,11 +352,11 @@ public class PathAddress implements Iterable<PathElement> {
      * @return the iterator
      */
     @Override
-    public ListIterator<PathElement> iterator() {
+    public ListIterator<AddressElement> iterator() {
         return pathAddressList.listIterator();
     }
 
-    public PathAddress getParent() {
+    public ResourceAddress getParent() {
         return subAddress(0, size() - 1);
     }
 
@@ -417,7 +373,7 @@ public class PathAddress implements Iterable<PathElement> {
      */
     @Override
     public boolean equals(Object other) {
-        return other instanceof PathAddress && equals((PathAddress) other);
+        return other instanceof ResourceAddress && equals((ResourceAddress) other);
     }
 
     /**
@@ -426,7 +382,7 @@ public class PathAddress implements Iterable<PathElement> {
      * @param other the other object
      * @return {@code true} if they are equal, {@code false} otherwise
      */
-    public boolean equals(PathAddress other) {
+    public boolean equals(ResourceAddress other) {
         return this == other || other != null && pathAddressList.equals(other.pathAddressList);
     }
 
@@ -456,7 +412,7 @@ public class PathAddress implements Iterable<PathElement> {
      * returns false.
      * @return true if the provided path matches, false otherwise.
      */
-    public boolean matches(PathAddress address) {
+    public boolean matches(ResourceAddress address) {
         if (address == null) {
             return false;
         }
@@ -467,8 +423,8 @@ public class PathAddress implements Iterable<PathElement> {
             return false;
         }
         for (int i = 0; i < size(); i++) {
-            PathElement pe = getElement(i);
-            PathElement other = address.getElement(i);
+            AddressElement pe = getElement(i);
+            AddressElement other = address.getElement(i);
             if (!pe.matches(other)) {
                 // Could be a multiTarget with segments
                 if (pe.isMultiTarget() && !pe.isWildcard()) {
@@ -495,7 +451,7 @@ public class PathAddress implements Iterable<PathElement> {
             return "/";
         }
         StringBuilder sb = new StringBuilder();
-        for (PathElement pe : pathAddressList) {
+        for (AddressElement pe : pathAddressList) {
             sb.append('/');
             sb.append(pe.getKey());
             sb.append(keyValSeparator);

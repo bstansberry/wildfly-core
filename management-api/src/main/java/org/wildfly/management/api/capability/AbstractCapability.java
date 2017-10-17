@@ -27,7 +27,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.wildfly.management.api.PathAddress;
+import org.wildfly.management.api.ResourceAddress;
 
 /**
  * Base class for a core or subsystem capability.
@@ -48,7 +48,7 @@ public abstract class AbstractCapability implements Capability {
     // specify the dynamic part of the requirement name, and a
     // runtime-only requirement by definition cannot be specified
     // via configuration
-    final Function<PathAddress,String[]> dynamicNameMapper;
+    final Function<ResourceAddress,String[]> dynamicNameMapper;
 
     /**
      * Creates a new capability
@@ -67,7 +67,7 @@ public abstract class AbstractCapability implements Capability {
                                  final Set<String> optionalRequirements,
                                  final Set<String> runtimeOnlyRequirements,
                                  final Set<String> dynamicRequirements,
-                                 final Set<String> dynamicOptionalRequirements, Function<PathAddress, String[]> dynamicNameMapper) {
+                                 final Set<String> dynamicOptionalRequirements, Function<ResourceAddress, String[]> dynamicNameMapper) {
         assert name != null;
         this.name = name;
         this.dynamic = dynamic;
@@ -94,11 +94,11 @@ public abstract class AbstractCapability implements Capability {
     /**
      * resolves dynamic name from path address that return last element value are result
      *
-     * @param pathAddress
+     * @param resourceAddress
      * @return dynamic part of address
      */
-    public static String[] addressValueToDynamicName(PathAddress pathAddress){
-        return new String[]{pathAddress.getLastElement().getValue()};
+    public static String[] addressValueToDynamicName(ResourceAddress resourceAddress){
+        return new String[]{resourceAddress.getLastElement().getValue()};
     }
 
     /**
@@ -206,7 +206,7 @@ public abstract class AbstractCapability implements Capability {
     }
 
     @Override
-    public String getDynamicName(PathAddress address) {
+    public String getDynamicName(ResourceAddress address) {
         if (!dynamic) {
             throw new IllegalStateException();
         }

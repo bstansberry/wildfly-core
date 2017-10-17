@@ -25,8 +25,8 @@ package org.wildfly.management.api.model.definition;
 import java.util.Set;
 
 import org.jboss.dmr.ModelNode;
-import org.wildfly.management.api.PathAddress;
-import org.wildfly.management.api.PathElement;
+import org.wildfly.management.api.ResourceAddress;
+import org.wildfly.management.api.AddressElement;
 import org.wildfly.management.api.capability.RuntimeCapability;
 import org.wildfly.management.api.model.ResourceType;
 import org.wildfly.management.api.model.Resource;
@@ -101,11 +101,11 @@ public interface CapabilityReferenceRecorder {
          * Gets the address associated with the currently executing operation step.
          * @return the address. Will not be {@code null}
          */
-        PathAddress getCurrentAddress();
+        ResourceAddress getCurrentAddress();
 
         /**
-         * Gets the {@link PathElement#getValue() value} of the {@link #getCurrentAddress() current address'}
-         * {@link PathAddress#getLastElement() last element}.
+         * Gets the {@link AddressElement#getValue() value} of the {@link #getCurrentAddress() current address'}
+         * {@link ResourceAddress#getLastElement() last element}.
          *
          * @return the last element value
          *
@@ -205,7 +205,7 @@ public interface CapabilityReferenceRecorder {
          * @param currentAddress the address of the resource currently being processed. Will not be {@code null}
          * @return the dynamic portion of the dependenty capability name. Cannot be {@code null}
          */
-        String getDynamicDependentName(PathAddress currentAddress) {
+        String getDynamicDependentName(ResourceAddress currentAddress) {
             return currentAddress.getLastElement().getValue();
         }
 

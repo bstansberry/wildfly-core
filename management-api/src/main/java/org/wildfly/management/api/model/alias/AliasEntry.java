@@ -21,7 +21,7 @@
 */
 package org.wildfly.management.api.model.alias;
 
-import org.wildfly.management.api.PathAddress;
+import org.wildfly.management.api.ResourceAddress;
 
 /**
  * Encapsulates the two addresses associated with a resource alias.
@@ -35,13 +35,13 @@ public interface AliasEntry {
      *
      * @return the alias address
      */
-    PathAddress getAliasAddress();
+    ResourceAddress getAliasAddress();
 
     /**
      * Gets the address to which this alias should convert
      *
      * @return the target address
      */
-    PathAddress getTargetAddress();
+    ResourceAddress getTargetAddress();
 
 }

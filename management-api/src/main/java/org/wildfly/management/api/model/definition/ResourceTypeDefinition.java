@@ -20,7 +20,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.wildfly.management.api.PathElement;
+import org.wildfly.management.api.AddressElement;
 import org.wildfly.management.api.RunLevel;
 import org.wildfly.management.api.SchemaVersion;
 import org.wildfly.management.api.access.AccessConstraintDefinition;
@@ -47,11 +47,11 @@ public final class ResourceTypeDefinition {
         private static final OperationDefinition[] EMPTY_OPS = new OperationDefinition[0];
         private static final ResourceTypeDefinition[] EMPTY_CHILDREN = new ResourceTypeDefinition[0];
 
-        public static Builder of(PathElement path, ResourceDescriptionResolver descriptionResolver) {
+        public static Builder of(AddressElement path, ResourceDescriptionResolver descriptionResolver) {
             return new Builder(path, descriptionResolver);
         }
 
-        private final PathElement path;
+        private final AddressElement path;
         private final ResourceDescriptionResolver descriptionResolver;
         private AttributeDefinition[] rootAttributes = EMPTY_ATTRS;
         private AttributeGroupDefinition[] attributeGroups = EMPTY_GROUPS;
@@ -77,7 +77,7 @@ public final class ResourceTypeDefinition {
         private DeprecationData deprecationData;
         private SchemaVersion[] since;
 
-        private Builder(PathElement path, ResourceDescriptionResolver descriptionResolver) {
+        private Builder(AddressElement path, ResourceDescriptionResolver descriptionResolver) {
             this.path = path;
             this.descriptionResolver = descriptionResolver;
         }
@@ -454,7 +454,7 @@ public final class ResourceTypeDefinition {
         }
     }
 
-    private final PathElement path;
+    private final AddressElement path;
     private final ResourceDescriptionResolver descriptionResolver;
     private final AttributeDefinition[] rootAttributes;
     private final AttributeGroupDefinition[] attributeGroups;

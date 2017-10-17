@@ -23,7 +23,7 @@
 package org.wildfly.management.api.notification;
 
 import org.jboss.dmr.ModelNode;
-import org.wildfly.management.api.PathAddress;
+import org.wildfly.management.api.ResourceAddress;
 
 /**
  * A notification emitted by a resource and handled by a {@link NotificationHandler}.
@@ -39,12 +39,12 @@ public class Notification {
     public static final String DATA = "data";
 
     private final String type;
-    private final PathAddress source;
+    private final ResourceAddress source;
     private final String message;
     private final long timestamp;
     private final ModelNode data;
 
-    public Notification(String type, PathAddress source, String message) {
+    public Notification(String type, ResourceAddress source, String message) {
         this(type, source, message, null);
     }
 
@@ -52,11 +52,11 @@ public class Notification {
      *
      * @param data can be {@code null}
      */
-    public Notification(String type, PathAddress source, String message, ModelNode data) {
+    public Notification(String type, ResourceAddress source, String message, ModelNode data) {
         this(type, source, message, System.currentTimeMillis(), data);
     }
 
-    private Notification(String type, PathAddress source, String message, long timestamp, ModelNode data) {
+    private Notification(String type, ResourceAddress source, String message, long timestamp, ModelNode data) {
         this.type = type;
         this.source = source;
         this.message = message;
@@ -74,7 +74,7 @@ public class Notification {
     /**
      * @return the address of the resource that emitted the notification (its source)
      */
-    public PathAddress getSource() {
+    public ResourceAddress getSource() {
         return source;
     }
 
@@ -122,7 +122,7 @@ public class Notification {
      */
     public static Notification fromModelNode(ModelNode node) {
         String type = node.require(TYPE).asString();
-        PathAddress source = PathAddress.pathAddress(node.require(SOURCE));
+        ResourceAddress source = ResourceAddress.pathAddress(node.require(SOURCE));
         long timestamp = node.require(TIMESTAMP).asLong();
         String message = node.require(MESSAGE).asString();
         ModelNode data = node.hasDefined(DATA)? node.get(DATA): null;

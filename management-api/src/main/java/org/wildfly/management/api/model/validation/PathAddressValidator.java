@@ -17,12 +17,12 @@ limitations under the License.
 package org.wildfly.management.api.model.validation;
 
 import org.jboss.dmr.ModelNode;
-import org.wildfly.management.api.PathAddress;
+import org.wildfly.management.api.ResourceAddress;
 import org.wildfly.management.api.OperationFailedException;
 import org.wildfly.management.api._private.ControllerLoggerDuplicate;
 
 /**
- * Validates that a node can be converted to a {@link PathAddress}.
+ * Validates that a node can be converted to a {@link ResourceAddress}.
  *
  * @author Brian Stansberry
  */
@@ -33,7 +33,7 @@ public class PathAddressValidator implements ParameterValidator {
     @Override
     public void validateParameter(String parameterName, ModelNode value) throws OperationFailedException {
         try {
-            PathAddress.pathAddress(value);
+            ResourceAddress.pathAddress(value);
         } catch (IllegalArgumentException iae) {
             throw ControllerLoggerDuplicate.ROOT_LOGGER.invalidAddressFormat(value);
         }
