@@ -81,7 +81,6 @@ import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.controller.notification.NotificationSupport;
 import org.jboss.as.controller.persistence.ConfigurationPersistenceException;
 import org.jboss.as.controller.persistence.ConfigurationPersister;
-import org.jboss.as.controller.registry.DelegatingResource;
 import org.jboss.as.controller.registry.ImmutableManagementResourceRegistration;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.NotificationHandlerRegistration;
@@ -89,6 +88,8 @@ import org.jboss.as.controller.registry.OperationEntry;
 import org.jboss.as.controller.registry.PlaceholderResource;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.as.controller.registry.Resource.ResourceEntry;
+import org.jboss.as.controller.registry.bridge.BridgeResource;
+import org.jboss.as.controller.registry.bridge.LegacyWrapperBridgeResource;
 import org.jboss.as.core.security.AccessMechanism;
 import org.jboss.dmr.ModelNode;
 import org.jboss.msc.service.ServiceRegistry;
@@ -168,7 +169,8 @@ class ModelControllerImpl implements ModelController {
         assert rootRegistration != null;
 
         assert capabilityRegistry != null;
-        ManagementModelImpl mmi = new ManagementModelImpl(rootRegistration, Resource.Factory.create(), capabilityRegistry);
+        ManagementModelImpl mmi = new ManagementModelImpl(rootRegistration,
+                new LegacyWrapperBridgeResource(Resource.Factory.create(), null), capabilityRegistry);
         //ModelControllerImpl.this.managementModel.set(mmi);
         mmi.publish();
         assert stateMonitor != null;
@@ -289,8 +291,10 @@ class ModelControllerImpl implements ModelController {
         @SuppressWarnings("deprecation")
         final int operationId = CurrentOperationIdHolder.getCurrentOperationID();
         final AbstractOperationContext delegateContext = getDelegateContext(operationId);
+        final PathAddress pa = operation.hasDefined(OP_ADDR) ? PathAddress.pathAddress(operation.get(OP_ADDR)) : PathAddress.EMPTY_ADDRESS;
+        final BridgeResource bridgeResource = new LegacyWrapperBridgeResource(resource, pa.getLastElement());
         final ManagementModelImpl current = delegateContext.getManagementModel();
-        final ManagementModelImpl mgmtModel = new ManagementModelImpl(current.getRootResourceRegistration(), resource, current.capabilityRegistry);
+        final ManagementModelImpl mgmtModel = new ManagementModelImpl(current.getRootResourceRegistration(), bridgeResource, current.capabilityRegistry);
         return executeReadOnlyOperation(operation, mgmtModel, control, prepareStep, delegateContext);
     }
 
@@ -692,7 +696,7 @@ class ModelControllerImpl implements ModelController {
             // Don't do an expensive Resource.Tools.readModel if the persister isn't going to use the result
             if (persister.isPersisting()) {
                 ControllerLogger.MGMT_OP_LOGGER.tracef("persisting %s from %s", model.rootResource, model);
-                final ModelNode newModel = Resource.Tools.readModel(model.rootResource, model.resourceRegistration);
+                final ModelNode newModel = Resource.Tools.readModel(model.rootResource.asLegacyResource(), model.resourceRegistration);
                 delegate = persister.store(newModel, affectedAddresses);
             } else {
                 ControllerLogger.MGMT_OP_LOGGER.tracef("Ignoring permanent persistence during boot");
@@ -1068,18 +1072,18 @@ class ModelControllerImpl implements ModelController {
         // The root MRR
         private final ManagementResourceRegistration resourceRegistration;
         // The possibly unpublished root Resource
-        private final Resource rootResource;
+        private final BridgeResource rootResource;
         // The root MRR we expose
         private final ManagementResourceRegistration delegatingResourceRegistration;
         // The root Resource we expose
-        private final Resource delegatingResource;
+        private final BridgeResource delegatingResource;
         // The capability registry
         private final CapabilityRegistry capabilityRegistry;
 
         private volatile boolean published;
 
         ManagementModelImpl(final ManagementResourceRegistration resourceRegistration,
-                            final Resource rootResource,
+                            final BridgeResource rootResource,
                             final CapabilityRegistry capabilityRegistry) {
             this.resourceRegistration = resourceRegistration;
             this.rootResource = rootResource;
@@ -1104,10 +1108,10 @@ class ModelControllerImpl implements ModelController {
 //                }
 //            });
             this.delegatingResourceRegistration = resourceRegistration;
-            this.delegatingResource = new DelegatingResource(new DelegatingResource.ResourceDelegateProvider() {
+            this.delegatingResource = new DelegatingBridgeResource(new DelegatingBridgeResource.ResourceDelegateProvider() {
                 @Override
-                public Resource getDelegateResource() {
-                    Resource result;
+                public BridgeResource getDelegateResource() {
+                    BridgeResource result;
                     if (published) {
                         result = ModelControllerImpl.this.managementModel.get().rootResource;
                     } else {
@@ -1125,7 +1129,7 @@ class ModelControllerImpl implements ModelController {
 
         @Override
         public Resource getRootResource() {
-            return delegatingResource;
+            return delegatingResource.asLegacyResource();
         }
 
         @Override
@@ -1175,7 +1179,7 @@ class ModelControllerImpl implements ModelController {
          */
         ManagementModelImpl cloneRootResource() {
             ManagementResourceRegistration mrr;
-            Resource currentResource;
+            BridgeResource currentResource;
             CapabilityRegistry currentCaps;
             if (published) {
                 // This is the first clone since this was published. Use the current stuff as the basis
@@ -1191,7 +1195,7 @@ class ModelControllerImpl implements ModelController {
                 currentResource = rootResource;
                 currentCaps = capabilityRegistry;
             }
-            Resource clone = currentResource.clone();
+            BridgeResource clone = currentResource.clone();
             ManagementModelImpl result = new ManagementModelImpl(mrr, clone, currentCaps);
             ControllerLogger.MGMT_OP_LOGGER.tracef("cloned to %s to create %s and %s", currentResource, clone, result);
             return result;

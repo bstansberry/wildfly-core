@@ -763,7 +763,7 @@ public class SyncModelServerStateTestCase extends AbstractControllerTestBase  {
             registerServer("server-one");
             registerServer("server-two");
             registerServer("server-three");
-            return rootResource;
+            return managementModel.getRootResource();
         }
 
         private void registerServer(String serverName) {
