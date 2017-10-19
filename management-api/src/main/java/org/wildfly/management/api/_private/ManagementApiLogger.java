@@ -19,7 +19,9 @@ package org.wildfly.management.api._private;
 
 import org.jboss.logging.BasicLogger;
 import org.jboss.logging.Logger;
+import org.jboss.logging.annotations.Message;
 import org.jboss.logging.annotations.MessageLogger;
+import org.wildfly.management.api.AddressElement;
 
 /**
  * Provides internationalized log messages and exceptions for the classes in the extension API.
@@ -33,5 +35,8 @@ public interface ManagementApiLogger extends BasicLogger {
      * Default root logger with category of the package name.
      */
     ManagementApiLogger ROOT_LOGGER = Logger.getMessageLogger(ManagementApiLogger.class, "org.wildfly.management");
-    
+
+
+    @Message(id = 2, value = "The resource at address %s does not support external addition or removal of children of type %s")
+    String nonMutableChildType(AddressElement address, String childType);
 }

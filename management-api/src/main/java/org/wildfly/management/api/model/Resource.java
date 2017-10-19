@@ -35,6 +35,15 @@ import org.wildfly.management.api._private.ControllerLoggerDuplicate;
 /**
  * An addressable resource in the management model, representing a configuration model and child resources.
  * <p>Instances of this class are <b>not</b> thread-safe and need to be synchronized externally.
+ * <p>
+ * <strong>Ordering of Child Resources</strong>
+ * <p>
+ * A resource must retain consistent ordering of children such that if there has been no intervening
+ * changes in the resource's children, two calls to {@link #getChildTypes()}, {@link #getChildrenNames(String)}
+ * and {@link #getChildren(String)} will provide sets whose iterators provide elements in the same order. The
+ * iteration order of @link #getChildrenNames(String)} and {@link #getChildren(String)} for the same {@code childType}
+ * parameter should also be consistent. Further, if there has been a change in the resource's children between the
+ * two calls the resource must keep the iteration ordering as consistent as practical.
  *
  * @author Emanuel Muckenhuber
  */
@@ -148,7 +157,7 @@ public interface Resource extends Cloneable {
      * Return the child types for which the order matters.
      *
      * @return {@code true} if the order of the children matters. If there are no ordered
-     * children and empty set is returned. This method should never return {@code null}
+     * children an empty set is returned. This method should never return {@code null}
      */
     Set<String> getOrderedChildTypes();
 
@@ -167,6 +176,13 @@ public interface Resource extends Cloneable {
      * @return {@code true} if this resource represents a remote resource; {@code false} otherwise
      */
     boolean isProxy();
+
+    /**
+     * Creates and returns a copy of this resource.
+     *
+     * @return the clone. Will not return {@code null}
+     */
+    Resource clone();
 
     class Tools {
 
