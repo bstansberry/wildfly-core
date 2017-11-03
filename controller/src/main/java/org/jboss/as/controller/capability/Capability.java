@@ -30,6 +30,12 @@ import org.jboss.as.controller.PathAddress;
 public interface Capability {
 
     /**
+     * Gets the underlying non-legacy representation of this capability.
+     * @return the capability. Will not return {@code null}
+     */
+    org.wildfly.management.api.capability.Capability asNonLegacyCapability();
+
+    /**
      * Gets the basic name of the capability. If {@link #isDynamicallyNamed()} returns {@code true}
      * this will be the basic name of the capability, not including any dynamic portions.
      *

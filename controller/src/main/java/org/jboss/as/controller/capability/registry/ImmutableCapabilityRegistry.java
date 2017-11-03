@@ -43,6 +43,7 @@ public interface ImmutableCapabilityRegistry {
      * @return {@code true} if there is a capability with the given name registered
      */
     boolean hasCapability(String capabilityName, CapabilityScope scope);
+
     /**
      * Gets the runtime API associated with a given capability, if there is one.
      * @param capabilityName the name of the capability. Cannot be {@code null}

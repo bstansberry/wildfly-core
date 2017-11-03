@@ -20,6 +20,7 @@ package org.jboss.as.controller.capability.registry;
 
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.capability.Capability;
+import org.wildfly.management.api.ResourceAddress;
 
 /**
  * Registry that holds possible capabilities. <p>
@@ -34,10 +35,39 @@ public interface PossibleCapabilityRegistry {
      * Registers a possible capability with the system.
      *
      * @param capability the possible capability. Cannot be {@code null}
+     * @param registrationPoint address of the resource that provides the capability. Cannot be {@code null}
      */
+    default void registerPossibleCapability(Capability capability, PathAddress registrationPoint) {
+        registerPossibleCapability(capability.asNonLegacyCapability(), registrationPoint.asResourceAddress());
+    }
 
-    void registerPossibleCapability(Capability capability, PathAddress registrationPoint);
+    /**
+     * Registers a possible capability with the system.
+     *
+     * @param capability the possible capability. Cannot be {@code null}
+     * @param registrationPoint address of the resource that provides the capability. Cannot be {@code null}
+     */
+    default void registerPossibleCapability(Capability capability, ResourceAddress registrationPoint) {
+        registerPossibleCapability(capability.asNonLegacyCapability(), registrationPoint);
+    }
 
+    /**
+     * Registers a possible capability with the system.
+     *
+     * @param capability the possible capability. Cannot be {@code null}
+     * @param registrationPoint address of the resource that provides the capability. Cannot be {@code null}
+     */
+    default void registerPossibleCapability(org.wildfly.management.api.capability.Capability capability, PathAddress registrationPoint) {
+        registerPossibleCapability(capability, registrationPoint.asResourceAddress());
+    }
+
+    /**
+     * Registers a possible capability with the system.
+     *
+     * @param capability the possible capability. Cannot be {@code null}
+     * @param registrationPoint address of the resource that provides the capability. Cannot be {@code null}
+     */
+    void registerPossibleCapability(org.wildfly.management.api.capability.Capability capability, ResourceAddress registrationPoint);
 
     /**
      * Remove a previously registered possible capability if all registration points for it have been removed.
@@ -47,6 +77,42 @@ public interface PossibleCapabilityRegistry {
      * @return the capability that was removed, or {@code null} if no matching capability was registered or other
      * registration points for the capability still exist
      */
-    CapabilityRegistration<?> removePossibleCapability(Capability capability, PathAddress registrationPoint);
+    default CapabilityRegistration<?> removePossibleCapability(Capability capability, PathAddress registrationPoint) {
+        return removePossibleCapability(capability.asNonLegacyCapability(), registrationPoint.asResourceAddress());
+    }
+
+    /**
+     * Remove a previously registered possible capability if all registration points for it have been removed.
+     *
+     * @param capability    the capability. Cannot be {@code null}
+     * @param registrationPoint the specific registration point that is being removed
+     * @return the capability that was removed, or {@code null} if no matching capability was registered or other
+     * registration points for the capability still exist
+     */
+    default CapabilityRegistration<?> removePossibleCapability(Capability capability, ResourceAddress registrationPoint) {
+        return removePossibleCapability(capability.asNonLegacyCapability(), registrationPoint);
+    }
+
+    /**
+     * Remove a previously registered possible capability if all registration points for it have been removed.
+     *
+     * @param capability    the capability. Cannot be {@code null}
+     * @param registrationPoint the specific registration point that is being removed
+     * @return the capability that was removed, or {@code null} if no matching capability was registered or other
+     * registration points for the capability still exist
+     */
+    default CapabilityRegistration<?> removePossibleCapability(org.wildfly.management.api.capability.Capability capability, PathAddress registrationPoint) {
+        return removePossibleCapability(capability, registrationPoint.asResourceAddress());
+    }
+
+    /**
+     * Remove a previously registered possible capability if all registration points for it have been removed.
+     *
+     * @param capability    the capability. Cannot be {@code null}
+     * @param registrationPoint the specific registration point that is being removed
+     * @return the capability that was removed, or {@code null} if no matching capability was registered or other
+     * registration points for the capability still exist
+     */
+    CapabilityRegistration<?> removePossibleCapability(org.wildfly.management.api.capability.Capability capability, ResourceAddress registrationPoint);
 
 }

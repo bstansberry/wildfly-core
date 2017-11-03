@@ -40,7 +40,6 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import org.jboss.as.controller.capability.Capability;
 import org.jboss.as.controller.capability.RuntimeCapability;
 import org.jboss.as.controller.capability.registry.CapabilityId;
 import org.jboss.as.controller.capability.registry.CapabilityRegistration;
@@ -56,6 +55,8 @@ import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.controller.registry.ImmutableManagementResourceRegistration;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.msc.service.ServiceName;
+import org.wildfly.management.api.ResourceAddress;
+import org.wildfly.management.api.capability.Capability;
 
 /**
  * Registry of {@link org.jboss.as.controller.capability.Capability capabilities} available in the system.
@@ -559,7 +560,7 @@ public final class CapabilityRegistry implements ImmutableCapabilityRegistry, Po
      * @param capability the capability. Cannot be {@code null}
      */
     @Override
-    public void registerPossibleCapability(Capability capability, PathAddress registrationPoint) {
+    public void registerPossibleCapability(Capability capability, ResourceAddress registrationPoint) {
         final CapabilityId capabilityId = new CapabilityId(capability.getName(), CapabilityScope.GLOBAL);
         RegistrationPoint point = new RegistrationPoint(registrationPoint, null);
         CapabilityRegistration<?> capabilityRegistration = new CapabilityRegistration<>(capability, CapabilityScope.GLOBAL, point);
@@ -593,7 +594,7 @@ public final class CapabilityRegistry implements ImmutableCapabilityRegistry, Po
      * registration points for the capability still exist
      */
     @Override
-    public CapabilityRegistration<?> removePossibleCapability(Capability capability, PathAddress registrationPoint) {
+    public CapabilityRegistration<?> removePossibleCapability(Capability capability, ResourceAddress registrationPoint) {
         CapabilityId capabilityId = new CapabilityId(capability.getName(), CapabilityScope.GLOBAL);
         CapabilityRegistration<?> removed = null;
         writeLock.lock();
@@ -676,7 +677,7 @@ public final class CapabilityRegistry implements ImmutableCapabilityRegistry, Po
         readLock.lock();
         try {
             RuntimeCapabilityRegistration reg = getCapabilityRegistration(capabilityName, scope);
-            RuntimeCapability<?> cap = reg.getCapability();
+            org.wildfly.management.api.capability.RuntimeCapability<?> cap = reg.getCapability();
             return cap.getCapabilityServiceName(serviceType);
         } finally {
             readLock.unlock();
