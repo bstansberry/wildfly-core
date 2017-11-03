@@ -42,7 +42,7 @@ public abstract class AbstractCapability implements Capability {
     private final String name;
     private final boolean dynamic;
     private final Set<String> requirements;
-    final Function<PathAddress,String[]> dynamicNameMapper;
+    private final Function<PathAddress,String[]> dynamicNameMapper;
 
     /**
      * Creates a new capability
@@ -67,13 +67,6 @@ public abstract class AbstractCapability implements Capability {
                                  final Set<String> dynamicRequirements,
                                  final Set<String> dynamicOptionalRequirements,
                                  Function<PathAddress, String[]> dynamicNameMapper) {
-        this(name, dynamic, requirements, dynamicNameMapper);
-    }
-
-    AbstractCapability(final String name,
-                       final boolean dynamic,
-                       final Set<String> requirements,
-                       Function<PathAddress, String[]> dynamicNameMapper) {
         assert name != null;
         this.name = name;
         this.dynamic = dynamic;

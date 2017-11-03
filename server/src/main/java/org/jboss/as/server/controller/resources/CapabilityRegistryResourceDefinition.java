@@ -127,7 +127,7 @@ public class CapabilityRegistryResourceDefinition extends SimpleResourceDefiniti
     }
 
     private static void populateCapabilities(Set<CapabilityRegistration<?>> caps, ModelNode res, boolean possible) {
-        for (CapabilityRegistration cr : caps) {
+        for (CapabilityRegistration<?> cr : caps) {
             ModelNode cap = res.add();
             cap.get(NAME.getName()).set(cr.getCapabilityName());
             cap.get(DYNAMIC.getName()).set(cr.getCapability().isDynamicallyNamed());
@@ -165,7 +165,7 @@ public class CapabilityRegistryResourceDefinition extends SimpleResourceDefiniti
                 scope = CapabilityScope.GLOBAL;
             }
             CapabilityId id = new CapabilityId(name, scope);
-            CapabilityRegistration reg = capabilityRegistry.getCapability(id);
+            CapabilityRegistration<?> reg = capabilityRegistry.getCapability(id);
             if (reg!=null) {
                 ModelNode result = context.getResult();
                 populateCapabilityRegistration(reg, result);
@@ -186,7 +186,7 @@ public class CapabilityRegistryResourceDefinition extends SimpleResourceDefiniti
         });
     }
 
-    private void populateCapabilityRegistration(CapabilityRegistration reg, ModelNode capability) {
+    private void populateCapabilityRegistration(CapabilityRegistration<?> reg, ModelNode capability) {
         populateRegistrationPoints(capability.get(REGISTRATION_POINTS.getName()), reg.getRegistrationPoints());
     }
 }

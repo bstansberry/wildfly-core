@@ -62,7 +62,6 @@ public class RuntimeCapability<T> extends AbstractCapability  {
 
     // Default value for allowMultipleRegistrations.
     private static final boolean ALLOW_MULTIPLE = false;
-    private static final ServiceName ORG_WILDFLY = ServiceName.parse("org.wildfly");
 
     private final Class<?> serviceValueType;
     private final ServiceName serviceName;
@@ -75,8 +74,7 @@ public class RuntimeCapability<T> extends AbstractCapability  {
      * Constructor for use by the builder.
      */
     private RuntimeCapability(Builder<T> builder) {
-        super(builder.baseName, builder.dynamic, builder.requirements, builder.optionalRequirements,
-                builder.runtimeOnlyRequirements, builder.dynamicRequirements, builder.dynamicOptionalRequirements, builder.dynamicNameMapper);
+        super(builder.baseName, builder.dynamic, builder.requirements, builder.dynamicNameMapper);
         this.runtimeAPI = builder.runtimeAPI;
         this.serviceValueType = builder.serviceValueType;
         this.serviceName = this.serviceValueType == null ? null : ServiceNameFactory.parseServiceName(builder.baseName);
@@ -87,14 +85,11 @@ public class RuntimeCapability<T> extends AbstractCapability  {
      * Constructor for use by {@link #fromBaseCapability(String...)}
      */
     private RuntimeCapability(String baseName, Class<?> serviceValueType, ServiceName baseServiceName, T runtimeAPI,
-                              Set<String> requirements, Set<String> optionalRequirements,
-                              Set<String> runtimeOnlyRequirements, Set<String> dynamicRequirements,
-                              Set<String> dynamicOptionalRequirements,
+                              Set<String> requirements,
                               boolean allowMultipleRegistrations,
                               Function<ResourceAddress, String[]> dynamicNameMapper, String... dynamicElement
     ) {
-        super(buildDynamicCapabilityName(baseName, dynamicElement), false, requirements,
-                optionalRequirements, runtimeOnlyRequirements, dynamicRequirements, dynamicOptionalRequirements, dynamicNameMapper);
+        super(buildDynamicCapabilityName(baseName, dynamicElement), false, requirements, dynamicNameMapper);
         this.runtimeAPI = runtimeAPI;
         this.serviceValueType = serviceValueType;
         if (serviceValueType != null) {
@@ -254,9 +249,7 @@ public class RuntimeCapability<T> extends AbstractCapability  {
         assert dynamicElement != null;
         assert dynamicElement.length > 0;
         return new RuntimeCapability<T>(getName(), serviceValueType, serviceName, runtimeAPI,
-                getRequirements(), getOptionalRequirements(),
-                getRuntimeOnlyRequirements(), getDynamicRequirements(),
-                getDynamicOptionalRequirements(), allowMultipleRegistrations,
+                getRequirements(), allowMultipleRegistrations,
                 dynamicNameMapper, dynamicElement);
 
     }
@@ -277,9 +270,7 @@ public class RuntimeCapability<T> extends AbstractCapability  {
         String[] dynamicElement = dynamicNameMapper.apply(path);
         assert dynamicElement.length > 0;
         return new RuntimeCapability<>(getName(), serviceValueType, serviceName, runtimeAPI,
-                getRequirements(), getOptionalRequirements(),
-                getRuntimeOnlyRequirements(), getDynamicRequirements(),
-                getDynamicOptionalRequirements(), allowMultipleRegistrations,
+                getRequirements(), allowMultipleRegistrations,
                 dynamicNameMapper, dynamicElement);
     }
 
@@ -294,10 +285,6 @@ public class RuntimeCapability<T> extends AbstractCapability  {
         private final boolean dynamic;
         private Class<?> serviceValueType;
         private Set<String> requirements;
-        private Set<String> optionalRequirements;
-        private Set<String> runtimeOnlyRequirements;
-        private Set<String> dynamicRequirements;
-        private Set<String> dynamicOptionalRequirements;
         private boolean allowMultipleRegistrations = ALLOW_MULTIPLE;
         private Function<ResourceAddress, String[]> dynamicNameMapper = AbstractCapability::addressValueToDynamicName;
 

@@ -22,16 +22,11 @@
 
 package org.jboss.as.controller.capability;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.function.Function;
 
 import org.jboss.as.controller.PathAddress;
-import org.jboss.as.controller.ServiceNameFactory;
-import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.msc.service.ServiceName;
-import org.wildfly.common.Assert;
+import org.wildfly.management.api.capability.Capability;
 
 /**
  * A capability exposed in a running WildFly process.
@@ -40,7 +35,7 @@ import org.wildfly.common.Assert;
  *
  * @author Brian Stansberry (c) 2014 Red Hat Inc.
  */
-public class RuntimeCapability<T> extends AbstractCapability  {
+public class RuntimeCapability<T> extends CapabilityBase  {
 
     //todo remove, here only for binary compatibility of elytron subsystem, drop once it is in.
     public static String buildDynamicCapabilityName(String baseName, String dynamicNameElement) {
@@ -51,6 +46,7 @@ public class RuntimeCapability<T> extends AbstractCapability  {
     public RuntimeCapability<T> fromBaseCapability(String dynamicElement) {
         return fromBaseCapability(new String[]{dynamicElement});
     }
+
     //end remove
 
     /**
@@ -71,42 +67,19 @@ public class RuntimeCapability<T> extends AbstractCapability  {
         return sb.toString();
     }
 
-    // Default value for allowMultipleRegistrations.
-    private static final boolean ALLOW_MULTIPLE = false;
+    private final org.wildfly.management.api.capability.RuntimeCapability<T> wrapped;
 
-    private final Class<?> serviceValueType;
-    private volatile ServiceName serviceName;
-    private final T runtimeAPI;
-    private final boolean allowMultipleRegistrations;
-
-    /**
-     * Constructor for use by the builder.
-     */
-    private RuntimeCapability(Builder<T> builder) {
-        super(builder.baseName, builder.dynamic, builder.requirements, builder.dynamicNameMapper);
-        this.runtimeAPI = builder.runtimeAPI;
-        this.serviceValueType = builder.serviceValueType;
-        this.allowMultipleRegistrations = builder.allowMultipleRegistrations;
+    private RuntimeCapability(org.wildfly.management.api.capability.RuntimeCapability<T> wrapped) {
+        this.wrapped = wrapped;
     }
 
     /**
-     * Constructor for use by {@link #fromBaseCapability(String...)}
+     * Gets the underlying non-legacy representation of this capability.
+     * @return the capability. Will not return {@code null}
      */
-    private RuntimeCapability(String baseName, Class<?> serviceValueType, ServiceName baseServiceName, T runtimeAPI,
-                              Set<String> requirements,
-                              boolean allowMultipleRegistrations,
-                              Function<PathAddress, String[]> dynamicNameMapper, String... dynamicElement
-    ) {
-        super(buildDynamicCapabilityName(baseName, dynamicElement), false, requirements, dynamicNameMapper);
-        this.runtimeAPI = runtimeAPI;
-        this.serviceValueType = serviceValueType;
-        if (serviceValueType != null) {
-            Assert.assertNotNull(baseServiceName);
-            this.serviceName = dynamicElement == null ? baseServiceName : baseServiceName.append(dynamicElement);
-        } else {
-            assert baseServiceName == null;
-        }
-        this.allowMultipleRegistrations = allowMultipleRegistrations;
+    @Override
+    public org.wildfly.management.api.capability.RuntimeCapability<T> asNonLegacyCapability() {
+        return wrapped;
     }
 
     /**
@@ -117,7 +90,7 @@ public class RuntimeCapability<T> extends AbstractCapability  {
      * @throws IllegalArgumentException if the capability does not provide a service
      */
     public ServiceName getCapabilityServiceName() {
-        return getCapabilityServiceName((Class<?>) null);
+        return wrapped.getCapabilityServiceName();
     }
 
     /**
@@ -133,11 +106,7 @@ public class RuntimeCapability<T> extends AbstractCapability  {
      *                                  is not assignable to {@code serviceValueType}
      */
     public ServiceName getCapabilityServiceName(Class<?> serviceValueType) {
-        if (this.serviceValueType == null ||
-                (serviceValueType != null && !serviceValueType.isAssignableFrom(this.serviceValueType))) {
-            throw ControllerLogger.MGMT_OP_LOGGER.invalidCapabilityServiceType(getName(), serviceValueType);
-        }
-        return getServiceName();
+        return wrapped.getCapabilityServiceName(serviceValueType);
     }
 
     /**
@@ -217,7 +186,7 @@ public class RuntimeCapability<T> extends AbstractCapability  {
      *          service
      */
     public Class<?> getCapabilityServiceValueType() {
-        return serviceValueType;
+        return wrapped.getCapabilityServiceValueType();
     }
 
     /**
@@ -227,7 +196,7 @@ public class RuntimeCapability<T> extends AbstractCapability  {
      * @return the API object, or {@code null} if the capability exposes no API to other capabilities
      */
     public T getRuntimeAPI() {
-        return runtimeAPI;
+        return wrapped.getRuntimeAPI();
     }
 
     /**
@@ -238,7 +207,7 @@ public class RuntimeCapability<T> extends AbstractCapability  {
      *         {@code false} if an attempt to do this should result in an exception
      */
     public boolean isAllowMultipleRegistrations() {
-        return allowMultipleRegistrations;
+        return wrapped.isAllowMultipleRegistrations();
     }
 
     /**
@@ -252,20 +221,8 @@ public class RuntimeCapability<T> extends AbstractCapability  {
      * @throws AssertionError if {@link #isDynamicallyNamed()} returns {@code false}
      */
     public RuntimeCapability<T> fromBaseCapability(String ... dynamicElement) {
-        assert isDynamicallyNamed();
-        assert dynamicElement != null;
-        assert dynamicElement.length > 0;
-        return new RuntimeCapability<T>(getName(), serviceValueType, getServiceName(), runtimeAPI,
-                getRequirements(), allowMultipleRegistrations,dynamicNameMapper, dynamicElement);
+        return new RuntimeCapability<T>(wrapped.fromBaseCapability(dynamicElement));
 
-    }
-
-    private ServiceName getServiceName() {
-        ServiceName result = serviceName;
-        if (result == null && serviceValueType != null) {
-            result = this.serviceName = ServiceNameFactory.parseServiceName(getName());
-        }
-        return  result;
     }
 
     /**
@@ -279,12 +236,43 @@ public class RuntimeCapability<T> extends AbstractCapability  {
      * @throws AssertionError if {@link #isDynamicallyNamed()} returns {@code false}
      */
     public RuntimeCapability<T> fromBaseCapability(PathAddress path) {
-        assert isDynamicallyNamed();
-        assert path != null;
-        String[] dynamicElement = dynamicNameMapper.apply(path);
-        assert dynamicElement.length > 0;
-        return new RuntimeCapability<>(getName(), serviceValueType, getServiceName(), runtimeAPI,
-                getRequirements(), allowMultipleRegistrations, dynamicNameMapper, dynamicElement);
+        return new RuntimeCapability<T>(wrapped.fromBaseCapability(path.asResourceAddress()));
+    }
+
+    @Override
+    final Capability getCapability() {
+        return wrapped;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return {@code true} if {@code o} is the same type as this object and its {@link #getName() name} is equal
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        RuntimeCapability that = (RuntimeCapability) o;
+
+        return wrapped.equals(that.wrapped);
+
+    }
+
+    @Override
+    public int hashCode() {
+        return wrapped.hashCode();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return the value returned by {@link #getName()}
+     */
+    @Override
+    public String toString() {
+        return getName();
     }
 
     /**
@@ -293,14 +281,6 @@ public class RuntimeCapability<T> extends AbstractCapability  {
      * @param <T> the type of the runtime API object exposed by the capability
      */
     public static class Builder<T> {
-        private final String baseName;
-        private final T runtimeAPI;
-        private final boolean dynamic;
-        private Class<?> serviceValueType;
-        private Set<String> requirements;
-        private boolean allowMultipleRegistrations = ALLOW_MULTIPLE;
-        @SuppressWarnings("deprecation")
-        private Function<PathAddress, String[]> dynamicNameMapper = AbstractCapability::addressValueToDynamicName;
 
         /**
          * Create a builder for a non-dynamic capability with no custom runtime API.
@@ -367,12 +347,10 @@ public class RuntimeCapability<T> extends AbstractCapability  {
             return new Builder<T>(name, dynamic, runtimeAPI);
         }
 
+        private final org.wildfly.management.api.capability.RuntimeCapability.Builder<T> wrapped;
+
         private Builder(String baseName, boolean dynamic, T runtimeAPI) {
-            assert baseName != null;
-            assert baseName.length() > 0;
-            this.baseName = baseName;
-            this.runtimeAPI = runtimeAPI;
-            this.dynamic = dynamic;
+            this.wrapped = org.wildfly.management.api.capability.RuntimeCapability.Builder.of(baseName, dynamic, runtimeAPI);
         }
 
         /**
@@ -381,7 +359,7 @@ public class RuntimeCapability<T> extends AbstractCapability  {
          * @return the builder
          */
         public Builder<T> setServiceType(Class<?> type) {
-            this.serviceValueType = type;
+            wrapped.setServiceType(type);
             return this;
         }
 
@@ -393,11 +371,7 @@ public class RuntimeCapability<T> extends AbstractCapability  {
          * @return the builder
          */
         public Builder<T> addRequirements(String... requirements) {
-            assert requirements != null;
-            if (this.requirements == null) {
-                this.requirements = new HashSet<>(requirements.length);
-            }
-            Collections.addAll(this.requirements, requirements);
+            wrapped.addRequirements(requirements);
             return this;
         }
 
@@ -410,7 +384,7 @@ public class RuntimeCapability<T> extends AbstractCapability  {
          * @return the builder
          */
         public Builder<T> setAllowMultipleRegistrations(boolean allowMultipleRegistrations) {
-            this.allowMultipleRegistrations = allowMultipleRegistrations;
+            wrapped.setAllowMultipleRegistrations(allowMultipleRegistrations);
             return this;
         }
 
@@ -421,8 +395,7 @@ public class RuntimeCapability<T> extends AbstractCapability  {
          * @return the builder
          */
         public Builder<T> setDynamicNameMapper(Function<PathAddress,String[]> mapper) {
-            assert mapper != null;
-            this.dynamicNameMapper = mapper;
+            wrapped.setDynamicNameMapper(resourceAddress -> mapper.apply(PathAddress.pathAddress(resourceAddress)));
             return this;
         }
 
@@ -432,7 +405,8 @@ public class RuntimeCapability<T> extends AbstractCapability  {
          * @return the capability. Will not return {@code null}
          */
         public RuntimeCapability<T> build() {
-            return new RuntimeCapability<>(this);
+            org.wildfly.management.api.capability.RuntimeCapability<T> toWrap = wrapped.build();
+            return new RuntimeCapability<>(toWrap);
         }
     }
 }
