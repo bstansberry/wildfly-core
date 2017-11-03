@@ -23,6 +23,7 @@
 package org.jboss.as.controller.capability.registry;
 
 import org.jboss.as.controller.PathAddress;
+import org.wildfly.management.api.ResourceAddress;
 
 /**
  * Encapsulates the point in the model that triggered the registration of a capability or requirement.
@@ -31,10 +32,14 @@ import org.jboss.as.controller.PathAddress;
  */
 public class RegistrationPoint {
 
-    private final PathAddress address;
+    private final ResourceAddress address;
     private final String attribute;
 
     public RegistrationPoint(PathAddress address, String attribute) {
+        this(address.asResourceAddress(), attribute);
+    }
+
+    public RegistrationPoint(ResourceAddress address, String attribute) {
         this.address = address;
 
         this.attribute = attribute;
@@ -46,6 +51,15 @@ public class RegistrationPoint {
      * @return the address. Will not be {@code null}
      */
     public PathAddress getAddress() {
+        return PathAddress.pathAddress(address);
+    }
+
+    /**
+     * Gets the address of the resource that triggered the registration.
+     *
+     * @return the address. Will not be {@code null}
+     */
+    public ResourceAddress getResourceAddress() {
         return address;
     }
 

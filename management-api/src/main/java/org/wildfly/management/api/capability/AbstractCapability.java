@@ -34,48 +34,27 @@ import org.wildfly.management.api.ResourceAddress;
  *
  * @author Brian Stansberry (c) 2014 Red Hat Inc.
  */
-public abstract class AbstractCapability implements Capability {
+abstract class AbstractCapability implements Capability {
 
     private final String name;
     private final boolean dynamic;
     private final Set<String> requirements;
-    private final Set<String> optionalRequirements;
-    private final Set<String> runtimeOnlyRequirements;
-    private final Set<String> dynamicRequirements;
-    private final Set<String> dynamicOptionalRequirements;
-    // note there is no field "dynamicRuntimeOnlyRequirements" as a
-    // dynamic requirement requires some configuration value to
-    // specify the dynamic part of the requirement name, and a
-    // runtime-only requirement by definition cannot be specified
-    // via configuration
     final Function<ResourceAddress,String[]> dynamicNameMapper;
 
     /**
      * Creates a new capability
      * @param name the name of the capability. Cannot be {@code null}
      * @param requirements names of other capabilities upon which this capability has a hard requirement. May be {@code null}
-     * @param optionalRequirements names of other capabilities upon which this capability has an optional requirement. May be {@code null}
-     * @param runtimeOnlyRequirements names of other capabilities upon which this capability has an optional, runtime-only requirement. May be {@code null}
-     * @param dynamicRequirements names of other dynamically named capabilities upon a concrete instance of which this
-*                            capability will have a hard requirement once the full name is known. May be {@code null}
-     * @param dynamicOptionalRequirements names of other dynamically named capabilities upon a concrete instance of which this
-*                            capability will have an optional requirement once the full name is known. May be {@code null}
-     * @param dynamicNameMapper
+     * @param dynamicNameMapper mapper from the address of the resource providing a capability to the dynamic elements of its name
      */
-    protected AbstractCapability(final String name, final boolean dynamic,
-                                 final Set<String> requirements,
-                                 final Set<String> optionalRequirements,
-                                 final Set<String> runtimeOnlyRequirements,
-                                 final Set<String> dynamicRequirements,
-                                 final Set<String> dynamicOptionalRequirements, Function<ResourceAddress, String[]> dynamicNameMapper) {
+    AbstractCapability(final String name,
+                       final boolean dynamic,
+                       final Set<String> requirements,
+                       final Function<ResourceAddress, String[]> dynamicNameMapper) {
         assert name != null;
         this.name = name;
         this.dynamic = dynamic;
         this.requirements = establishRequirements(requirements);
-        this.optionalRequirements = establishRequirements(optionalRequirements);
-        this.runtimeOnlyRequirements = establishRequirements(runtimeOnlyRequirements);
-        this.dynamicRequirements = establishRequirements(dynamicRequirements);
-        this.dynamicOptionalRequirements = establishRequirements(dynamicOptionalRequirements);
         if (dynamicNameMapper != null) {
             this.dynamicNameMapper = dynamicNameMapper;
         } else {
@@ -91,112 +70,25 @@ public abstract class AbstractCapability implements Capability {
         }
     }
 
-    /**
-     * resolves dynamic name from path address that return last element value are result
-     *
-     * @param resourceAddress
-     * @return dynamic part of address
-     */
-    public static String[] addressValueToDynamicName(ResourceAddress resourceAddress){
+    static String[] addressValueToDynamicName(ResourceAddress resourceAddress){
         return new String[]{resourceAddress.getLastElement().getValue()};
     }
 
-    /**
-     * Gets the basic name of the capability. If {@link #isDynamicallyNamed()} returns {@code true}
-     * this will be the basic name of the capability, not including any dynamic portions.
-     *
-     * @return the name. Will not be {@code null}
-     *
-     * @see #getDynamicName(String)
-     */
     @Override
     public String getName() {
         return name;
     }
 
-    /**
-     * Gets the names of other capabilities required by this capability.
-     * These are static requirements.
-     *
-     * @return the capability names. Will not be {@code null} but may be empty.
-     */
     @Override
     public Set<String> getRequirements() {
         return requirements;
     }
 
-    /**
-     * Gets the names of other capabilities optionally required by this capability.
-     * Whether this capability will actually require the other capabilities is not
-     * statically known but rather depends on this capability's own configuration.
-     *
-     * @return the capability names. Will not be {@code null} but may be empty.
-     */
-    @Override
-    public Set<String> getOptionalRequirements() {
-        return optionalRequirements;
-    }
-
-    /**
-     * Gets the names of other capabilities optionally used by this capability if they
-     * are present in the runtime, but where the use of the other capability will never
-     * be mandated by the persistent configuration. Differs from
-     * {@link #getOptionalRequirements() optional requirements}
-     * in that optional requirements may or may not be specified by the persistent
-     * configuration, but if they are the capability must be present or the configuration
-     * is invalid.
-     *
-     * @return the capability names. Will not be {@code null} but may be empty.
-     */
-    @Override
-    public Set<String> getRuntimeOnlyRequirements() {
-        return runtimeOnlyRequirements;
-    }
-
-    /**
-     * Gets the names of other dynamically named capabilities upon a concrete instance of which this
-     * capability will have a hard requirement once the full name is known. It is statically
-     * known that some variant of these base capability names will be required, but the
-     * exact name will not be known until this capability's configuration is read.
-     *
-     * @return the capability names. Will not be {@code null} but may be empty.
-     */
-    @Override
-    public Set<String> getDynamicRequirements() {
-        return dynamicRequirements;
-    }
-
-    /**
-     * Gets the names of other dynamically named capabilities upon a concrete instance of which this
-     * capability will have an optional requirement once the full name is known.
-     * Whether this capability will actually require the other capabilities is not
-     * statically known but rather depends on this capability's own configuration.
-     *
-     * @return the capability names. Will not be {@code null} but may be empty.
-     */
-    @Override
-    public Set<String> getDynamicOptionalRequirements() {
-        return dynamicOptionalRequirements;
-    }
-
-    /**
-     * Gets whether this capability is a dynamically named one, whose runtime variants
-     * will have a dynamic element added to the base name provided by {@link #getName()}.
-     *
-     * @return {@code true} if this capability is dynamically named
-     */
     @Override
     public boolean isDynamicallyNamed() {
         return dynamic;
     }
 
-    /**
-     * Gets the full name of a capbility, including a dynamic element
-     * @param dynamicNameElement the dynamic portion of the name. Cannot be {@code null}
-     * @return the full capability name
-     *
-     * @throws IllegalStateException if {@link #isDynamicallyNamed()} returns {@code false}
-     */
     @Override
     public String getDynamicName(String dynamicNameElement) {
         if (!dynamic) {
@@ -213,16 +105,6 @@ public abstract class AbstractCapability implements Capability {
         String[] dynamicElements = dynamicNameMapper.apply(address);
         return RuntimeCapability.buildDynamicCapabilityName(name, dynamicElements);
     }
-
-//    /**
-//     * Gets an internationalized text description of the capability.
-//     *
-//     * @param locale the locale to use. Cannot be {@code null}
-//     * @return the text description, or {@code null} if there is no text description
-//     *
-//     * @throws java.lang.IllegalArgumentException if {@code locale} is {@code null}
-//     */
-//    public abstract String getDescription(Locale locale);
 
     /**
      * {@inheritDoc}

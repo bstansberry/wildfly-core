@@ -1599,7 +1599,7 @@ final class OperationContextImpl extends AbstractOperationContext {
         CapabilityScope context = createCapabilityContext(step.address);
         RuntimeCapabilityRegistration capReg = managementModel.getCapabilityRegistry().removeCapability(capabilityName, context, step.address);
         if (capReg != null) {
-            RuntimeCapability capability = capReg.getCapability();
+            org.wildfly.management.api.capability.RuntimeCapability capability = capReg.getCapability();
             for (String required : capability.getRequirements()) {
                 removeRequirement(required, context, step);
             }

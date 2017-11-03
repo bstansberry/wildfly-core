@@ -22,7 +22,8 @@
 
 package org.jboss.as.controller.capability.registry;
 
-import org.jboss.as.controller.capability.RuntimeCapability;
+
+import org.wildfly.management.api.capability.RuntimeCapability;
 
 /**
  * Registration information for a {@link org.jboss.as.controller.capability.RuntimeCapability}. As a runtime capability is
@@ -32,6 +33,10 @@ import org.jboss.as.controller.capability.RuntimeCapability;
  * @author Brian Stansberry (c) 2014 Red Hat Inc.
  */
 public class RuntimeCapabilityRegistration extends CapabilityRegistration<RuntimeCapability> {
+
+    public RuntimeCapabilityRegistration(org.jboss.as.controller.capability.RuntimeCapability capability, CapabilityScope context, RegistrationPoint registrationPoint) {
+        this(capability.asNonLegacyCapability(), context, registrationPoint);
+    }
 
     public RuntimeCapabilityRegistration(RuntimeCapability capability, CapabilityScope context, RegistrationPoint registrationPoint) {
         super(capability, context, registrationPoint);

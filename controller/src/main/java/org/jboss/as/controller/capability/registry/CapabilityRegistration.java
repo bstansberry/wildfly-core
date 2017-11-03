@@ -29,7 +29,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.jboss.as.controller.PathAddress;
-import org.jboss.as.controller.capability.Capability;
+import org.wildfly.management.api.capability.Capability;
 
 /**
  * Encapsulates the registration information for a {@link org.jboss.as.controller.capability.Capability capability}.
