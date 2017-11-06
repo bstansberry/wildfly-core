@@ -42,6 +42,7 @@ import org.jboss.as.controller.capability.RuntimeCapability;
 import org.jboss.as.controller.descriptions.DescriptionProvider;
 import org.jboss.as.controller.descriptions.OverrideDescriptionProvider;
 import org.jboss.as.controller.logging.ControllerLogger;
+import org.jboss.as.controller.registry.bridge.BridgeResourceType;
 import org.jboss.dmr.ModelNode;
 
 /**
@@ -279,11 +280,11 @@ final class AliasResourceRegistration extends AbstractResourceRegistration imple
     }
 
     @Override
-    ManagementResourceRegistration getResourceRegistration(ListIterator<PathElement> iterator) {
+    BridgeResourceType getSubResourceType(ListIterator<PathElement> iterator) {
         if (!iterator.hasNext()) {
             return this;
         }
-        return target.getResourceRegistration(iterator);
+        return target.getSubResourceType(iterator);
     }
 
     @Override

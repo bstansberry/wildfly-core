@@ -44,8 +44,11 @@ import org.jboss.as.controller.descriptions.DescriptionProvider;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.as.controller.descriptions.OverrideDescriptionProvider;
 import org.jboss.as.controller.logging.ControllerLogger;
+import org.jboss.as.controller.registry.bridge.BridgeResourceType;
 import org.jboss.dmr.ModelNode;
 import org.wildfly.common.Assert;
+import org.wildfly.management.api.ResourceAddress;
+import org.wildfly.management.api.model.ResourceType;
 
 /**
  * A registry of model node information.  This registry is thread-safe.
@@ -53,7 +56,7 @@ import org.wildfly.common.Assert;
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
  */
 @SuppressWarnings("deprecation")
-abstract class AbstractResourceRegistration implements ManagementResourceRegistration {
+abstract class AbstractResourceRegistration implements ManagementResourceRegistration, BridgeResourceType {
 
     private final String valueString;
     private final NodeSubregistry parent;
@@ -92,6 +95,20 @@ abstract class AbstractResourceRegistration implements ManagementResourceRegistr
 
     void addAccessConstraints(List<AccessConstraintDefinition> list) {
         // no-op in the base class
+    }
+
+    // BridgeResourceType
+
+
+    @Override
+    public ManagementResourceRegistration asManagementResourceRegistration() {
+        //TODO perhaps create a separate view class
+        return this;
+    }
+
+    @Override
+    public ResourceType asResourceType() {
+        return new ResourceTypeView();
     }
 
     @Override
@@ -383,10 +400,11 @@ abstract class AbstractResourceRegistration implements ManagementResourceRegistr
     @Override
     public final ManagementResourceRegistration getSubModel(PathAddress address) {
 
-        return getSubRegistration(address);
+        BridgeResourceType bridge = getSubRegistration(address);
+        return bridge == null ? null : bridge.asManagementResourceRegistration();
     }
 
-    final ManagementResourceRegistration getSubRegistration(PathAddress address) {
+    final BridgeResourceType getSubRegistration(PathAddress address) {
 
 
         if (parent != null) {
@@ -394,11 +412,11 @@ abstract class AbstractResourceRegistration implements ManagementResourceRegistr
             return ri.root.getSubRegistration(ri.pathAddress.append(address));
         }
         // else we are the root
-        return getResourceRegistration(address.iterator());
+        return getSubResourceType(address.iterator());
 
     }
 
-    abstract ManagementResourceRegistration getResourceRegistration(ListIterator<PathElement> iterator);
+    abstract BridgeResourceType getSubResourceType(ListIterator<PathElement> iterator);
 
     final String getLocationString() {
         return getPathAddress().toCLIStyleString();
@@ -539,6 +557,30 @@ abstract class AbstractResourceRegistration implements ManagementResourceRegistr
     abstract Set<String> getOrderedChildTypes(ListIterator<PathElement> iterator);
 
     protected abstract void setOrderedChild(String key);
+
+    private class ResourceTypeView extends LegacyWrapperResourceType implements ResourceType {
+
+        private ResourceTypeView() {
+            super(AbstractResourceRegistration.this);
+        }
+
+        @Override
+        public ResourceType getParent() {
+            return parent == null ? null : parent.getParent().asResourceType();
+        }
+
+        @Override
+        public org.wildfly.management.api.model.alias.AliasEntry getAliasEntry() {
+            //TODO implement getAliasEntry
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public ResourceType getChildResourceType(ResourceAddress address) {
+            BridgeResourceType bridge = AbstractResourceRegistration.this.getSubRegistration(PathAddress.pathAddress(address));
+            return bridge == null ? null : bridge.asResourceType();
+        }
+    }
 
     private static class RootInvocation {
         final AbstractResourceRegistration root;

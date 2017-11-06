@@ -46,7 +46,10 @@ import org.jboss.as.controller.descriptions.DescriptionProvider;
 import org.jboss.as.controller.descriptions.NonResolvingResourceDescriptionResolver;
 import org.jboss.as.controller.descriptions.OverrideDescriptionProvider;
 import org.jboss.as.controller.logging.ControllerLogger;
+import org.jboss.as.controller.registry.bridge.BridgeResourceType;
 import org.jboss.dmr.ModelNode;
+import org.wildfly.management.api.ResourceAddress;
+import org.wildfly.management.api.model.ResourceType;
 
 /**
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
@@ -338,7 +341,7 @@ final class ProxyControllerRegistration extends AbstractResourceRegistration imp
     }
 
     @Override
-    ManagementResourceRegistration getResourceRegistration(ListIterator<PathElement> iterator) {
+    BridgeResourceType getSubResourceType(ListIterator<PathElement> iterator) {
         // BES 2011/06/14 I do not see why the IAE makes sense, so...
 //        if (!iterator.hasNext()) {
 //            return this;
@@ -407,13 +410,43 @@ final class ProxyControllerRegistration extends AbstractResourceRegistration imp
      * Differs from ProxyControllerRegistration in that it never provides locally
      * registered handlers or attributes. See WFCORE-229.
      */
-    private class ChildRegistration extends DelegatingManagementResourceRegistration {
+    private class ChildRegistration extends DelegatingManagementResourceRegistration implements BridgeResourceType {
         private final PathAddress pathAddress;
 
-        public ChildRegistration(PathAddress pathAddress) {
+        private ChildRegistration(PathAddress pathAddress) {
             super(ProxyControllerRegistration.this);
             this.pathAddress = pathAddress;
         }
+
+        // BridgeResourceType
+
+        @Override
+        public ManagementResourceRegistration asManagementResourceRegistration() {
+            return this;
+        }
+
+        @Override
+        public ResourceType asResourceType() {
+            return new LegacyWrapperResourceType(this) {
+
+                @Override
+                public ResourceType getParent() {
+                    return ChildRegistration.this.getParentType().asResourceType();
+                }
+
+                @Override
+                public org.wildfly.management.api.model.alias.AliasEntry getAliasEntry() {
+                    return null;
+                }
+
+                @Override
+                public ResourceType getChildResourceType(ResourceAddress address) {
+                    return ChildRegistration.this.getSubRegistration(PathAddress.pathAddress(address)).asResourceType();
+                }
+            };
+        }
+
+        // ManagementResourceRegistration
 
         @Override
         public PathAddress getPathAddress() {
@@ -428,6 +461,10 @@ final class ProxyControllerRegistration extends AbstractResourceRegistration imp
 
         @Override
         public ImmutableManagementResourceRegistration getParent() {
+            return getParentType().asManagementResourceRegistration();
+        }
+
+        private BridgeResourceType getParentType() {
             PathAddress parentAddress = ProxyControllerRegistration.this.getPathAddress();
             if (pathAddress.size() == parentAddress.size() + 1) {
                 return ProxyControllerRegistration.this;
@@ -471,6 +508,10 @@ final class ProxyControllerRegistration extends AbstractResourceRegistration imp
 
         @Override
         public ManagementResourceRegistration getSubModel(PathAddress address) {
+            return getSubRegistration(address).asManagementResourceRegistration();
+        }
+
+        private ChildRegistration getSubRegistration(PathAddress address) {
             if (address.size() == 0) {
                 return this;
             }
