@@ -52,8 +52,10 @@ import org.jboss.as.controller.notification.NotificationSupport;
 import org.jboss.as.controller.operations.common.Util;
 import org.jboss.as.controller.persistence.ConfigurationPersistenceException;
 import org.jboss.as.controller.persistence.ConfigurationPersister;
+import org.jboss.as.controller.registry.BridgeResourceTypeFactory;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.Resource;
+import org.jboss.as.controller.registry.bridge.BridgeResourceType;
 import org.jboss.as.controller.services.path.PathManager;
 import org.jboss.dmr.ModelNode;
 import org.jboss.msc.service.Service;
@@ -327,9 +329,10 @@ public abstract class AbstractControllerService implements Service<ModelControll
         final NotificationSupport notificationSupport = NotificationSupport.Factory.create(executorService);
         WritableAuthorizerConfiguration authorizerConfig = authorizer.getWritableAuthorizerConfiguration();
         authorizerConfig.reset();
-        ManagementResourceRegistration rootResourceRegistration = ManagementResourceRegistration.Factory.forProcessType(processType).createRegistration(rootResourceDefinition, authorizerConfig, capabilityRegistry);
+        //ManagementResourceRegistration rootResourceRegistration = ManagementResourceRegistration.Factory.forProcessType(processType).createRegistration(rootResourceDefinition, authorizerConfig, capabilityRegistry);
+        BridgeResourceType rootResourcetype = BridgeResourceTypeFactory.forProcessType(processType).createRootResourceType(rootResourceDefinition, authorizerConfig, capabilityRegistry);
         final ModelControllerImpl controller = new ModelControllerImpl(container, target,
-                rootResourceRegistration,
+                rootResourcetype,
                 new ContainerStateMonitor(container),
                 configurationPersister, processType, runningModeControl, prepareStep,
                 processState, executorService, expressionResolver, authorizer, securityIdentitySupplier, auditLogger, notificationSupport,

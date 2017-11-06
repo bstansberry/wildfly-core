@@ -54,6 +54,7 @@ import org.jboss.as.controller.descriptions.DescriptionProvider;
 import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.controller.registry.AttributeAccess.AccessType;
 import org.jboss.as.controller.registry.AttributeAccess.Storage;
+import org.jboss.as.controller.registry.bridge.BridgeResourceType;
 import org.wildfly.common.Assert;
 
 final class ConcreteResourceRegistration extends AbstractResourceRegistration {
@@ -223,7 +224,8 @@ final class ConcreteResourceRegistration extends AbstractResourceRegistration {
         if (isRuntimeOnly() && !resourceDefinition.isRuntime()) {
             throw ControllerLogger.ROOT_LOGGER.cannotRegisterSubmodel();
         }
-        final ManagementResourceRegistration existing = getSubRegistration(PathAddress.pathAddress(address));
+        BridgeResourceType bridge = getSubRegistration(PathAddress.pathAddress(address));
+        final ManagementResourceRegistration existing = bridge == null ? null : bridge.asManagementResourceRegistration();
         if (existing != null && existing.getPathAddress().getLastElement().getValue().equals(address.getValue())) {
             throw ControllerLogger.ROOT_LOGGER.nodeAlreadyRegistered(existing.getPathAddress().toCLIStyleString());
         }
@@ -274,7 +276,8 @@ final class ConcreteResourceRegistration extends AbstractResourceRegistration {
                 // find those kinds of addresses.
                 Set<PathElement> childAddresses = getChildAddresses(PathAddress.pathAddress(address).iterator());
                 if (childAddresses != null) {
-                    ManagementResourceRegistration registration = subregistry.getResourceRegistration(PathAddress.EMPTY_ADDRESS.iterator(), address.getValue());
+                    ManagementResourceRegistration registration = subregistry.getResourceRegistration(PathAddress.EMPTY_ADDRESS.iterator(), address.getValue())
+                            .asManagementResourceRegistration();
                     if(!registration.isAlias()) {
                         for (PathElement a : childAddresses) {
                             registration.unregisterSubModel(a);
@@ -655,7 +658,8 @@ final class ConcreteResourceRegistration extends AbstractResourceRegistration {
 
     @Override
     public void registerProxyController(final PathElement address, final ProxyController controller) throws IllegalArgumentException {
-        final ManagementResourceRegistration existing = getSubRegistration(PathAddress.pathAddress(address));
+        BridgeResourceType bridge = getSubRegistration(PathAddress.pathAddress(address));
+        final ManagementResourceRegistration existing = bridge == null ? null : bridge.asManagementResourceRegistration();
         if (existing != null && existing.getPathAddress().getLastElement().getValue().equals(address.getValue())) {
             throw ControllerLogger.ROOT_LOGGER.nodeAlreadyRegistered(existing.getPathAddress().toCLIStyleString());
         }
@@ -908,7 +912,7 @@ final class ConcreteResourceRegistration extends AbstractResourceRegistration {
     }
 
     @Override
-    ManagementResourceRegistration getResourceRegistration(ListIterator<PathElement> iterator) {
+    BridgeResourceType getSubResourceType(ListIterator<PathElement> iterator) {
         if (! iterator.hasNext()) {
             checkPermission();
             return this;
