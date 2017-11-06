@@ -28,20 +28,18 @@ package org.jboss.as.controller;
  * need to be present. {@link OperationStepHandler}s can use this to determine how to handle operations.
  */
 public enum ProcessType {
-    DOMAIN_SERVER(true, true),
-    EMBEDDED_SERVER(true, false),
-    STANDALONE_SERVER(true, false),
-    HOST_CONTROLLER(false, true),
-    EMBEDDED_HOST_CONTROLLER(false, true),
-    APPLICATION_CLIENT(true, false),
-    SELF_CONTAINED(true, false);
+    DOMAIN_SERVER(org.wildfly.management.api.ProcessType.DOMAIN_SERVER),
+    EMBEDDED_SERVER(org.wildfly.management.api.ProcessType.EMBEDDED_SERVER),
+    STANDALONE_SERVER(org.wildfly.management.api.ProcessType.STANDALONE_SERVER),
+    HOST_CONTROLLER(org.wildfly.management.api.ProcessType.HOST_CONTROLLER),
+    EMBEDDED_HOST_CONTROLLER(org.wildfly.management.api.ProcessType.EMBEDDED_HOST_CONTROLLER),
+    APPLICATION_CLIENT(org.wildfly.management.api.ProcessType.APPLICATION_CLIENT),
+    SELF_CONTAINED(org.wildfly.management.api.ProcessType.SELF_CONTAINED);
 
-    private final boolean server;
-    private final boolean domain;
+    private final org.wildfly.management.api.ProcessType wrapped;
 
-    ProcessType(final boolean server, final boolean domain) {
-        this.server = server;
-        this.domain = domain;
+    ProcessType(final org.wildfly.management.api.ProcessType wrapped) {
+        this.wrapped = wrapped;
     }
 
     /**
@@ -50,7 +48,7 @@ public enum ProcessType {
      * @return Returns <tt>true</tt> if the process is a server. Returns <tt>false</tt> otherwise.
      */
     public boolean isServer() {
-        return server;
+        return wrapped.isServer();
     }
 
     /**
@@ -68,6 +66,14 @@ public enum ProcessType {
      * @return Returns <tt>true</tt> if the process is a managed domain process. Returns <tt>false</tt> otherwise.
      */
     public boolean isManagedDomain() {
-        return domain;
+        return wrapped.isManagedDomain();
+    }
+
+    /**
+     * Gets the underlying non-legacy representation of this process type.
+     * @return the process type. Will not return {@code null}
+     */
+    public org.wildfly.management.api.ProcessType asNonLegacyProcessType() {
+        return wrapped;
     }
 }

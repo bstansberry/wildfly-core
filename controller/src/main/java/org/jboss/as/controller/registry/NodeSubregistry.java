@@ -43,6 +43,7 @@ import org.jboss.as.controller.capability.Capability;
 import org.jboss.as.controller.capability.RuntimeCapability;
 import org.jboss.as.controller.descriptions.DescriptionProvider;
 import org.jboss.as.controller.logging.ControllerLogger;
+import org.jboss.as.controller.registry.bridge.BridgeResourceType;
 
 /**
  * A registry of values within a specific key type.
@@ -380,19 +381,19 @@ final class NodeSubregistry {
         return result;
     }
 
-    ManagementResourceRegistration getResourceRegistration(final ListIterator<PathElement> iterator, final String child) {
+    BridgeResourceType getResourceRegistration(final ListIterator<PathElement> iterator, final String child) {
 
         final RegistrySearchControl searchControl = new RegistrySearchControl(iterator, child);
 
         // First search the non-wildcard child; if not found, search the wildcard child
-        ManagementResourceRegistration result = null;
+        BridgeResourceType result = null;
 
         if (searchControl.getSpecifiedRegistry() != null) {
-            result = searchControl.getSpecifiedRegistry().getResourceRegistration(searchControl.getIterator());
+            result = searchControl.getSpecifiedRegistry().getSubResourceType(searchControl.getIterator());
         }
 
         if (result == null && searchControl.getWildCardRegistry() != null) {
-            result = searchControl.getWildCardRegistry().getResourceRegistration(searchControl.getIterator());
+            result = searchControl.getWildCardRegistry().getSubResourceType(searchControl.getIterator());
         }
 
         return result;
