@@ -22,50 +22,72 @@
 
 package org.jboss.as.controller.access.constraint;
 
+import org.wildfly.management.api.access.SensitiveTargetAccessConstraintDefinition;
 
 /**
- * Classification to apply to resources, attributes or operation to allow configuration
+ * Classification to apply to resources, attributes or operations to allow configuration
  * of whether access, reads or writes are sensitive.
  *
  * @author Brian Stansberry (c) 2013 Red Hat Inc.
  */
 public class SensitivityClassification extends AbstractSensitivity {
 
-    public static final SensitivityClassification ACCESS_CONTROL = new SensitivityClassification("access-control", true, true, true);
-    public static final SensitivityClassification AUTHENTICATION_CLIENT_REF = new SensitivityClassification("authentication-client-ref", true, true, true);
-    public static final SensitivityClassification AUTHENTICATION_FACTORY_REF = new SensitivityClassification("authentication-factory-ref", true, true, true);
-    public static final SensitivityClassification CREDENTIAL = new SensitivityClassification("credential", false, true, true);
-    public static final SensitivityClassification DOMAIN_CONTROLLER = new SensitivityClassification("domain-controller", false, false, true);
-    public static final SensitivityClassification DOMAIN_NAMES = new SensitivityClassification("domain-names", false, false, true);
-    public static final SensitivityClassification ELYTRON_SECURITY_DOMAIN_REF = new SensitivityClassification("elytron-security-domain-ref", true, true, true);
-    public static final SensitivityClassification EXTENSIONS = new SensitivityClassification("extensions", false, false, true);
-    public static final SensitivityClassification JVM = new SensitivityClassification("jvm", false, false, true);
-    public static final SensitivityClassification MANAGEMENT_INTERFACES = new SensitivityClassification("management-interfaces", false, false, true);
-    public static final SensitivityClassification MODULE_LOADING = new SensitivityClassification("module-loading", false, false, true);
-    public static final SensitivityClassification PATCHING = new SensitivityClassification("patching", false, false, true);
-    public static final SensitivityClassification READ_WHOLE_CONFIG = new SensitivityClassification("read-whole-config", false, true, true);
-    public static final SensitivityClassification SECURITY_REALM = new SensitivityClassification("security-realm", true, true, true);
-    public static final SensitivityClassification SECURITY_REALM_REF = new SensitivityClassification("security-realm-ref", true, true, true);
-    public static final SensitivityClassification SECURITY_DOMAIN = new SensitivityClassification("security-domain", true, true, true);
-    public static final SensitivityClassification SECURITY_DOMAIN_REF = new SensitivityClassification("security-domain-ref", true, true, true);
-    public static final SensitivityClassification SECURITY_VAULT = new SensitivityClassification("security-vault", false, true, true);
-    public static final SensitivityClassification SERVER_SSL = new SensitivityClassification("server-ssl", true, true, true);
-    public static final SensitivityClassification SERVICE_CONTAINER = new SensitivityClassification("service-container", false, false, true);
-    public static final SensitivityClassification SOCKET_BINDING_REF = new SensitivityClassification("socket-binding-ref", false, false, false);
-    public static final SensitivityClassification SOCKET_CONFIG = new SensitivityClassification("socket-config", false, false, true);
-    public static final SensitivityClassification SNAPSHOTS = new SensitivityClassification("snapshots", false, false, false);
-    public static final SensitivityClassification SSL_REF = new SensitivityClassification("ssl-ref", true, true, true);
-    public static final SensitivityClassification SYSTEM_PROPERTY = new SensitivityClassification("system-property", false, false, true);
+    public static final SensitivityClassification ACCESS_CONTROL = new SensitivityClassification(SensitiveTargetAccessConstraintDefinition.ACCESS_CONTROL, true);
+    public static final SensitivityClassification AUTHENTICATION_CLIENT_REF = new SensitivityClassification(SensitiveTargetAccessConstraintDefinition.AUTHENTICATION_CLIENT_REF, true);
+    public static final SensitivityClassification AUTHENTICATION_FACTORY_REF = new SensitivityClassification(SensitiveTargetAccessConstraintDefinition.AUTHENTICATION_FACTORY_REF, true);
+    public static final SensitivityClassification CREDENTIAL = new SensitivityClassification(SensitiveTargetAccessConstraintDefinition.CREDENTIAL, true);
+    public static final SensitivityClassification DOMAIN_CONTROLLER = new SensitivityClassification(SensitiveTargetAccessConstraintDefinition.DOMAIN_CONTROLLER, true);
+    public static final SensitivityClassification DOMAIN_NAMES = new SensitivityClassification(SensitiveTargetAccessConstraintDefinition.DOMAIN_NAMES, true);
+    public static final SensitivityClassification ELYTRON_SECURITY_DOMAIN_REF = new SensitivityClassification(SensitiveTargetAccessConstraintDefinition.ELYTRON_SECURITY_DOMAIN_REF, true);
+    public static final SensitivityClassification EXTENSIONS = new SensitivityClassification(SensitiveTargetAccessConstraintDefinition.EXTENSIONS, true);
+    public static final SensitivityClassification JVM = new SensitivityClassification(SensitiveTargetAccessConstraintDefinition.JVM, true);
+    public static final SensitivityClassification MANAGEMENT_INTERFACES = new SensitivityClassification(SensitiveTargetAccessConstraintDefinition.MANAGEMENT_INTERFACES, true);
+    public static final SensitivityClassification MODULE_LOADING = new SensitivityClassification(SensitiveTargetAccessConstraintDefinition.MODULE_LOADING, true);
+    public static final SensitivityClassification PATCHING = new SensitivityClassification(SensitiveTargetAccessConstraintDefinition.PATCHING, true);
+    public static final SensitivityClassification READ_WHOLE_CONFIG = new SensitivityClassification(SensitiveTargetAccessConstraintDefinition.READ_WHOLE_CONFIG, true);
+    public static final SensitivityClassification SECURITY_REALM = new SensitivityClassification(SensitiveTargetAccessConstraintDefinition.SECURITY_REALM, true);
+    public static final SensitivityClassification SECURITY_REALM_REF = new SensitivityClassification(SensitiveTargetAccessConstraintDefinition.SECURITY_REALM_REF, true);
+    public static final SensitivityClassification SECURITY_DOMAIN = new SensitivityClassification(SensitiveTargetAccessConstraintDefinition.SECURITY_DOMAIN, true);
+    public static final SensitivityClassification SECURITY_DOMAIN_REF = new SensitivityClassification(SensitiveTargetAccessConstraintDefinition.SECURITY_DOMAIN_REF, true);
+    public static final SensitivityClassification SECURITY_VAULT = new SensitivityClassification(SensitiveTargetAccessConstraintDefinition.SECURITY_VAULT, true);
+    public static final SensitivityClassification SERVER_SSL = new SensitivityClassification(SensitiveTargetAccessConstraintDefinition.SERVER_SSL, true);
+    public static final SensitivityClassification SERVICE_CONTAINER = new SensitivityClassification(SensitiveTargetAccessConstraintDefinition.SERVICE_CONTAINER, true);
+    public static final SensitivityClassification SOCKET_BINDING_REF = new SensitivityClassification(SensitiveTargetAccessConstraintDefinition.SOCKET_BINDING_REF, true);
+    public static final SensitivityClassification SOCKET_CONFIG = new SensitivityClassification(SensitiveTargetAccessConstraintDefinition.SOCKET_CONFIG, true);
+    public static final SensitivityClassification SNAPSHOTS = new SensitivityClassification(SensitiveTargetAccessConstraintDefinition.SNAPSHOTS, true);
+    public static final SensitivityClassification SSL_REF = new SensitivityClassification(SensitiveTargetAccessConstraintDefinition.SSL_REF, true);
+    public static final SensitivityClassification SYSTEM_PROPERTY = new SensitivityClassification(SensitiveTargetAccessConstraintDefinition.SYSTEM_PROPERTY, true);
 
     private final boolean core;
     private final String subsystem;
     private final String name;
 
-    private SensitivityClassification(String name, boolean accessDefault, boolean readDefault, boolean writeDefault) {
-        super(accessDefault, readDefault, writeDefault);
-        this.core = true;
-        this.subsystem = null;
-        this.name = name;
+    /**
+     * Constructor based on the management-api module's {@link SensitiveTargetAccessConstraintDefinition} that validates
+     * that the {@code forCore} param matches the definition's
+     * {@link SensitiveTargetAccessConstraintDefinition#isCore() isCore()} setting. The {@code forCore} param
+     * should only be {@code true} for the kernel-defined classifications declared as constants in this class.
+     */
+    private SensitivityClassification(SensitiveTargetAccessConstraintDefinition definition, boolean forCore) {
+        super(definition.isDefaultRequiresAccessPermission(), definition.isDefaultRequiresReadPermission(), definition.isDefaultRequiresWritePermission());
+        this.core = definition.isCore();
+        if (!this.core == forCore) {
+            throw new IllegalArgumentException();
+        }
+        this.subsystem = definition.getSubsystemName();
+        this.name = definition.getName();
+    }
+
+    /**
+     * Constructor based on the management-api module's {@link SensitiveTargetAccessConstraintDefinition}.
+     * Should not be used for {@link SensitiveTargetAccessConstraintDefinition#isCore() core} definitions.
+     *
+     * @param definition the definition on which this classification should be based
+     *
+     * @throws IllegalArgumentException if {@code definition} is {@link SensitiveTargetAccessConstraintDefinition#isCore() core}.
+     */
+    public SensitivityClassification(SensitiveTargetAccessConstraintDefinition definition) {
+        this(definition, false);
     }
 
     public SensitivityClassification(String subsystem, String name, boolean accessDefault, boolean readDefault, boolean writeDefault) {

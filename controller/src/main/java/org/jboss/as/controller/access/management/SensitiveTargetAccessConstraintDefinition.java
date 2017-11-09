@@ -23,8 +23,10 @@
 package org.jboss.as.controller.access.management;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import org.jboss.as.controller.access.constraint.ConstraintFactory;
 import org.jboss.as.controller.access.constraint.SensitiveTargetConstraint;
@@ -37,7 +39,9 @@ import org.jboss.dmr.ModelNode;
  *
  * @author Brian Stansberry (c) 2013 Red Hat Inc.
  */
-public class SensitiveTargetAccessConstraintDefinition implements AccessConstraintDefinition {
+public final class SensitiveTargetAccessConstraintDefinition implements AccessConstraintDefinition {
+
+    private static final Map<String, SensitiveTargetAccessConstraintDefinition> coreClassifications = Collections.synchronizedMap(new HashMap<>());
 
     public static final SensitiveTargetAccessConstraintDefinition ACCESS_CONTROL = new SensitiveTargetAccessConstraintDefinition(SensitivityClassification.ACCESS_CONTROL);
     public static final SensitiveTargetAccessConstraintDefinition AUTHENTICATION_CLIENT_REF = new SensitiveTargetAccessConstraintDefinition(SensitivityClassification.AUTHENTICATION_CLIENT_REF);
@@ -74,6 +78,20 @@ public class SensitiveTargetAccessConstraintDefinition implements AccessConstrai
         this.sensitivity = toUse;
         this.key = new AccessConstraintKey(ModelDescriptionConstants.SENSITIVITY_CLASSIFICATION, toUse.isCore(),
                 toUse.getSubsystem(), toUse.getName());
+        if (toUse.isCore()) {
+            coreClassifications.put(toUse.getName(), this);
+        }
+    }
+
+    public static SensitiveTargetAccessConstraintDefinition forDefinition(org.wildfly.management.api.access.SensitiveTargetAccessConstraintDefinition definition) {
+        SensitiveTargetAccessConstraintDefinition result;
+        if (definition.isCore()) {
+            result = coreClassifications.get(definition.getName());
+            assert result != null;
+        } else {
+            result = new SensitiveTargetAccessConstraintDefinition(new SensitivityClassification(definition));
+        }
+        return result;
     }
 
     public SensitivityClassification getSensitivity() {
