@@ -43,6 +43,25 @@ public class ApplicationTypeAccessConstraintDefinition implements AccessConstrai
 
     public static final List<AccessConstraintDefinition> DEPLOYMENT_AS_LIST = DEPLOYMENT.wrapAsList();
 
+    /**
+     * Creates an ApplicationTypeAccessConstraintDefinition from the new management-api module's
+     * {@link org.wildfly.management.api.access.ApplicationTypeAccessConstraintDefinition variant}.
+     *
+     * @param definition the new management-api module variant. Cannot be {@code null}
+     *
+     * @return the ApplicationTypeAccessConstraintDefinition
+     */
+    public static ApplicationTypeAccessConstraintDefinition forDefinition(org.wildfly.management.api.access.ApplicationTypeAccessConstraintDefinition definition) {
+        ApplicationTypeAccessConstraintDefinition result;
+        if (definition.isCore()) {
+            assert definition.getName().equals(DEPLOYMENT.getName());
+            result = DEPLOYMENT;
+        } else {
+            result = new ApplicationTypeAccessConstraintDefinition(new ApplicationTypeConfig(definition));
+        }
+        return result;
+    }
+
     private final ApplicationTypeConfig applicationTypeConfig;
     private final AccessConstraintKey key;
 
