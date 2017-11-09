@@ -22,7 +22,7 @@
 
 package org.jboss.as.controller.access.constraint;
 
-import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
+import org.wildfly.management.api.access.ApplicationTypeAccessConstraintDefinition;
 
 /**
  * Classification to apply to resources, attributes or operation to allow configuration
@@ -30,12 +30,12 @@ import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
  *
  * @author Brian Stansberry (c) 2013 Red Hat Inc.
  */
-public class ApplicationTypeConfig {
+public final class ApplicationTypeConfig {
 
 
     // Core configurations
 
-    public static final ApplicationTypeConfig DEPLOYMENT = new ApplicationTypeConfig(ModelDescriptionConstants.DEPLOYMENT, true);
+    public static final ApplicationTypeConfig DEPLOYMENT = new ApplicationTypeConfig(ApplicationTypeAccessConstraintDefinition.DEPLOYMENT, true);
 
     private final boolean core;
 
@@ -43,6 +43,18 @@ public class ApplicationTypeConfig {
     private final String name;
     private final boolean application;
     private volatile Boolean configuredApplication;
+
+    /**
+     * Constructor based on the management-api module's {@link ApplicationTypeAccessConstraintDefinition}.
+     * Should not be used for {@link ApplicationTypeAccessConstraintDefinition#isCore() core} definitions.
+     *
+     * @param definition the definition on which this classification should be based
+     *
+     * @throws IllegalArgumentException if {@code definition} is {@link ApplicationTypeAccessConstraintDefinition#isCore() core}.
+     */
+    public ApplicationTypeConfig(ApplicationTypeAccessConstraintDefinition definition) {
+        this(definition, false);
+    }
 
     public ApplicationTypeConfig(String subsystem, String name) {
         this(subsystem, name, false);
@@ -57,11 +69,20 @@ public class ApplicationTypeConfig {
         this.core = false;
     }
 
-    private ApplicationTypeConfig(String name, boolean application) {
-        this.core = true;
-        this.subsystem = null;
-        this.name = name;
-        this.application = application;
+    /**
+     * Constructor based on the management-api module's {@link ApplicationTypeAccessConstraintDefinition} that validates
+     * that the {@code forCore} param matches the definition's
+     * {@link ApplicationTypeAccessConstraintDefinition#isCore() isCore()} setting. The {@code forCore} param
+     * should only be {@code true} for the kernel-defined classifications declared as constants in this class.
+     */
+    private ApplicationTypeConfig(ApplicationTypeAccessConstraintDefinition definition, boolean forCore) {
+        this.core = definition.isCore();
+        if (!this.core == forCore) {
+            throw new IllegalArgumentException();
+        }
+        this.subsystem = definition.getSubsystemName();
+        this.name = definition.getName();
+        this.application = definition.isDefaultApplication();
     }
 
 
