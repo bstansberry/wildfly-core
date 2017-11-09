@@ -38,35 +38,7 @@ import org.jboss.dmr.ModelNode;
  *
  * @author Brian Stansberry (c) 2013 Red Hat Inc.
  */
-public interface AccessConstraintDefinition {
-
-    /**
-     * Get the name of the constraint
-     *
-     * @return the name
-     */
-    String getName();
-
-    /**
-     * Get the type of constraint
-     *
-     * @return the type of constraint
-     */
-    String getType();
-
-    /**
-     * Gets whether the definition is provided by the core management system.
-     * @return {@code true} if the definition is provided by the core; {@code false} if it
-     *         is provided by a subsystem
-     */
-    boolean isCore();
-
-    /**
-     * Gets the name of the subsystem that provides this definition, it is not {@link #isCore() core}.
-     *
-     * @return the subsystem name, or {@code null} if {@link #isCore()}
-     */
-    String getSubsystemName();
+public interface AccessConstraintDefinition extends org.wildfly.management.api.access.AccessConstraintDefinition {
 
     /**
      * Gets a unique identifier for this {@code AccessConstraintDefinition}.
