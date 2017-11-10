@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.OperationStepHandler;
 import org.wildfly.common.Assert;
+import org.wildfly.management.api.model.definition.RestartLevel;
 
 /**
  * Information about handling an attribute in a sub-model.
@@ -172,6 +173,38 @@ public final class AttributeAccess {
             }
 
             return result;
+        }
+
+        public static Flag fromNonLegacyFlag(org.wildfly.management.api.model.definition.AttributeDefinition.Flag nonLegacy) {
+            switch (nonLegacy) {
+                case STORAGE_RUNTIME:
+                    return STORAGE_RUNTIME;
+                case RUNTIME_SERVICE_NOT_REQUIRED:
+                    return RUNTIME_SERVICE_NOT_REQUIRED;
+                case READ_ONLY:
+                case METRIC:
+                case RESOURCE_NAME_ALIAS:
+                    return null;
+                default:
+                    // New flag needs to be handled
+                    throw new IllegalArgumentException();
+            }
+        }
+
+        public static Flag fromRestartLevel(RestartLevel restartLevel) {
+            switch (restartLevel) {
+                case NONE:
+                    return RESTART_NONE;
+                case RESOURCE_SERVICES:
+                    return RESTART_RESOURCE_SERVICES;
+                case ALL_SERVICES:
+                    return RESTART_ALL_SERVICES;
+                case JVM:
+                    return RESTART_JVM;
+                default:
+                    // New level needs to be handled
+                    throw new IllegalArgumentException();
+            }
         }
     }
 

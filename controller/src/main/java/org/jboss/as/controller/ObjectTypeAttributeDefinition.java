@@ -37,11 +37,11 @@ import javax.xml.stream.XMLStreamReader;
 import org.jboss.as.controller.access.management.AccessConstraintDefinition;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.as.controller.descriptions.ResourceDescriptionResolver;
-import org.jboss.as.controller.operations.validation.ObjectTypeValidator;
-import org.jboss.as.controller.operations.validation.ParameterValidator;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
+import org.wildfly.management.api.model.definition.ItemDefinition;
+import org.wildfly.management.api.model.definition.ObjectTypeItemDefinition;
 
 /**
  * {@link AttributeDefinition} for attributes of type {@link ModelType#OBJECT} that aren't simple maps, but
@@ -66,6 +66,13 @@ public class ObjectTypeAttributeDefinition extends SimpleAttributeDefinition {
         this.valueTypes = valueTypes;
         this.suffix = suffix == null ? "" : suffix;
     }
+
+    final ObjectTypeItemDefinition getItemDefinition() {
+        // We know it's ObjectTypeItemDefinition because that's what our Builder produces
+        return (ObjectTypeItemDefinition) super.getItemDefinition();
+    }
+
+
 
     private static AbstractAttributeDefinitionBuilder<?, ? extends ObjectTypeAttributeDefinition> addValueTypeConstraints(AbstractAttributeDefinitionBuilder<?, ? extends  ObjectTypeAttributeDefinition> builder,
                                                                                                                           AttributeDefinition[] valueTypes) {
@@ -305,11 +312,6 @@ public class ObjectTypeAttributeDefinition extends SimpleAttributeDefinition {
         return new Builder(name, valueTypes);
     }
 
-    @Override
-    protected void addAllowedValuesToDescription(ModelNode result, ParameterValidator validator) {
-        //Don't add allowed values for object types, since they simply enumerate the fields given in the value type
-    }
-
     public static final class Builder extends AbstractAttributeDefinitionBuilder<Builder, ObjectTypeAttributeDefinition> {
         private String suffix;
         private final AttributeDefinition[] valueTypes;
@@ -334,11 +336,16 @@ public class ObjectTypeAttributeDefinition extends SimpleAttributeDefinition {
             return new Builder(name, allValueTypes);
         }
 
-        public ObjectTypeAttributeDefinition build() {
-            ParameterValidator validator = getValidator();
-            if (validator == null) {
-                setValidator(new ObjectTypeValidator(isAllowNull(), valueTypes));
+        @Override
+        protected ItemDefinition.Builder createItemDefinitionBuilder() {
+            ItemDefinition[] valueIDs = new ItemDefinition[valueTypes.length];
+            for (int i = 0; i < valueTypes.length; i++) {
+                valueIDs[i] = valueTypes[i].getItemDefinition();
             }
+            return ObjectTypeItemDefinition.Builder.of(getName(), valueIDs);
+        }
+
+        public ObjectTypeAttributeDefinition build() {
             return new ObjectTypeAttributeDefinition(this);
         }
 

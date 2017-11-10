@@ -34,6 +34,8 @@ import org.jboss.as.controller.operations.validation.ParameterValidator;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
+import org.wildfly.management.api.model.definition.ItemDefinition;
+import org.wildfly.management.api.model.definition.ObjectMapItemDefinition;
 
 /**
  * {@link MapAttributeDefinition} for maps with keys of {@link ModelType#STRING} and values of type {@link ObjectTypeAttributeDefinition}
@@ -158,13 +160,17 @@ public class ObjectMapAttributeDefinition extends MapAttributeDefinition {
         public Builder(final String name, final ObjectTypeAttributeDefinition valueType) {
             super(name);
             this.valueType = valueType;
-            setElementValidator(valueType.getValidator());
             setAttributeParser(AttributeParsers.OBJECT_MAP_WRAPPED);
             setAttributeMarshaller(AttributeMarshaller.OBJECT_MAP_MARSHALLER);
         }
 
         public static ObjectMapAttributeDefinition.Builder of(final String name, final ObjectTypeAttributeDefinition valueType) {
             return new ObjectMapAttributeDefinition.Builder(name, valueType);
+        }
+
+        @Override
+        protected ItemDefinition.Builder createItemDefinitionBuilder() {
+            return ObjectMapItemDefinition.Builder.of(getName(), valueType.getItemDefinition());
         }
 
         public ObjectMapAttributeDefinition build() {
@@ -178,6 +184,8 @@ public class ObjectMapAttributeDefinition extends MapAttributeDefinition {
                 acdSet.addAll(valueConstraints);
                 setAccessConstraints(acdSet.toArray(new AccessConstraintDefinition[acdSet.size()]));
             }
+            // Set up the legacy business where by default a nillable collection means undefined elements are allowed
+            configureUndefinedElement();
             return new ObjectMapAttributeDefinition(this);
         }
     }

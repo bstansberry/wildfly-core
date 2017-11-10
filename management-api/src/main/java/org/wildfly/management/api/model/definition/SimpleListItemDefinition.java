@@ -47,7 +47,12 @@ SimpleListItemDefinition extends ListItemDefinition<SimpleItemDefinition> {
         //assert getElementDefinition().getType() != ModelType.LIST;
     }
 
-     /** Builder for a {@link SimpleListItemDefinition}. */
+    @Override
+    public Builder getBuilderToCopy() {
+        return Builder.of(this);
+    }
+
+    /** Builder for a {@link SimpleListItemDefinition}. */
     public static final class Builder extends ListItemDefinition.Builder<Builder,SimpleListItemDefinition, SimpleItemDefinition>{
 
         public static Builder of(final String name, final SimpleItemDefinition valueType) {
@@ -68,6 +73,13 @@ SimpleListItemDefinition extends ListItemDefinition<SimpleItemDefinition> {
 
         private Builder(final String name, final SimpleListItemDefinition basis) {
             super(name, basis);
+        }
+
+        @SuppressWarnings("deprecation")
+        @Override
+        @Deprecated
+        public Builder setAllowExpression(boolean allowExpression) {
+            return super.setAllowExpression(allowExpression);
         }
 
         @Override

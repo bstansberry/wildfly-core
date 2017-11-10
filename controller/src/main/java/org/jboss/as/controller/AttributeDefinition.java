@@ -27,7 +27,6 @@ import static org.jboss.as.controller.registry.AttributeAccess.Flag.immutableSet
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -45,19 +44,17 @@ import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.as.controller.descriptions.ResourceDescriptionResolver;
 import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.controller.operations.common.Util;
-import org.jboss.as.controller.operations.validation.AllowedValuesValidator;
-import org.jboss.as.controller.operations.validation.BytesValidator;
-import org.jboss.as.controller.operations.validation.MinMaxValidator;
-import org.jboss.as.controller.operations.validation.ModelTypeValidator;
-import org.jboss.as.controller.operations.validation.NillableOrExpressionParameterValidator;
 import org.jboss.as.controller.operations.validation.ParameterValidator;
-import org.jboss.as.controller.operations.validation.StringLengthValidator;
 import org.jboss.as.controller.parsing.ParseUtils;
 import org.jboss.as.controller.registry.AttributeAccess;
 import org.jboss.as.controller.registry.Resource;
+import org.jboss.as.controller.registry.bridge.BridgeParameterCorrector;
+import org.jboss.as.controller.registry.bridge.ModernToLegacyParameterValidator;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 import org.jboss.dmr.Property;
+import org.wildfly.management.api.model.definition.ItemDefinition;
+import org.wildfly.management.api.model.definition.ItemDefinitionValidator;
 
 /**
  * Defining characteristics of an attribute in a {@link org.jboss.as.controller.registry.Resource} or a
@@ -69,20 +66,9 @@ import org.jboss.dmr.Property;
 public abstract class AttributeDefinition {
 
     /** The {@link ModelType} types that reflect complex DMR structures -- {@code LIST}, {@code OBJECT}, {@code PROPERTY}} */
+    @SuppressWarnings("WeakerAccess")
     protected static final Set<ModelType> COMPLEX_TYPES = Collections.unmodifiableSet(EnumSet.of(ModelType.LIST, ModelType.OBJECT, ModelType.PROPERTY));
 
-    private final String name;
-    private final String xmlName;
-    private final ModelType type;
-    private final boolean required;
-    private final boolean allowExpression;
-    private final ModelNode defaultValue;
-    private final MeasurementUnit measurementUnit;
-    private final String[] alternatives;
-    private final String[] requires;
-    private final ModelNode[] allowedValues;
-    private final ParameterCorrector valueCorrector;
-    private final ParameterValidator validator;
     private final Set<AttributeAccess.Flag> flags;
     /** @deprecated use {@link #getMarshaller()} as this will be made private in a future release*/
     @Deprecated
@@ -97,7 +83,7 @@ public abstract class AttributeDefinition {
     /** @deprecated use {@link #getReferenceRecorder()} ()} as this will be made private in a future release*/
     @Deprecated
     protected final CapabilityReferenceRecorder referenceRecorder;
-    private final Map<String, ModelNode> arbitraryDescriptors;
+    private final org.wildfly.management.api.model.definition.ItemDefinition itemDefinition;
 
     // NOTE: Standards for creating a constructor variant are:
     // 1) Don't.
@@ -106,42 +92,21 @@ public abstract class AttributeDefinition {
     // Use the constructor that takes a builder
 
     protected AttributeDefinition(AbstractAttributeDefinitionBuilder<?, ?> toCopy) {
-        this(toCopy.getName(), toCopy.getXmlName(), toCopy.getDefaultValue(), toCopy.getType(),
-                toCopy.isAllowNull(), toCopy.isAllowExpression(), toCopy.getMeasurementUnit(), toCopy.getCorrector(),
-                wrapValidator(toCopy.getValidator(), toCopy.isAllowNull(), toCopy.getAlternatives(), toCopy.isAllowExpression(),
-                        toCopy.getType(), toCopy.getConfiguredMinSize(), toCopy.getConfiguredMaxSize()),
-                true, toCopy.getAlternatives(), toCopy.getRequires(), toCopy.getAttributeMarshaller(),
+        this(toCopy.getAttributeMarshaller(),
                 toCopy.isResourceOnly(), toCopy.getDeprecated(),
                 wrapConstraints(toCopy.getAccessConstraints()), toCopy.getNullSignificant(), toCopy.getParser(),
-                toCopy.getAttributeGroup(), toCopy.referenceRecorder, toCopy.getAllowedValues(), toCopy.getArbitraryDescriptors(),
-                toCopy.getUndefinedMetricValue(), immutableSetOf(toCopy.getFlags()));
+                toCopy.getAttributeGroup(), toCopy.getCapabilityReferenceRecorder(),
+                toCopy.getUndefinedMetricValue(), immutableSetOf(toCopy.getFlags()), toCopy.getItemDefinition());
     }
 
-    private AttributeDefinition(String name, String xmlName, final ModelNode defaultValue, final ModelType type,
-                                final boolean allowNull, final boolean allowExpression, final MeasurementUnit measurementUnit,
-                                final ParameterCorrector valueCorrector, final ParameterValidator validator, final boolean validateNull,
-                                final String[] alternatives, final String[] requires, AttributeMarshaller marshaller,
+    private AttributeDefinition(AttributeMarshaller marshaller,
                                 boolean resourceOnly, DeprecationData deprecationData, final List<AccessConstraintDefinition> accessConstraints,
                                 Boolean nilSignificant, AttributeParser parser, final String attributeGroup, CapabilityReferenceRecorder referenceRecorder,
-                                ModelNode[] allowedValues, final Map<String, ModelNode> arbitraryDescriptors, final ModelNode undefinedMetricValue, final Set<AttributeAccess.Flag> flags) {
+                                final ModelNode undefinedMetricValue, final Set<AttributeAccess.Flag> flags,
+                                final org.wildfly.management.api.model.definition.ItemDefinition itemDefinition) {
 
-        this.name = name;
-        this.xmlName = xmlName == null ? name : xmlName;
-        this.type = type;
-        this.required = !allowNull;
-        this.allowExpression = allowExpression;
+        this.itemDefinition = itemDefinition;
         this.parser = parser != null ? parser : AttributeParser.SIMPLE;
-        if (defaultValue != null && defaultValue.isDefined()) {
-            this.defaultValue = defaultValue;
-            this.defaultValue.protect();
-        } else {
-            this.defaultValue = null;
-        }
-        this.measurementUnit = measurementUnit;
-        this.alternatives = alternatives;
-        this.requires = requires;
-        this.valueCorrector = valueCorrector;
-        this.validator = validator;
         this.flags = flags;
         //noinspection deprecation
         this.attributeMarshaller = marshaller != null ? marshaller : AttributeMarshaller.SIMPLE;
@@ -150,7 +115,6 @@ public abstract class AttributeDefinition {
         this.deprecationData = deprecationData;
         this.nilSignificant = nilSignificant;
         this.attributeGroup = attributeGroup;
-        this.allowedValues = allowedValues;
         if (undefinedMetricValue != null && undefinedMetricValue.isDefined()) {
             this.undefinedMetricValue = undefinedMetricValue;
             this.undefinedMetricValue.protect();
@@ -159,53 +123,6 @@ public abstract class AttributeDefinition {
         }
         //noinspection deprecation
         this.referenceRecorder = referenceRecorder;
-        if (arbitraryDescriptors != null && !arbitraryDescriptors.isEmpty()) {
-            if (arbitraryDescriptors.size() == 1) {
-                Map.Entry<String, ModelNode> entry = arbitraryDescriptors.entrySet().iterator().next();
-                this.arbitraryDescriptors = Collections.singletonMap(entry.getKey(), entry.getValue());
-            } else {
-                this.arbitraryDescriptors = Collections.unmodifiableMap(new HashMap<>(arbitraryDescriptors));
-            }
-        } else {
-            this.arbitraryDescriptors = Collections.emptyMap();
-        }
-    }
-
-    private static ParameterValidator wrapValidator(ParameterValidator toWrap, boolean allowNull,
-                                                    String[] alternatives, boolean allowExpression, ModelType type,
-                                                    Integer minSize, Integer maxSize) {
-        NillableOrExpressionParameterValidator result = null;
-        boolean hasAlternatives = alternatives != null && alternatives.length > 0;
-        boolean nullOK = allowNull || hasAlternatives;
-        if (toWrap == null) {
-            if (type == ModelType.STRING) {
-                // If sizing was specified, use it. If unspecified use defaults we've used since early AS 7
-                int min = minSize == null ? 1 : minSize;
-                int max = maxSize == null ? Integer.MAX_VALUE : maxSize;
-                toWrap = new StringLengthValidator(min, max, allowNull, allowExpression);
-            } else if (type == ModelType.BYTES) {
-                // If sizing was specified, use it. If unspecified use defaults equivalent to no min or max
-                int min = minSize == null ? 0 : minSize;
-                int max = maxSize == null ? Integer.MAX_VALUE : maxSize;
-                toWrap = new BytesValidator(min, max, false); // don't need to allow null here; the wrapper will deal with null
-            } else {
-                toWrap = new ModelTypeValidator(type);
-            }
-        } else if (toWrap instanceof NillableOrExpressionParameterValidator) {
-            // Avoid re-wrapping
-            NillableOrExpressionParameterValidator current = (NillableOrExpressionParameterValidator) toWrap;
-            if (allowExpression == current.isAllowExpression() &&
-                    nullOK == current.getAllowNull()) {
-                result = current;
-            } else {
-                toWrap = current.getDelegate();
-            }
-        }
-        if (result == null) {
-            result = new NillableOrExpressionParameterValidator(toWrap, nullOK, allowExpression);
-        }
-
-        return result;
     }
 
     private static List<AccessConstraintDefinition> wrapConstraints(AccessConstraintDefinition[] accessConstraints) {
@@ -216,13 +133,17 @@ public abstract class AttributeDefinition {
         }
     }
 
+    ItemDefinition getItemDefinition() {
+        return itemDefinition;
+    }
+
     /**
      * The attribute's name in the management model.
      *
      * @return the name. Will not be {@code null}
      */
     public String getName() {
-        return name;
+        return itemDefinition.getName();
     }
 
     /**
@@ -231,7 +152,7 @@ public abstract class AttributeDefinition {
      * @return the name. Will not be {@code null}, although it may not be relevant
      */
     public String getXmlName() {
-        return xmlName;
+        return itemDefinition.getXmlName();
     }
 
     /**
@@ -240,7 +161,7 @@ public abstract class AttributeDefinition {
      * @return the type. Will not be {@code null}
      */
     public ModelType getType() {
-        return type;
+        return itemDefinition.getType();
     }
 
     /**
@@ -256,7 +177,7 @@ public abstract class AttributeDefinition {
      *         alternatives; {@code false} if not
      */
     public boolean isRequired() {
-        return required;
+        return itemDefinition.isRequired();
     }
 
     /**
@@ -273,7 +194,7 @@ public abstract class AttributeDefinition {
      */
     @Deprecated
     public boolean isAllowNull() {
-        return !required;
+        return !isRequired();
     }
 
     /**
@@ -287,7 +208,11 @@ public abstract class AttributeDefinition {
      * @return {@code true} if an {@code undefined ModelNode} is valid; {@code false} if not
      */
     public boolean isNillable() {
-        return !required || (alternatives != null && alternatives.length > 0);
+        if (!isRequired()) {
+            return true;
+        }
+        String[] alternatives = getAlternatives();
+        return alternatives != null && alternatives.length > 0;
     }
 
     /**
@@ -303,10 +228,15 @@ public abstract class AttributeDefinition {
      * @return {@code true} if an {@code undefined} value is significant
      */
     public final boolean isNullSignificant() {
-        if (nilSignificant != null) {
-            return nilSignificant;
+        Boolean nullSignif = getNilSignificant();
+        if (nullSignif != null) {
+            return nullSignif;
+        } else if (isRequired()) {
+            return false;
+        } else {
+            ModelNode defaultValue = getDefaultValue();
+            return defaultValue != null && defaultValue.isDefined();
         }
-        return !required && defaultValue != null && defaultValue.isDefined();
     }
 
     /**
@@ -315,7 +245,7 @@ public abstract class AttributeDefinition {
      *
      * @see #isNullSignificant()
      */
-    Boolean getNilSignificant() {
+    protected Boolean getNilSignificant() {
         return nilSignificant;
     }
 
@@ -326,7 +256,7 @@ public abstract class AttributeDefinition {
      * @return {@code true} if an {@code expression ModelNode} is valid; {@code false} if not
      */
     public boolean isAllowExpression() {
-        return allowExpression;
+        return itemDefinition.isAllowExpression();
     }
 
     /**
@@ -335,7 +265,7 @@ public abstract class AttributeDefinition {
      * @return the default value, or {@code null} if no defined value was provided
      */
     public ModelNode getDefaultValue() {
-        return defaultValue;
+        return itemDefinition.getDefaultValue();
     }
 
     /**
@@ -353,7 +283,7 @@ public abstract class AttributeDefinition {
      * @return the measurement unit, or {@code null} if none is relevant
      */
     public MeasurementUnit getMeasurementUnit() {
-        return measurementUnit;
+        return itemDefinition.getMeasurementUnit();
     }
 
     /**
@@ -362,7 +292,9 @@ public abstract class AttributeDefinition {
      * @return the corrector. May be {@code null}
      */
     public ParameterCorrector getCorrector() {
-        return valueCorrector;
+        org.wildfly.management.api.model.definition.ParameterCorrector corrector = itemDefinition.getCorrector();
+        return corrector == null ? null :
+                corrector instanceof ParameterCorrector ? (ParameterCorrector) corrector : new BridgeParameterCorrector(corrector);
     }
 
     /**
@@ -371,7 +303,12 @@ public abstract class AttributeDefinition {
      * @return the validator. Will not be {@code null}
      */
     public ParameterValidator getValidator() {
-        return validator;
+        org.wildfly.management.api.model.validation.ParameterValidator modern = itemDefinition.getValidator();
+        if (modern instanceof ParameterValidator) {
+            return (ParameterValidator) modern;
+        } else {
+            return new ModernToLegacyParameterValidator(itemDefinition);
+        }
     }
 
     /**
@@ -388,7 +325,11 @@ public abstract class AttributeDefinition {
      */
     @Deprecated
     public boolean isValidatingNull() {
-        return !required || alternatives == null || alternatives.length == 0;
+        if (!isRequired()) {
+            return true;
+        }
+        String[] alternatives = getAlternatives();
+        return alternatives == null || alternatives.length == 0;
     }
 
     /**
@@ -398,7 +339,7 @@ public abstract class AttributeDefinition {
      * @return the alternative attribute names, or {@code null} if there are no such attributes
      */
     public String[] getAlternatives() {
-        return alternatives;
+        return itemDefinition.getAlternatives();
     }
 
     /**
@@ -408,7 +349,7 @@ public abstract class AttributeDefinition {
      * @return the required attribute names, or {@code null} if there are no such attributes
      */
     public String[] getRequires() {
-        return requires;
+        return itemDefinition.getRequires();
     }
 
     /**
@@ -421,10 +362,11 @@ public abstract class AttributeDefinition {
      */
     @Deprecated
     public EnumSet<AttributeAccess.Flag> getFlags() {
-        if (flags.isEmpty()) {
+        Set<AttributeAccess.Flag> flagSet = getImmutableFlags();
+        if (flagSet.isEmpty()) {
             return EnumSet.noneOf(AttributeAccess.Flag.class);
         }
-        AttributeAccess.Flag[] array = flags.toArray(new AttributeAccess.Flag[flags.size()]);
+        AttributeAccess.Flag[] array = flagSet.toArray(new AttributeAccess.Flag[flagSet.size()]);
         return array.length == 1 ? EnumSet.of(array[0]) : EnumSet.of(array[0], array);
     }
 
@@ -441,14 +383,11 @@ public abstract class AttributeDefinition {
      * @return allowed values
      */
     public List<ModelNode> getAllowedValues() {
-        if (allowedValues == null) {
-            return Collections.emptyList();
-        }
-        return Arrays.asList(this.allowedValues);
+        return itemDefinition.getAllowedValues();
     }
 
     public Map<String, ModelNode> getArbitraryDescriptors() {
-        return arbitraryDescriptors;
+        return itemDefinition.getArbitraryDescriptors();
     }
 
     /**
@@ -501,6 +440,7 @@ public abstract class AttributeDefinition {
      * @throws OperationFailedException if the value is not valid
      */
     public final void validateAndSet(ModelNode operationObject, final ModelNode model) throws OperationFailedException {
+        String name = getName();
         if (operationObject.hasDefined(name) && deprecationData != null && deprecationData.isNotificationUseful()) {
             ControllerLogger.DEPRECATED_LOGGER.attributeDeprecated(getName(),
                     PathAddress.pathAddress(operationObject.get(ModelDescriptionConstants.OP_ADDR)).toCLIStyleString());
@@ -521,6 +461,7 @@ public abstract class AttributeDefinition {
     }
 
     private ModelNode convertToExpectedType(final ModelNode node) {
+        ModelType type = getType();
         ModelType nodeType = node.getType();
         if (nodeType == type || nodeType == ModelType.UNDEFINED || nodeType == ModelType.EXPRESSION || Util.isExpression(node.asString())) {
             return node;
@@ -620,6 +561,7 @@ public abstract class AttributeDefinition {
      */
     public ModelNode resolveModelAttribute(final ExpressionResolver resolver, final ModelNode model) throws OperationFailedException {
         final ModelNode node = new ModelNode();
+        final String name = getName();
         if(model.has(name)) {
             node.set(model.get(name));
         }
@@ -661,12 +603,15 @@ public abstract class AttributeDefinition {
      */
     public ModelNode resolveValue(final ExpressionResolver resolver, final ModelNode value) throws OperationFailedException {
         final ModelNode node = value.clone();
-        if (!node.isDefined() && defaultValue != null && defaultValue.isDefined()) {
-            node.set(defaultValue);
+        if (!node.isDefined()) {
+            ModelNode defaultValue = getDefaultValue();
+            if (defaultValue != null && defaultValue.isDefined()) {
+                node.set(defaultValue);
+            }
         }
         ModelNode resolved = resolver.resolveExpressions(node);
         resolved = parseResolvedValue(value, resolved);
-        validator.validateParameter(name, resolved);
+        ItemDefinitionValidator.validateItem(itemDefinition, resolved);
         return resolved;
     }
 
@@ -692,6 +637,7 @@ public abstract class AttributeDefinition {
      * @return {@code true} if {@code operationObject} has no defined values for attributes configured as our alternatives
      */
     public boolean isAllowed(final ModelNode operationObject) {
+        String[] alternatives = getAlternatives();
         if(alternatives != null) {
             for(final String alternative : alternatives) {
                 if(operationObject.hasDefined(alternative)) {
@@ -710,7 +656,7 @@ public abstract class AttributeDefinition {
      *         {@link #getAlternatives() alternatives} to this attribute
      */
     public boolean isRequired(final ModelNode operationObject) {
-        return required && !hasAlternative(operationObject);
+        return isRequired() && !hasAlternative(operationObject);
     }
 
     /**
@@ -722,6 +668,7 @@ public abstract class AttributeDefinition {
      * @return {@code true} if {@code operationObject} has any defined values for attributes configured as our alternatives
      */
     public boolean hasAlternative(final ModelNode operationObject) {
+        String[] alternatives = getAlternatives();
         if(alternatives != null) {
             for(final String alternative : alternatives) {
                 if(operationObject.hasDefined(alternative)) {
@@ -910,6 +857,7 @@ public abstract class AttributeDefinition {
      * @return the resolved text
      */
     public String getAttributeTextDescription(final ResourceBundle bundle, final String prefix) {
+        final String name = getName();
         final String bundleKey = prefix == null ? name : (prefix + "." + name);
         return bundle.getString(bundleKey);
     }
@@ -922,6 +870,7 @@ public abstract class AttributeDefinition {
      * @return the resolved text
      */
     public String getAttributeDeprecatedDescription(final ResourceBundle bundle, final String prefix) {
+        final String name = getName();
         String bundleKey = prefix == null ? name : (prefix + "." + name);
         bundleKey += "." + ModelDescriptionConstants.DEPRECATED;
         return bundle.getString(bundleKey);
@@ -952,6 +901,7 @@ public abstract class AttributeDefinition {
      * @return object node containing the descriptive metadata
      */
     public ModelNode getNoTextDescription(boolean forOperation) {
+        final ModelType type = getType();
         final ModelNode result = new ModelNode();
         result.get(ModelDescriptionConstants.TYPE).set(type);
         result.get(ModelDescriptionConstants.DESCRIPTION); // placeholder
@@ -966,60 +916,85 @@ public abstract class AttributeDefinition {
                 result.get(ModelDescriptionConstants.NIL_SIGNIFICANT).set(true);
             }
         }
+        ModelNode defaultValue = getDefaultValue();
         if (defaultValue != null && defaultValue.isDefined()) {
             result.get(ModelDescriptionConstants.DEFAULT).set(defaultValue);
         }
+        MeasurementUnit measurementUnit = getMeasurementUnit();
         if (measurementUnit != null && measurementUnit != MeasurementUnit.NONE) {
             result.get(ModelDescriptionConstants.UNIT).set(measurementUnit.getName());
         }
-        if (alternatives != null) {
+        String[] alternatives = getAlternatives();
+        if (alternatives != null && alternatives.length > 0) {
+            ModelNode alts = result.get(ModelDescriptionConstants.ALTERNATIVES);
             for(final String alternative : alternatives) {
-                result.get(ModelDescriptionConstants.ALTERNATIVES).add(alternative);
+                alts.add(alternative);
             }
         }
-        if (requires != null) {
+        String[] requires = getRequires();
+        if (requires != null && requires.length > 0) {
+            ModelNode reqs = result.get(ModelDescriptionConstants.REQUIRES);
             for(final String required : requires) {
-                result.get(ModelDescriptionConstants.REQUIRES).add(required);
+                reqs.add(required);
             }
         }
         if (getReferenceRecorder() != null) {
             result.get(ModelDescriptionConstants.CAPABILITY_REFERENCE).set(getReferenceRecorder().getBaseRequirementName());
         }
 
-        if (validator instanceof MinMaxValidator) {
-            MinMaxValidator minMax = (MinMaxValidator) validator;
-            Long min = minMax.getMin();
-            if (min != null) {
-                switch (this.type) {
-                    case STRING:
-                    case LIST:
-                    case OBJECT:
-                    case BYTES:
-                        result.get(ModelDescriptionConstants.MIN_LENGTH).set(min);
-                        break;
-                    default:
-                        result.get(ModelDescriptionConstants.MIN).set(min);
-                }
-            }
-            Long max = minMax.getMax();
-            if (max != null) {
-                switch (this.type) {
-                    case STRING:
-                    case LIST:
-                    case OBJECT:
-                    case BYTES:
-                        result.get(ModelDescriptionConstants.MAX_LENGTH).set(max);
-                        break;
-                    default:
-                        result.get(ModelDescriptionConstants.MAX).set(max);
-                }
+        Integer min = itemDefinition.getMinAsInteger();
+        if (min != null) {
+            switch (type) {
+                case OBJECT: // we never wrote length data for OBJECT before and we have subsystem tests that complain if we do.
+                             // Since it appears there's no case where this is other than 0, skip it and save output size.
+                             // If there's a need for it the subsystem tests can be changed
+                    break;
+                case STRING:
+                case LIST:
+                case BYTES:
+                    result.get(ModelDescriptionConstants.MIN_LENGTH).set(min);
+                    break;
+                case INT:
+                    result.get(ModelDescriptionConstants.MIN).set(min);
+                    break;
+                default:
+                    // Use the long variant of getMin for the rest
+                    result.get(ModelDescriptionConstants.MIN).set(itemDefinition.getMin());
             }
         }
-        addAllowedValuesToDescription(result, validator);
-        arbitraryDescriptors.forEach((key, value) -> {
+        Integer max = itemDefinition.getMaxAsInteger();
+        if (max != null) {
+            switch (type) {
+                case OBJECT: // we never wrote length data for OBJECT before and the standard subsystem tests that complain if we do.
+                            // Since it appears there's no case where this is other than Integer.MAX_VALUE, skip it and save output size.
+                            // If there's a need for it the subsystem tests can be changed
+                    break;
+                case STRING:
+                case LIST:
+                case BYTES:
+                    result.get(ModelDescriptionConstants.MAX_LENGTH).set(max);
+                    break;
+                case INT:
+                    result.get(ModelDescriptionConstants.MAX).set(max);
+                    break;
+                default:
+                    // Use the long variant of getMax for the rest
+                    result.get(ModelDescriptionConstants.MAX).set(itemDefinition.getMax());
+            }
+        }
+        //addAllowedValuesToDescription(result, validator);
+        List<ModelNode> allowedValues = getAllowedValues();
+        if (allowedValues != null && !allowedValues.isEmpty()) {
+            ModelNode allowed = result.get(ModelDescriptionConstants.ALLOWED);
+            for (ModelNode allowedValue : allowedValues) {
+                allowed.add(allowedValue);
+            }
+        }
+        for (Map.Entry<String, ModelNode> entry : getArbitraryDescriptors().entrySet()) {
+            String key = entry.getKey();
             assert !result.hasDefined(key); //You can't override an arbitrary descriptor set through other properties.
-            result.get(key).set(value);
-        });
+            result.get(key).set(entry.getValue());
+        }
         return result;
     }
 
@@ -1055,10 +1030,18 @@ public abstract class AttributeDefinition {
         if (refRecorder != null) {
             // We can't process expressions
             if (attributeValue.getType() != ModelType.EXPRESSION) {
-                ModelNode value = attributeValue.isDefined() ? attributeValue : (defaultValue != null) ? defaultValue : new ModelNode();
-                refRecorder.addCapabilityRequirements(context, resource, name, value.isDefined() ? value.asString() : null);
+                ModelNode value = getValueOrDefault(attributeValue);
+                refRecorder.addCapabilityRequirements(context, resource, getName(), value.isDefined() ? value.asString() : null);
             }
         }
+    }
+
+    private ModelNode getValueOrDefault(ModelNode value) {
+        if (!value.isDefined()) {
+            ModelNode defaultValue = getDefaultValue();
+            value = defaultValue != null ? defaultValue : new ModelNode();
+        }
+        return value;
     }
 
     /**
@@ -1096,8 +1079,8 @@ public abstract class AttributeDefinition {
         if (refRecorder != null) {
             // We can't process expressions
             if (attributeValue.getType() != ModelType.EXPRESSION) {
-                ModelNode value = attributeValue.isDefined() ? attributeValue : (defaultValue != null) ? defaultValue : new ModelNode();
-                refRecorder.removeCapabilityRequirements(context, resource, name, value.isDefined() ? value.asString() : null);
+                ModelNode value = getValueOrDefault(attributeValue);
+                refRecorder.removeCapabilityRequirements(context, resource, getName(), value.isDefined() ? value.asString() : null);
             }
         }
     }
@@ -1121,25 +1104,11 @@ public abstract class AttributeDefinition {
     }
 
     /**
-     * Adds the allowed values. Override for attributes who should not use the allowed values.
-     *
-     * @param result the node to add the allowed values to
-     * @param validator the validator to get the allowed values from
+     * @deprecated Not called.
      */
+    @Deprecated
     protected void addAllowedValuesToDescription(ModelNode result, ParameterValidator validator) {
-        if (allowedValues != null) {
-            for (ModelNode allowedValue : allowedValues) {
-                result.get(ModelDescriptionConstants.ALLOWED).add(allowedValue);
-            }
-        } else if (validator instanceof AllowedValuesValidator) {
-            AllowedValuesValidator avv = (AllowedValuesValidator) validator;
-            List<ModelNode> allowed = avv.getAllowedValues();
-            if (allowed != null) {
-                for (ModelNode ok : allowed) {
-                    result.get(ModelDescriptionConstants.ALLOWED).add(ok);
-                }
-            }
-        }
+        // do nothing as this isn't called any more
     }
 
     /**
@@ -1153,6 +1122,8 @@ public abstract class AttributeDefinition {
      *         null}.
      */
     protected final ModelNode correctValue(final ModelNode newValue, final ModelNode oldValue) {
+        // Use the non-legacy variant of ParameterCorrector from the ItemDefinition
+        org.wildfly.management.api.model.definition.ParameterCorrector valueCorrector = itemDefinition.getCorrector();
         if (valueCorrector != null) {
             return valueCorrector.correct(newValue, oldValue);
         }
@@ -1181,7 +1152,7 @@ public abstract class AttributeDefinition {
      * @throws IllegalStateException if expressions are supported, but the {@link #getType() attribute type} is {@link #COMPLEX_TYPES complex}
      */
     protected ModelNode convertParameterExpressions(final ModelNode parameter) {
-        if (isAllowExpression() && COMPLEX_TYPES.contains(type)) {
+        if (isAllowExpression() && COMPLEX_TYPES.contains(getType())) {
             // They need to subclass and override
             throw new IllegalStateException();
         }
@@ -1205,6 +1176,8 @@ public abstract class AttributeDefinition {
 
     private ModelNode validateOperation(final ModelNode operationObject, final boolean immutableValue) throws OperationFailedException {
 
+        final String name = getName();
+
         ModelNode node = new ModelNode();
         if(operationObject.has(name)) {
             node.set(operationObject.get(name));
@@ -1215,11 +1188,8 @@ public abstract class AttributeDefinition {
             node = correctValue(node, node);
         }
 
-        if (!node.isDefined() && defaultValue != null && defaultValue.isDefined()) {
-            validator.validateParameter(name, defaultValue);
-        } else {
-            validator.validateParameter(name, node);
-        }
+        ModelNode toValidate = getValueOrDefault(node);
+        ItemDefinitionValidator.validateItem(itemDefinition, toValidate);
 
         return convertToExpectedType(node);
     }

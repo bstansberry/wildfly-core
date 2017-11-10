@@ -32,16 +32,26 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
 
 import org.jboss.as.controller.descriptions.ResourceDescriptionResolver;
-import org.jboss.as.controller.operations.validation.MapValidator;
-import org.jboss.as.controller.operations.validation.NillableOrExpressionParameterValidator;
+import org.jboss.as.controller.operations.validation.AllowedValuesValidator;
+import org.jboss.as.controller.operations.validation.MinMaxValidator;
+import org.jboss.as.controller.operations.validation.ModelTypeValidator;
 import org.jboss.as.controller.operations.validation.ParameterValidator;
 import org.jboss.as.controller.parsing.ParseUtils;
+import org.jboss.as.controller.registry.bridge.LegacyToModernAllowedValueValidator;
+import org.jboss.as.controller.registry.bridge.LegacyToModernMinMaxValidator;
+import org.jboss.as.controller.registry.bridge.LegacyToModernParameterValidator;
+import org.jboss.as.controller.registry.bridge.ModernToLegacyParameterValidator;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 import org.jboss.dmr.Property;
 import org.jboss.staxmapper.XMLExtendedStreamReader;
 import org.wildfly.common.Assert;
 import org.wildfly.management.api.OperationClientException;
+import org.wildfly.management.api.model.definition.CollectionItemDefinition;
+import org.wildfly.management.api.model.definition.ItemDefinition;
+import org.wildfly.management.api.model.definition.MapItemDefinition;
+import org.wildfly.management.api.model.definition.SimpleItemDefinition;
+import org.wildfly.management.api.model.definition.SimpleMapItemDefinition;
 
 /**
  * Defining characteristics of an {@link ModelType#OBJECT} attribute in a {@link org.jboss.as.controller.registry.Resource},
@@ -52,11 +62,8 @@ import org.wildfly.management.api.OperationClientException;
  */
 public abstract class MapAttributeDefinition extends AttributeDefinition {
 
-    private final ParameterValidator elementValidator;
-
     protected MapAttributeDefinition(Builder<? extends Builder, ? extends MapAttributeDefinition> builder) {
         super(builder);
-        this.elementValidator = builder.getElementValidator();
     }
 
     /**
@@ -78,7 +85,7 @@ public abstract class MapAttributeDefinition extends AttributeDefinition {
     public ModelNode parse(final String value, final Location location) throws XMLStreamException {
         ModelNode node = ParseUtils.parseAttributeValue(value, isAllowExpression(), getType());
         try {
-            elementValidator.validateParameter(getXmlName(), node);
+            getElementValidator().validateParameter(getXmlName(), node);
         } catch (OperationFailedException e) {
             throw new XMLStreamException(e.getFailureDescription().toString(), location);
         } catch (OperationClientException e) {
@@ -112,7 +119,13 @@ public abstract class MapAttributeDefinition extends AttributeDefinition {
      * @return  the element validator
      */
     public ParameterValidator getElementValidator() {
-        return elementValidator;
+        CollectionItemDefinition cid = (CollectionItemDefinition) getItemDefinition();
+        ItemDefinition elementId = cid.getElementDefinition();
+        Object elValidator = elementId.getValidator();
+        if (elValidator instanceof ParameterValidator) {
+            return (ParameterValidator) elValidator;
+        }
+        return new ModernToLegacyParameterValidator(elementId);
     }
 
     protected abstract void addValueTypeDescription(final ModelNode node, final ResourceBundle bundle);
@@ -235,6 +248,10 @@ public abstract class MapAttributeDefinition extends AttributeDefinition {
     public abstract static class Builder<BUILDER extends Builder, ATTRIBUTE extends MapAttributeDefinition>
             extends AbstractAttributeDefinitionBuilder<BUILDER, ATTRIBUTE> {
 
+        /**
+         * @deprecated Callers have no need to read this
+         */
+        @Deprecated
         protected ParameterValidator elementValidator;
         private Boolean allowNullElement;
 
@@ -249,37 +266,16 @@ public abstract class MapAttributeDefinition extends AttributeDefinition {
         public Builder(MapAttributeDefinition basis) {
             super(basis);
             this.elementValidator = basis.getElementValidator();
-            if (elementValidator instanceof NillableOrExpressionParameterValidator) {
-                this.allowNullElement = ((NillableOrExpressionParameterValidator) elementValidator).getAllowNull();
-            }
+            this.allowNullElement = !((CollectionItemDefinition) basis.getItemDefinition()).getElementDefinition().isRequired();
         }
 
         /**
          * Gets the validator to use for validating list elements. En
          * @return the validator, or {@code null} if no validator has been set
+         * @deprecated Callers have no need to read this
          */
+        @Deprecated
         public ParameterValidator getElementValidator() {
-            if (elementValidator == null) {
-                return null;
-            }
-
-            ParameterValidator toWrap = elementValidator;
-            ParameterValidator wrappedElementValidator = null;
-            if (elementValidator instanceof NillableOrExpressionParameterValidator) {
-                // See if it's configured correctly already; if so don't re-wrap
-                NillableOrExpressionParameterValidator wrapped = (NillableOrExpressionParameterValidator) elementValidator;
-                Boolean allow = wrapped.getAllowNull();
-                if ((allow == null || allow) == getAllowNullElement()
-                        && wrapped.isAllowExpression() == isAllowExpression()) {
-                    wrappedElementValidator = wrapped;
-                } else {
-                    // re-wrap
-                    toWrap = wrapped.getDelegate();
-                }
-            }
-            if (wrappedElementValidator == null) {
-                elementValidator = new NillableOrExpressionParameterValidator(toWrap, getAllowNullElement(), isAllowExpression());
-            }
             return elementValidator;
         }
 
@@ -290,11 +286,26 @@ public abstract class MapAttributeDefinition extends AttributeDefinition {
          * @return a builder that can be used to continue building the attribute definition
          *
          * @throws java.lang.IllegalArgumentException if {@code elementValidator} is {@code null}
+         * @deprecated Use a {@link SimpleListAttributeDefinition} with a properly configured element definition.
          */
+        @Deprecated
         @SuppressWarnings("unchecked")
         public final BUILDER setElementValidator(ParameterValidator elementValidator) {
             Assert.checkNotNullParam("elementValidator", elementValidator);
             this.elementValidator = elementValidator;
+
+            org.wildfly.management.api.model.validation.ParameterValidator modern = null;
+            if (elementValidator instanceof org.wildfly.management.api.model.validation.ParameterValidator) {
+                modern = (org.wildfly.management.api.model.validation.ParameterValidator) elementValidator;
+            } else if (elementValidator instanceof MinMaxValidator) {
+                modern = new LegacyToModernMinMaxValidator(elementValidator);
+            } else if (elementValidator instanceof AllowedValuesValidator) {
+                modern = new LegacyToModernAllowedValueValidator(elementValidator);
+            } else {
+                modern = new LegacyToModernParameterValidator(elementValidator);
+            }
+            getWrappedBuilder().setElementValidator(modern);
+
             // Setting an element validator invalidates any existing overall attribute validator
             super.setValidator(null);
             return (BUILDER) this;
@@ -310,7 +321,9 @@ public abstract class MapAttributeDefinition extends AttributeDefinition {
          * @return a builder that can be used to continue building the attribute definition
          *
          * @throws java.lang.IllegalArgumentException if {@code elementValidator} is {@code null}
+         * @deprecated Use a {@link SimpleListAttributeDefinition} with a properly configured element definition.
          */
+        @Deprecated
         @Override
         public BUILDER setValidator(ParameterValidator validator) {
             return setElementValidator(validator);
@@ -348,20 +361,28 @@ public abstract class MapAttributeDefinition extends AttributeDefinition {
         }
 
         /**
-         * Gets whether undefined list elements are valid. In the unlikely case {@link #setAllowNullElement(boolean)}
-         * has been called, that value is returned; otherwise the value of {@link #isAllowNull()} is used.
+         * Gets whether undefined map values are allowed. If {@link #setAllowNullElement(boolean)}
+         * has been called, that value is used; otherwise the vaule of {@link #isAllowNull()} is used.
          *
-         * @return {@code true} if undefined list elements are valid
+         * @return {@code true} if undefined map values are valid
+         *
+         * @deprecated Use a {@link SimpleMapAttributeDefinition} with a properly configured element definition.
          */
+        @Deprecated
+        @SuppressWarnings("WeakerAccess")
         public boolean getAllowNullElement() {
             return allowNullElement == null ? isAllowNull() : allowNullElement;
         }
 
         /**
-         * Sets whether undefined list elements are valid.
-         * @param allowNullElement whether undefined elements are valid
+         * Sets whether undefined map values are valid.
+         *
+         * @param allowNullElement {@code true} if undefined values are valid
          * @return a builder that can be used to continue building the attribute definition
+         *
+         * @deprecated Use a {@link SimpleMapAttributeDefinition} with a properly configured element definition.
          */
+        @Deprecated
         @SuppressWarnings({"unchecked", "WeakerAccess"})
         public BUILDER setAllowNullElement(boolean allowNullElement) {
             this.allowNullElement = allowNullElement;
@@ -369,15 +390,40 @@ public abstract class MapAttributeDefinition extends AttributeDefinition {
         }
 
         @Override
-        public ParameterValidator getValidator() {
-            ParameterValidator result = super.getValidator();
-            if (result == null) {
-                ParameterValidator mapElementValidator = getElementValidator();
-                // Subclasses must call setElementValidator before calling this
-                assert mapElementValidator != null;
-                result = new MapValidator(getElementValidator(), isAllowNull(), getMinSize(), getMaxSize());
+        public BUILDER setRequired(boolean required) {
+            BUILDER result = super.setRequired(required);
+            if (allowNullElement == null) {
+                // Set that too
+                setAllowNullElement(!required);
             }
             return result;
+        }
+
+        MapItemDefinition.Builder getWrappedBuilder() {
+            return (MapItemDefinition.Builder) super.getWrappedBuilder();
+        }
+
+        @Override
+        protected ItemDefinition.Builder createItemDefinitionBuilder() {
+            // This is a nasty hack to allow custom subclasses that don't
+            // directly implement this method to hopefully work
+            ModelType guess;
+            if (elementValidator instanceof ModelTypeValidator) {
+                guess = ((ModelTypeValidator) elementValidator).getValidTypes().iterator().next(); // in reality there's only ever one
+            } else {
+                guess = ModelType.STRING;
+            }
+            SimpleItemDefinition.Builder sidBuilder = SimpleItemDefinition.Builder.of(guess);
+            if (getAllowNullElement()) {
+                sidBuilder.setRequired(false);
+            }
+            return SimpleMapItemDefinition.Builder.of(getName(), sidBuilder.build());
+        }
+
+        final void configureUndefinedElement() {
+            if (getValidator() == null && getAllowNullElement()) {
+                getWrappedBuilder().setAllowUndefinedElement(true);
+            }
         }
     }
 }

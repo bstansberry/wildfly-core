@@ -32,6 +32,9 @@ import org.jboss.as.controller.descriptions.ResourceDescriptionResolver;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
+import org.wildfly.management.api.model.definition.ItemDefinition;
+import org.wildfly.management.api.model.definition.SimpleItemDefinition;
+import org.wildfly.management.api.model.definition.SimpleListItemDefinition;
 
 /**
  * {@link org.jboss.as.controller.AttributeDefinition} for attributes that represent lists with
@@ -157,7 +160,6 @@ public class SimpleListAttributeDefinition extends ListAttributeDefinition {
         public Builder(final String name, final AttributeDefinition valueType) {
             super(name);
             this.valueType = valueType;
-            setElementValidator(valueType.getValidator());
         }
 
         public Builder(final SimpleListAttributeDefinition basis) {
@@ -175,6 +177,9 @@ public class SimpleListAttributeDefinition extends ListAttributeDefinition {
         }
 
         public SimpleListAttributeDefinition build() {
+            // Set up the legacy business where by default a nillable collection means undefined elements are allowed
+            configureUndefinedElement();
+
             if (getAttributeMarshaller() == null) {
                 setAttributeMarshaller(AttributeMarshallers.getSimpleListMarshaller(wrapXmlList));
             }
@@ -202,6 +207,12 @@ public class SimpleListAttributeDefinition extends ListAttributeDefinition {
         @Override
         public Builder setMinSize(final int minSize) {
             return super.setMinSize(minSize);
+        }
+
+        @Override
+        protected ItemDefinition.Builder createItemDefinitionBuilder() {
+            SimpleItemDefinition sid = (SimpleItemDefinition) valueType.getItemDefinition();
+            return SimpleListItemDefinition.Builder.of(getName(), sid);
         }
     }
 }

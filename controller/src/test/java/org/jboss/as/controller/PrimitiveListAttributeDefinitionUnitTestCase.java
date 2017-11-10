@@ -25,8 +25,6 @@ package org.jboss.as.controller;
 import static org.jboss.as.controller.registry.AttributeAccess.Flag.RESTART_ALL_SERVICES;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -34,6 +32,7 @@ import javax.xml.stream.XMLStreamException;
 
 import org.jboss.as.controller.operations.validation.IntRangeValidator;
 import org.jboss.as.controller.operations.validation.ListValidator;
+import org.jboss.as.controller.operations.validation.MinMaxValidator;
 import org.jboss.as.controller.operations.validation.ModelTypeValidator;
 import org.jboss.as.controller.operations.validation.ParameterValidator;
 import org.jboss.as.controller.operations.validation.StringLengthValidator;
@@ -121,7 +120,7 @@ public class PrimitiveListAttributeDefinitionUnitTestCase {
     @Test
     public void testBuilderCopyPreservesElementValidator() throws OperationFailedException {
         PrimitiveListAttributeDefinition original = PrimitiveListAttributeDefinition.Builder.of("test", ModelType.STRING)
-                .setElementValidator(new StringLengthValidator(1))
+                .setElementValidator(new StringLengthValidator(2))
                 .build();
 
         // will use the same validator than original
@@ -140,9 +139,12 @@ public class PrimitiveListAttributeDefinitionUnitTestCase {
         assertFalse(original.getFlags().contains(RESTART_ALL_SERVICES));
         assertTrue(copy.getFlags().contains(RESTART_ALL_SERVICES));
         assertTrue(copyWithOtherValidator.getFlags().contains(RESTART_ALL_SERVICES));
-
-        assertSame(original.getElementValidator(), copy.getElementValidator());
-        assertNotSame(original.getElementValidator(), copyWithOtherValidator.getElementValidator());
+        ParameterValidator copyValidator = copy.getElementValidator();
+        assertTrue(copyValidator instanceof MinMaxValidator);
+        assertEquals(2, ((MinMaxValidator) copyValidator).getMin().longValue());
+        ParameterValidator otherCopyValidator = copyWithOtherValidator.getElementValidator();
+        assertTrue(otherCopyValidator instanceof MinMaxValidator);
+        assertEquals(Integer.MAX_VALUE, ((MinMaxValidator) otherCopyValidator).getMin().longValue());
 
         ModelNode value = new ModelNode();
         value.add("foo");

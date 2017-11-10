@@ -36,6 +36,7 @@ import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 import org.junit.Assert;
 import org.junit.Test;
+import org.wildfly.management.api.OperationClientException;
 
 /**
  * Unit Tests of {@link SimpleAttributeDefinition}
@@ -190,7 +191,7 @@ public class SimpleAttributeDefinitionUnitTestCase {
             if (expectFail) {
                 fail("Didn't fail validation");
             }
-        } catch (OperationFailedException ofe) {
+        } catch (OperationFailedException | OperationClientException ofe) {
             if (!expectFail) {
                 fail("Failed validation " + ofe.toString());
             }

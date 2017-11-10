@@ -33,6 +33,11 @@ public class ObjectMapItemDefinition extends MapItemDefinition<ObjectTypeItemDef
         super(builder);
     }
 
+    @Override
+    public Builder getBuilderToCopy() {
+        return Builder.of(this);
+    }
+
     /** Builder for an {@link ObjectMapItemDefinition}. */
     public static final class Builder extends MapItemDefinition.Builder<Builder, ObjectMapItemDefinition, ObjectTypeItemDefinition> {
 

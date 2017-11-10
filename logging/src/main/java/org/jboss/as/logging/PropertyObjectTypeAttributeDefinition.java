@@ -28,6 +28,7 @@ import org.jboss.as.controller.ObjectTypeAttributeDefinition;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.operations.validation.ObjectTypeValidator;
+import org.jboss.as.controller.operations.validation.ParameterValidator;
 import org.jboss.as.logging.resolvers.ModelNodeResolver;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
@@ -98,8 +99,9 @@ public class PropertyObjectTypeAttributeDefinition extends ObjectTypeAttributeDe
         }
 
         public PropertyObjectTypeAttributeDefinition build() {
+            ParameterValidator validator = getValidator();
             if (validator == null) {
-                validator = new ObjectTypeValidator(allowNull, valueTypes);
+                setValidator(new ObjectTypeValidator(valueTypes));
             }
             return new PropertyObjectTypeAttributeDefinition(this);
         }

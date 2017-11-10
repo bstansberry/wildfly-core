@@ -61,16 +61,16 @@ public class ModelTypeValidator implements ParameterValidator {
     protected static final BigInteger BIGINTEGER_MAX = BigInteger.valueOf(Integer.MAX_VALUE);
     protected static final BigInteger BIGINTEGER_MIN = BigInteger.valueOf(Integer.MIN_VALUE);
 
-    private static final Map<EnumSet<ModelType>, Set<ModelType>> flagSets = new ConcurrentHashMap<>(16);
+    private static final Map<EnumSet<ModelType>, Set<ModelType>> typeSets = new ConcurrentHashMap<>(16);
     private static Set<ModelType> sharedSetOf(boolean allowExpressions, ModelType firstValidType, ModelType... otherValidTypes) {
         EnumSet<ModelType> baseSet = EnumSet.of(firstValidType, otherValidTypes);
         if (allowExpressions) {
             baseSet.add(ModelType.EXPRESSION);
         }
-        Set<ModelType> result = flagSets.get(baseSet);
+        Set<ModelType> result = typeSets.get(baseSet);
         if (result == null) {
             Set<ModelType> immutable = Collections.unmodifiableSet(baseSet);
-            Set<ModelType> existing = flagSets.putIfAbsent(baseSet, immutable);
+            Set<ModelType> existing = typeSets.putIfAbsent(baseSet, immutable);
             result = existing == null ? immutable : existing;
         }
         return result;
@@ -137,6 +137,10 @@ public class ModelTypeValidator implements ParameterValidator {
         this.validTypes = sharedSetOf(allowExpressions, firstValidType, otherValidTypes);
         this.nullable = nullable;
         this.strictType = strictType;
+    }
+
+    public final Set<ModelType> getValidTypes() {
+        return validTypes;
     }
 
     /**

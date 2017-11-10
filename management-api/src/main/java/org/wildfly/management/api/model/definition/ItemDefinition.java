@@ -53,7 +53,7 @@ import org.wildfly.management.api.model.validation.ParameterValidator;
  *
  * @author Brian Stansberry
  */
-public class ItemDefinition {
+public abstract class ItemDefinition {
 
     private final String name;
     private final String xmlName;
@@ -165,6 +165,15 @@ public class ItemDefinition {
                 return null;
         }
     }
+
+    /**
+     * Gets a {@link Builder} that, if its {@link Builder#build() build} method is immediately invoked, will
+     * produce another definition with a configuration equivalent to this one. The expectation is first
+     * one or a few setters would be called the builder, resulting in a new definition slightly different from this one.
+     *
+     * @return the builder. Will not return {@code null}
+     */
+    public abstract Builder getBuilderToCopy();
 
     /**
      * The item's name in the management model.
@@ -544,6 +553,38 @@ public class ItemDefinition {
          */
         public final BUILDER setSince(SchemaVersion... since) {
             this.since = since;
+            return (BUILDER) this;
+        }
+
+        /**
+         * Sets the name of this item.
+         * <p>
+         * <strong>Should not be used by code outside the WildFly core management kernel.</strong>
+         *
+         * @param name the name. Cannot be {@code null}
+         * @return a builder that can be used to continue building the item definition
+         *
+         * @deprecated may be removed in any major or minor release
+         */
+        @Deprecated
+        public final BUILDER setName(String name) {
+            this.name = name;
+            return (BUILDER) this;
+        }
+
+        /**
+         * Sets the type of this item.
+         * <p>
+         * <strong>Should not be used by code outside the WildFly core management kernel.</strong>
+         *
+         * @param type the type. Cannot be {@code null}
+         * @return a builder that can be used to continue building the item definition
+         *
+         * @deprecated may be removed in any major or minor release
+         */
+        @Deprecated
+        public final BUILDER setType(ModelType type) {
+            this.type = type;
             return (BUILDER) this;
         }
 

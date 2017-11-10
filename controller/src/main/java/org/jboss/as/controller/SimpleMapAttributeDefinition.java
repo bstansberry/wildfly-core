@@ -29,9 +29,10 @@ import java.util.ResourceBundle;
 
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.as.controller.descriptions.ResourceDescriptionResolver;
-import org.jboss.as.controller.operations.validation.ModelTypeValidator;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
+import org.wildfly.management.api.model.definition.ItemDefinition;
+import org.wildfly.management.api.model.definition.SimpleMapItemDefinition;
 
 /**
  * {@link MapAttributeDefinition} for maps with keys of {@link ModelType#STRING} and values of type ModelType
@@ -99,10 +100,14 @@ public class SimpleMapAttributeDefinition extends MapAttributeDefinition {
 
         @Override
         public SimpleMapAttributeDefinition build() {
-            if (elementValidator == null) {
-                elementValidator = new ModelTypeValidator(valueType);
-            }
+            // Set up the legacy business where by default a nillable collection means undefined elements are allowed
+            configureUndefinedElement();
             return new SimpleMapAttributeDefinition(this);
+        }
+
+        @Override
+        protected ItemDefinition.Builder createItemDefinitionBuilder() {
+            return SimpleMapItemDefinition.Builder.of(getName(), valueType);
         }
     }
 }

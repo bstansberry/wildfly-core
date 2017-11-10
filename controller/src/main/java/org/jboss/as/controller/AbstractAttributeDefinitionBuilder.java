@@ -32,10 +32,27 @@ import java.util.Set;
 import org.jboss.as.controller.access.management.AccessConstraintDefinition;
 import org.jboss.as.controller.capability.RuntimeCapability;
 import org.jboss.as.controller.client.helpers.MeasurementUnit;
+import org.jboss.as.controller.operations.validation.AllowedValuesValidator;
+import org.jboss.as.controller.operations.validation.MinMaxValidator;
 import org.jboss.as.controller.operations.validation.ParameterValidator;
 import org.jboss.as.controller.registry.AttributeAccess;
+import org.jboss.as.controller.registry.bridge.BridgeParameterCorrector;
+import org.jboss.as.controller.registry.bridge.LegacyToModernAllowedValueValidator;
+import org.jboss.as.controller.registry.bridge.LegacyToModernMinMaxValidator;
+import org.jboss.as.controller.registry.bridge.LegacyToModernParameterValidator;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
+import org.wildfly.management.api.model.definition.CollectionItemDefinition;
+import org.wildfly.management.api.model.definition.ItemDefinition;
+import org.wildfly.management.api.model.definition.ObjectListItemDefinition;
+import org.wildfly.management.api.model.definition.ObjectMapItemDefinition;
+import org.wildfly.management.api.model.definition.ObjectTypeItemDefinition;
+import org.wildfly.management.api.model.definition.PrimitiveListItemDefinition;
+import org.wildfly.management.api.model.definition.PropertiesItemDefinition;
+import org.wildfly.management.api.model.definition.SimpleItemDefinition;
+import org.wildfly.management.api.model.definition.SimpleListItemDefinition;
+import org.wildfly.management.api.model.definition.SimpleMapItemDefinition;
+import org.wildfly.management.api.model.definition.StringListItemDefinition;
 
 /**
  * Provides a builder API for creating an {@link org.jboss.as.controller.AttributeDefinition}.
@@ -47,6 +64,27 @@ import org.jboss.dmr.ModelType;
  */
 @SuppressWarnings("unchecked")
 public abstract class AbstractAttributeDefinitionBuilder<BUILDER extends AbstractAttributeDefinitionBuilder, ATTRIBUTE extends AttributeDefinition> {
+
+//    private static Set<Class> SAFE_IMPLEMENTATIONS;
+//
+//    private static Set<Class> getSafeImplementations() {
+//        if (SAFE_IMPLEMENTATIONS == null) {
+//            SAFE_IMPLEMENTATIONS = Collections.unmodifiableSet(new HashSet<>(
+//                    Arrays.asList(
+//                            SimpleAttributeDefinitionBuilder.class,
+//                            ObjectTypeAttributeDefinition.Builder.class,
+//                            ObjectListAttributeDefinition.Builder.class,
+//                            ObjectMapAttributeDefinition.Builder.class,
+//                            PrimitiveListAttributeDefinition.Builder.class,
+//                            PropertiesAttributeDefinition.Builder.class,
+//                            SimpleListAttributeDefinition.Builder.class,
+//                            StringListAttributeDefinition.Builder.class,
+//                            BridgeAttributeDefinition.Builder.class
+//                    )
+//            ));
+//        }
+//        return SAFE_IMPLEMENTATIONS;
+//    }
 
     /** @deprecated use {@link #getName()} as this field will be made private in a future release */
     @Deprecated
@@ -90,11 +128,9 @@ public abstract class AbstractAttributeDefinitionBuilder<BUILDER extends Abstrac
     /** @deprecated use {@link #getName()} as this field will be made private in a future release */
     @Deprecated
     protected int minSize = 0;
-    private boolean minSizeSet;
     /** @deprecated use {@link #getMaxSize()} as this field will be made private in a future release */
     @Deprecated
     protected int maxSize = Integer.MAX_VALUE;
-    private boolean maxSizeSet;
     /** @deprecated use {@link #getFlags()} as this field will be made private in a future release */
     @Deprecated
     protected AttributeAccess.Flag[] flags;
@@ -126,6 +162,7 @@ public abstract class AbstractAttributeDefinitionBuilder<BUILDER extends Abstrac
     @Deprecated
     protected Map<String, ModelNode> arbitraryDescriptors = null;
     private ModelNode undefinedMetricValue;
+    private ItemDefinition.Builder wrappedBuilder;
 
     private static AccessConstraintDefinition[] ZERO_CONSTRAINTS = new AccessConstraintDefinition[0];
 
@@ -172,7 +209,14 @@ public abstract class AbstractAttributeDefinitionBuilder<BUILDER extends Abstrac
      */
     @SuppressWarnings("deprecation")
     public AbstractAttributeDefinitionBuilder(final String attributeName, final AttributeDefinition basis) {
-        this.name = attributeName != null ? attributeName : basis.getName();
+        this.wrappedBuilder = basis.getItemDefinition().getBuilderToCopy();
+        String theName = basis.getName();
+        if (attributeName != null && !attributeName.equals(theName)) {
+            wrappedBuilder.setName(attributeName);
+            theName = attributeName;
+        }
+        // We need to populate all the protected fields :(
+        this.name = theName;
         this.xmlName = basis.getXmlName();
         this.defaultValue = basis.getDefaultValue();
         this.type = basis.getType();
@@ -192,15 +236,42 @@ public abstract class AbstractAttributeDefinitionBuilder<BUILDER extends Abstrac
         this.parser = basis.getParser();
         Set<AttributeAccess.Flag> basisFlags = basis.getImmutableFlags();
         this.flags = basisFlags.toArray(new AttributeAccess.Flag[basisFlags.size()]);
-        if (basis.getAllowedValues().size() > 0) {
-            List<ModelNode> basisAllowedValues = basis.getAllowedValues();
+        List<ModelNode> basisAllowedValues = basis.getAllowedValues();
+        if (basisAllowedValues.size() > 0) {
             this.allowedValues = basisAllowedValues.toArray(new ModelNode[basisAllowedValues.size()]);
         }
         this.attributeGroup = basis.getAttributeGroup();
-        if(!basis.getArbitraryDescriptors().isEmpty()) {
-            this.arbitraryDescriptors = new HashMap<>(basis.getArbitraryDescriptors());
+        Map<String, ModelNode> arbDesc = basis.getArbitraryDescriptors();
+        if (!arbDesc.isEmpty()) {
+            this.arbitraryDescriptors = new HashMap<>(arbDesc);
         }
         this.referenceRecorder = basis.getReferenceRecorder();
+    }
+
+//    final boolean isSafeImplementation() {
+//        return getSafeImplementations().contains(getClass());
+//    }
+
+    ItemDefinition.Builder getWrappedBuilder() {
+        if (wrappedBuilder == null) {
+            wrappedBuilder = createItemDefinitionBuilder();
+            //noinspection deprecation
+            wrappedBuilder.setRequired(!allowNull);
+        }
+        return wrappedBuilder;
+    }
+
+    /**
+     * Creates a builder that can produce an {@link ItemDefinition} appropriate for holding
+     * the definition data configured via this object. The expectation is subclasses will
+     * override this method to produce different builder type. This default implementation
+     * produces a {@link SimpleItemDefinition.Builder}.
+     * @return the builder. Will not return {@code null}
+     */
+    @SuppressWarnings("WeakerAccess")
+    protected ItemDefinition.Builder createItemDefinitionBuilder() {
+        //noinspection deprecation
+        return SimpleItemDefinition.Builder.of(name, type);
     }
 
     /**
@@ -225,6 +296,7 @@ public abstract class AbstractAttributeDefinitionBuilder<BUILDER extends Abstrac
         assert name != null;
         //noinspection deprecation
         this.name = name;
+        getWrappedBuilder().setName(name);
         return (BUILDER) this;
     }
 
@@ -240,6 +312,7 @@ public abstract class AbstractAttributeDefinitionBuilder<BUILDER extends Abstrac
     public BUILDER setXmlName(String xmlName) {
         //noinspection deprecation
         this.xmlName = xmlName == null ? this.name : xmlName;
+        getWrappedBuilder().setXmlName(xmlName);
         return (BUILDER) this;
     }
 
@@ -254,6 +327,7 @@ public abstract class AbstractAttributeDefinitionBuilder<BUILDER extends Abstrac
     public BUILDER setType(ModelType type) {
         //noinspection deprecation
         this.type = type;
+        getWrappedBuilder().setType(type);
         return (BUILDER) this;
     }
 
@@ -269,6 +343,7 @@ public abstract class AbstractAttributeDefinitionBuilder<BUILDER extends Abstrac
     public BUILDER setRequired(boolean required) {
         //noinspection deprecation
         this.allowNull = !required;
+        getWrappedBuilder().setRequired(required);
         return (BUILDER) this;
     }
 
@@ -286,8 +361,7 @@ public abstract class AbstractAttributeDefinitionBuilder<BUILDER extends Abstrac
      */
     @Deprecated
     public BUILDER setAllowNull(boolean allowNull) {
-        this.allowNull = allowNull;
-        return (BUILDER) this;
+        return setRequired(!allowNull);
     }
 
     /**
@@ -297,9 +371,36 @@ public abstract class AbstractAttributeDefinitionBuilder<BUILDER extends Abstrac
      * @param allowExpression {@code true} if expression values should be allowed
      * @return a builder that can be used to continue building the attribute definition
      */
+    @SuppressWarnings("deprecation")
     public BUILDER setAllowExpression(boolean allowExpression) {
         //noinspection deprecation
         this.allowExpression = allowExpression;
+
+        // Not all ItemDefinition.Builder variants allow configuring expression support, as it's
+        // not always a valid setting (and for many it's deprecated and only allowed for compatibility
+        // with legacy use by this class or its descendants.)
+        ItemDefinition.Builder idBuilder = getWrappedBuilder();
+        if (idBuilder instanceof SimpleItemDefinition.Builder) {
+            ((SimpleItemDefinition.Builder) idBuilder).setAllowExpression(allowExpression);
+        } else if (idBuilder instanceof CollectionItemDefinition.Builder) {
+            // Historically this has been used to configure the collection element not the collection
+            // itself. So try and do that.
+            if (idBuilder instanceof PrimitiveListItemDefinition.Builder) {
+                ((PrimitiveListItemDefinition.Builder) idBuilder).setAllowExpression(allowExpression);
+            } else if (idBuilder instanceof PropertiesItemDefinition.Builder) {
+                ((PropertiesItemDefinition.Builder) idBuilder).setAllowExpression(allowExpression);
+            } else if (idBuilder instanceof SimpleListItemDefinition.Builder) {
+                ((SimpleListItemDefinition.Builder) idBuilder).setAllowExpression(allowExpression);
+            } else if (idBuilder instanceof SimpleMapItemDefinition.Builder) {
+                ((SimpleMapItemDefinition.Builder) idBuilder).setAllowExpression(allowExpression);
+            } else if (idBuilder instanceof StringListItemDefinition.Builder) {
+                ((StringListItemDefinition.Builder) idBuilder).setAllowExpression(allowExpression);
+            } else {
+                // Must be one of the object type collections, or we missed one ^^^
+                assert idBuilder instanceof ObjectListItemDefinition.Builder
+                        || idBuilder instanceof ObjectMapItemDefinition.Builder;
+            }
+        } // else it's not an applicable setting anyway
         return (BUILDER) this;
     }
 
@@ -309,9 +410,10 @@ public abstract class AbstractAttributeDefinitionBuilder<BUILDER extends Abstrac
      * @param defaultValue the default value, or {@code null} if no default should be used
      * @return a builder that can be used to continue building the attribute definition
      */
+    @SuppressWarnings("deprecation")
     public BUILDER setDefaultValue(ModelNode defaultValue) {
-        //noinspection deprecation
         this.defaultValue = (defaultValue == null || !defaultValue.isDefined()) ? null : defaultValue;
+        getWrappedBuilder().setDefaultValue(this.defaultValue);
         return (BUILDER) this;
     }
 
@@ -322,8 +424,12 @@ public abstract class AbstractAttributeDefinitionBuilder<BUILDER extends Abstrac
      * @return a builder that can be used to continue building the attribute definition
      */
     public BUILDER setMeasurementUnit(MeasurementUnit unit) {
-        //noinspection deprecation
-        this.measurementUnit = unit;
+        ItemDefinition.Builder idBuilder = getWrappedBuilder();
+        if (idBuilder instanceof SimpleItemDefinition.Builder) {
+            //noinspection deprecation
+            this.measurementUnit = unit;
+            ((SimpleItemDefinition.Builder) idBuilder).setMeasurementUnit(unit);
+        }  // else it's not an applicable setting anyway
         return (BUILDER) this;
     }
 
@@ -335,8 +441,12 @@ public abstract class AbstractAttributeDefinitionBuilder<BUILDER extends Abstrac
      * @return a builder that can be used to continue building the attribute definition
      */
     public BUILDER setCorrector(ParameterCorrector corrector) {
+        if (corrector != null && !(corrector instanceof org.wildfly.management.api.model.definition.ParameterCorrector)) {
+            corrector = new BridgeParameterCorrector(corrector);
+        }
         //noinspection deprecation
         this.corrector = corrector;
+        getWrappedBuilder().setCorrector((org.wildfly.management.api.model.definition.ParameterCorrector) corrector);
         return (BUILDER) this;
     }
 
@@ -352,8 +462,29 @@ public abstract class AbstractAttributeDefinitionBuilder<BUILDER extends Abstrac
     public BUILDER setValidator(ParameterValidator validator) {
         //noinspection deprecation
         this.validator = validator;
+        org.wildfly.management.api.model.validation.ParameterValidator modern;
+        if (validator == null) {
+            modern = null;
+        } else if (validator instanceof org.wildfly.management.api.model.validation.ParameterValidator) {
+            modern = (org.wildfly.management.api.model.validation.ParameterValidator) validator;
+        } else if (validator instanceof MinMaxValidator) {
+            modern = new LegacyToModernMinMaxValidator(validator);
+        } else if (validator instanceof AllowedValuesValidator) {
+            modern = new LegacyToModernAllowedValueValidator(validator);
+        } else {
+            modern = new LegacyToModernParameterValidator(validator);
+        }
+        ItemDefinition.Builder idBuilder = getWrappedBuilder();
+        if (idBuilder instanceof SimpleItemDefinition.Builder) {
+            ((SimpleItemDefinition.Builder) idBuilder).setValidator(modern);
+        } else if (idBuilder instanceof CollectionItemDefinition.Builder) {
+            ((CollectionItemDefinition.Builder) idBuilder).setCollectionValidator(modern);
+        } else if (idBuilder instanceof ObjectTypeItemDefinition.Builder) {
+            ((ObjectTypeItemDefinition.Builder) idBuilder).setValidator(modern);
+        }
         return (BUILDER) this;
     }
+
 
     /**
      * Has no effect. The behavior of {@link AttributeDefinition} now is to allow undefined values
@@ -369,6 +500,7 @@ public abstract class AbstractAttributeDefinitionBuilder<BUILDER extends Abstrac
     @Deprecated
     public BUILDER setValidateNull(boolean validateNull) {
         this.validateNull = validateNull;
+        // no ItemDefinition analogue
         return (BUILDER) this;
     }
 
@@ -381,6 +513,7 @@ public abstract class AbstractAttributeDefinitionBuilder<BUILDER extends Abstrac
     public BUILDER setAlternatives(String... alternatives) {
         //noinspection deprecation
         this.alternatives = alternatives;
+        getWrappedBuilder().setAlternatives(alternatives);
         return (BUILDER) this;
     }
 
@@ -393,11 +526,11 @@ public abstract class AbstractAttributeDefinitionBuilder<BUILDER extends Abstrac
     @SuppressWarnings("deprecation")
     public BUILDER addAlternatives(String... alternatives) {
         if (this.alternatives == null) {
-            this.alternatives = alternatives;
+            setAlternatives(alternatives);
         } else {
             String[] newAlternatives = Arrays.copyOf(this.alternatives, this.alternatives.length + alternatives.length);
             System.arraycopy(alternatives, 0, newAlternatives, this.alternatives.length, alternatives.length);
-            this.alternatives = newAlternatives;
+            setAlternatives(newAlternatives);
         }
         return (BUILDER) this;
     }
@@ -424,7 +557,7 @@ public abstract class AbstractAttributeDefinitionBuilder<BUILDER extends Abstrac
                             k++;
                         }
                     }
-                    this.alternatives = newAlternatives;
+                    setAlternatives(newAlternatives);
                 }
             }
         }
@@ -465,10 +598,11 @@ public abstract class AbstractAttributeDefinitionBuilder<BUILDER extends Abstrac
             }
             arbitraryDescriptors.put(arbitraryDescriptor, value);
         }
+        getWrappedBuilder().setArbitraryDescriptors(this.arbitraryDescriptors);
         return (BUILDER) this;
     }
 
-    @SuppressWarnings("WeakerAccess")
+    @SuppressWarnings({"WeakerAccess", "unused"})
     public Map<String, ModelNode> getArbitraryDescriptors() {
         //noinspection deprecation
         return arbitraryDescriptors;
@@ -483,6 +617,7 @@ public abstract class AbstractAttributeDefinitionBuilder<BUILDER extends Abstrac
     public BUILDER setRequires(String... requires) {
         //noinspection deprecation
         this.requires = requires;
+        getWrappedBuilder().setRequires(requires);
         return (BUILDER) this;
     }
 
@@ -606,19 +741,13 @@ public abstract class AbstractAttributeDefinitionBuilder<BUILDER extends Abstrac
     public BUILDER setMaxSize(final int maxSize) {
         //noinspection deprecation
         this.maxSize = maxSize;
-        this.maxSizeSet = true;
+        ItemDefinition.Builder idBuilder = getWrappedBuilder();
+        if (idBuilder instanceof SimpleItemDefinition.Builder) {
+            ((SimpleItemDefinition.Builder) idBuilder).setMaxSize(maxSize);
+        } else if (idBuilder instanceof CollectionItemDefinition.Builder) {
+            ((CollectionItemDefinition.Builder) idBuilder).setMaxSize(maxSize);
+        }
         return (BUILDER) this;
-    }
-
-    /**
-     * Gets the {@link #getMaxSize() max size} if {@link #setMaxSize(int)} has been called, otherwise {@code null}.
-     * This is a workaround needed because maxSize is protected, preventing changing its type to Integer to allow null
-     * values needed to discriminate unconfigured defaults from configured values that match the default.
-     * @return the minimum size or {@code null} if it was not explicitly set
-     */
-    Integer getConfiguredMaxSize()  {
-        //noinspection deprecation
-        return maxSizeSet ? maxSize : null;
     }
 
     /**
@@ -632,19 +761,13 @@ public abstract class AbstractAttributeDefinitionBuilder<BUILDER extends Abstrac
     public BUILDER setMinSize(final int minSize) {
         //noinspection deprecation
         this.minSize = minSize;
-        this.minSizeSet = true;
+        ItemDefinition.Builder idBuilder = getWrappedBuilder();
+        if (idBuilder instanceof SimpleItemDefinition.Builder) {
+            ((SimpleItemDefinition.Builder) idBuilder).setMinSize(minSize);
+        } else if (idBuilder instanceof CollectionItemDefinition.Builder) {
+            ((CollectionItemDefinition.Builder) idBuilder).setMinSize(minSize);
+        }
         return (BUILDER) this;
-    }
-
-    /**
-     * Gets the {@link #getMinSize() min size} if {@link #setMinSize(int)} has been called, otherwise {@code null}.
-     * This is a workaround needed because minSize is protected, preventing changing its type to Integer to allow null
-     * values needed to discriminate unconfigured defaults from configured values that match the default.
-     * @return the minimum size or {@code null} if it was not explicitly set
-     */
-    Integer getConfiguredMinSize()  {
-        //noinspection deprecation
-        return minSizeSet ? minSize : null;
     }
 
     /**
@@ -799,9 +922,13 @@ public abstract class AbstractAttributeDefinitionBuilder<BUILDER extends Abstrac
      * @return a builder that can be used to continue building the attribute definition
      */
     public BUILDER setAllowedValues(ModelNode ... allowedValues) {
-        assert allowedValues!= null;
-        //noinspection deprecation
-        this.allowedValues = allowedValues;
+        ItemDefinition.Builder idBuilder = getWrappedBuilder();
+        if (idBuilder instanceof SimpleItemDefinition.Builder) {
+            assert allowedValues != null;
+            //noinspection deprecation
+            this.allowedValues = allowedValues;
+            ((SimpleItemDefinition.Builder) idBuilder).setAllowedValues(allowedValues);
+        } // else this setting is not relevant
         return (BUILDER) this;
     }
 
@@ -813,13 +940,19 @@ public abstract class AbstractAttributeDefinitionBuilder<BUILDER extends Abstrac
      */
     @SuppressWarnings("deprecation")
     public BUILDER setAllowedValues(String ... allowedValues) {
-        assert allowedValues!= null;
-        this.allowedValues = new ModelNode[allowedValues.length];
-        for (int i = 0; i < allowedValues.length; i++) {
-            this.allowedValues[i] = new ModelNode(allowedValues[i]);
-        }
+        ItemDefinition.Builder idBuilder = getWrappedBuilder();
+        if (idBuilder instanceof SimpleItemDefinition.Builder) {
+            assert allowedValues!= null;
+            this.allowedValues = new ModelNode[allowedValues.length];
+            for (int i = 0; i < allowedValues.length; i++) {
+                this.allowedValues[i] = new ModelNode(allowedValues[i]);
+            }
+            ((SimpleItemDefinition.Builder) idBuilder).setAllowedValues(this.allowedValues);
+        } // else this setting is not relevant
         return (BUILDER) this;
-    }/**
+    }
+
+    /**
      * Sets allowed values for attribute
      *
      * @param allowedValues values that are legal as part in this attribute
@@ -827,11 +960,15 @@ public abstract class AbstractAttributeDefinitionBuilder<BUILDER extends Abstrac
      */
     @SuppressWarnings("deprecation")
     public BUILDER setAllowedValues(int ... allowedValues) {
-        assert allowedValues!= null;
-        this.allowedValues = new ModelNode[allowedValues.length];
-        for (int i = 0; i < allowedValues.length; i++) {
-            this.allowedValues[i] = new ModelNode(allowedValues[i]);
-        }
+        ItemDefinition.Builder idBuilder = getWrappedBuilder();
+        if (idBuilder instanceof SimpleItemDefinition.Builder) {
+            assert allowedValues!= null;
+            this.allowedValues = new ModelNode[allowedValues.length];
+            for (int i = 0; i < allowedValues.length; i++) {
+                this.allowedValues[i] = new ModelNode(allowedValues[i]);
+            }
+            ((SimpleItemDefinition.Builder) idBuilder).setAllowedValues(this.allowedValues);
+        } // else this setting is not relevant
         return (BUILDER) this;
     }
 
@@ -986,7 +1123,6 @@ public abstract class AbstractAttributeDefinitionBuilder<BUILDER extends Abstrac
         return (BUILDER) this;
     }
 
-
     public String getName() {
         //noinspection deprecation
         return name;
@@ -1017,7 +1153,7 @@ public abstract class AbstractAttributeDefinitionBuilder<BUILDER extends Abstrac
         return defaultValue;
     }
 
-    @SuppressWarnings("WeakerAccess")
+    @SuppressWarnings({"WeakerAccess", "unused"})
     public MeasurementUnit getMeasurementUnit() {
         //noinspection deprecation
         return measurementUnit;
@@ -1033,7 +1169,7 @@ public abstract class AbstractAttributeDefinitionBuilder<BUILDER extends Abstrac
         return copyStrings(requires);
     }
 
-    @SuppressWarnings("WeakerAccess")
+    @SuppressWarnings({"WeakerAccess", "unused"})
     public ParameterCorrector getCorrector() {
         //noinspection deprecation
         return corrector;
@@ -1117,6 +1253,10 @@ public abstract class AbstractAttributeDefinitionBuilder<BUILDER extends Abstrac
     protected final CapabilityReferenceRecorder getCapabilityReferenceRecorder() {
         //noinspection deprecation
         return referenceRecorder;
+    }
+
+    final org.wildfly.management.api.model.definition.ItemDefinition getItemDefinition() {
+        return getWrappedBuilder().build();
     }
 
     private String[] copyStrings(String[] toCopy) {

@@ -35,6 +35,11 @@ public class ObjectListItemDefinition extends ListItemDefinition<ObjectTypeItemD
         super(builder);
     }
 
+    @Override
+    public Builder getBuilderToCopy() {
+        return Builder.of(this);
+    }
+
     /** Builder for an {@link org.wildfly.management.api.model.definition.ObjectListItemDefinition}. */
     public static final class Builder extends ListItemDefinition.Builder<Builder, ObjectListItemDefinition, ObjectTypeItemDefinition> {
 

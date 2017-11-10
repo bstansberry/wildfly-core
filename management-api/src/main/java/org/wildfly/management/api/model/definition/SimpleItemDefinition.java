@@ -40,6 +40,11 @@ public final class SimpleItemDefinition extends ItemDefinition {
         super(builder);
     }
 
+    @Override
+    public Builder getBuilderToCopy() {
+        return SimpleItemDefinition.Builder.of(this);
+    }
+
     /** Builder for a {@link SimpleItemDefinition}. */
     public static final class Builder extends ItemDefinition.Builder<Builder, SimpleItemDefinition> {
 

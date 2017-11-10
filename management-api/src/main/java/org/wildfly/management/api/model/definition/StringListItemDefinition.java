@@ -35,6 +35,11 @@ public final class StringListItemDefinition extends ListItemDefinition<SimpleIte
         super(builder);
     }
 
+    @Override
+    public Builder getBuilderToCopy() {
+        return Builder.of(this);
+    }
+
     /** Builder for a {@link StringListItemDefinition}. */
     public static final class Builder extends ListItemDefinition.Builder<Builder, StringListItemDefinition, SimpleItemDefinition> {
 
@@ -58,6 +63,13 @@ public final class StringListItemDefinition extends ListItemDefinition<SimpleIte
 
         private Builder(final String name, final StringListItemDefinition basis) {
             super(name, basis);
+        }
+
+        @SuppressWarnings("deprecation")
+        @Override
+        @Deprecated
+        public Builder setAllowExpression(boolean allowExpression) {
+            return super.setAllowExpression(allowExpression);
         }
 
         @Override

@@ -57,6 +57,11 @@ public final class ObjectTypeItemDefinition extends ItemDefinition {
         return suffix;
     }
 
+    @Override
+    public Builder getBuilderToCopy() {
+        return Builder.of(this);
+    }
+
     /** Builder for an {@link ObjectTypeItemDefinition}*/
     public static final class Builder extends ItemDefinition.Builder<Builder, ObjectTypeItemDefinition> {
 

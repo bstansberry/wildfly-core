@@ -30,10 +30,11 @@ import javax.xml.stream.XMLStreamException;
 
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.as.controller.descriptions.ResourceDescriptionResolver;
-import org.jboss.as.controller.operations.validation.ModelTypeValidator;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
+import org.wildfly.management.api.model.definition.ItemDefinition;
+import org.wildfly.management.api.model.definition.PrimitiveListItemDefinition;
 
 /**
  * Date: 13.10.2011
@@ -163,7 +164,6 @@ public class PrimitiveListAttributeDefinition extends ListAttributeDefinition {
         public Builder(final String name, final ModelType valueType) {
             super(name);
             this.valueType = valueType;
-            setElementValidator(new ModelTypeValidator(valueType));
         }
 
         public Builder(final PrimitiveListAttributeDefinition basis) {
@@ -180,7 +180,14 @@ public class PrimitiveListAttributeDefinition extends ListAttributeDefinition {
         }
 
         public PrimitiveListAttributeDefinition build() {
+            // Set up the legacy business where by default a nillable collection means undefined elements are allowed
+            configureUndefinedElement();
             return new PrimitiveListAttributeDefinition(this, getValueType());
+        }
+
+        @Override
+        protected ItemDefinition.Builder createItemDefinitionBuilder() {
+            return PrimitiveListItemDefinition.Builder.of(getName(), valueType);
         }
     }
 }

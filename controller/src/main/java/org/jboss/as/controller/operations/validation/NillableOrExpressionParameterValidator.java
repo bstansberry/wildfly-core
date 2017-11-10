@@ -34,7 +34,10 @@ import org.wildfly.common.Assert;
  * validator for everything else.
  *
  * @author Brian Stansberry (c) 2011 Red Hat Inc.
+ *
+ * @deprecated This class was intended for use by the management kernel and is no longer needed by it; it will be removed in a future release
  */
+@Deprecated
 public class NillableOrExpressionParameterValidator implements ParameterValidator, MinMaxValidator, AllowedValuesValidator {
 
     private final ParameterValidator delegate;

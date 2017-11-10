@@ -26,10 +26,11 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.jboss.as.controller.operations.validation.ModelTypeValidator;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
+import org.wildfly.management.api.model.definition.ItemDefinition;
+import org.wildfly.management.api.model.definition.StringListItemDefinition;
 
 /**
  * @author <a href="mailto:tomaz.cerar@redhat.com">Tomaz Cerar</a>
@@ -100,7 +101,6 @@ public final class StringListAttributeDefinition extends PrimitiveListAttributeD
             super(name);
             setAttributeParser(AttributeParser.STRING_LIST);
             setAttributeMarshaller(AttributeMarshaller.STRING_LIST);
-            setElementValidator(new ModelTypeValidator(ModelType.STRING));
         }
 
         public Builder(final StringListAttributeDefinition basic) {
@@ -111,9 +111,15 @@ public final class StringListAttributeDefinition extends PrimitiveListAttributeD
 
         @Override
         public StringListAttributeDefinition build() {
+            // Set up the legacy business where by default a nillable collection means undefined elements are allowed
+            configureUndefinedElement();
             return new StringListAttributeDefinition(this);
         }
 
+        @Override
+        protected ItemDefinition.Builder createItemDefinitionBuilder() {
+            return StringListItemDefinition.Builder.of(getName());
+        }
     }
 
 }

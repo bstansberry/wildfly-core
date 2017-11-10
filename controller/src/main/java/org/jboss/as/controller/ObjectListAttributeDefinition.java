@@ -41,6 +41,8 @@ import org.jboss.as.controller.operations.validation.ParameterValidator;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
+import org.wildfly.management.api.model.definition.ItemDefinition;
+import org.wildfly.management.api.model.definition.ObjectListItemDefinition;
 
 /**
  * AttributeDefinition suitable for managing LISTs of OBJECTs, which takes into account
@@ -226,11 +228,6 @@ public class ObjectListAttributeDefinition extends ListAttributeDefinition {
         valueType.addValueTypeDescription(node, prefix, bundle, forOperation, resolver,locale);
     }
 
-    @Override
-    protected void addAllowedValuesToDescription(ModelNode result, ParameterValidator validator) {
-        //Don't add allowed values for object types, since they simply enumerate the fields given in the value type
-    }
-
     public final ObjectTypeAttributeDefinition getValueType() {
         return valueType;
     }
@@ -242,7 +239,6 @@ public class ObjectListAttributeDefinition extends ListAttributeDefinition {
         public Builder(final String name, final ObjectTypeAttributeDefinition valueType) {
             super(name);
             this.valueType = valueType;
-            setElementValidator(valueType.getValidator());
             setAttributeParser(AttributeParser.OBJECT_LIST_PARSER);
             setAttributeMarshaller(AttributeMarshaller.OBJECT_LIST_MARSHALLER);
         }
@@ -261,6 +257,11 @@ public class ObjectListAttributeDefinition extends ListAttributeDefinition {
             return new Builder(name, valueType);
         }
 
+        @Override
+        protected ItemDefinition.Builder createItemDefinitionBuilder() {
+            return ObjectListItemDefinition.Builder.of(getName(), valueType.getItemDefinition());
+        }
+
         public ObjectListAttributeDefinition build() {
             List<AccessConstraintDefinition> valueConstraints = valueType.getAccessConstraints();
             if (!valueConstraints.isEmpty()) {
@@ -272,6 +273,8 @@ public class ObjectListAttributeDefinition extends ListAttributeDefinition {
                 acdSet.addAll(valueConstraints);
                 setAccessConstraints(acdSet.toArray(new AccessConstraintDefinition[acdSet.size()]));
             }
+            // Set up the legacy business where by default a nillable collection means undefined elements are allowed
+            configureUndefinedElement();
             return new ObjectListAttributeDefinition(this);
         }
 

@@ -50,11 +50,12 @@ public abstract class CollectionItemDefinition<E extends ItemDefinition> extends
     }
 
     /** Builder for creating a {@link CollectionItemDefinition} */
-    abstract static class Builder<BUILDER extends CollectionItemDefinition.Builder,
+    public abstract static class Builder<BUILDER extends CollectionItemDefinition.Builder,
             ITEM extends CollectionItemDefinition<ELEMENT>, ELEMENT extends ItemDefinition>
             extends ItemDefinition.Builder<BUILDER, ITEM> {
 
-        private final ELEMENT elementDefinition;
+        private ELEMENT elementDefinition;
+        private ItemDefinition.Builder elementBuilder;
 
         Builder(String attributeName, ModelType type, ELEMENT elementDefinition) {
             super(attributeName, type);
@@ -71,14 +72,47 @@ public abstract class CollectionItemDefinition<E extends ItemDefinition> extends
         }
 
         /**
-         * Sets an overall validator for the list.
+         * Sets an overall validator for the collection.
          *
          * @param validator the validator. {@code null} is allowed
          * @return a builder that can be used to continue building the item definition
          */
         @SuppressWarnings({"WeakerAccess", "UnusedReturnValue"})
-        final BUILDER setCollectionValidator(ParameterValidator validator) {
+        public final BUILDER setCollectionValidator(ParameterValidator validator) {
             return super.setValidator(validator);
+        }
+
+        /**
+         * Sets a validator for the elements in the collection.
+         *
+         * @param elementValidator the validator. {@code null} is allowed
+         * @return a builder that can be used to continue building the item definition
+         *
+         * @deprecated Properly configure the element definition used to construct this builder. Exposing this method on a collection builder is simply a workaround to ease migration to this API
+         */
+        @Deprecated
+        public final BUILDER setElementValidator(ParameterValidator elementValidator) {
+            getElementBuilder().setValidator(elementValidator);
+            //noinspection unchecked
+            return (BUILDER) this;
+        }
+
+        /**
+         * Sets a validator for the elements in the collection.
+         *
+         * @param allowUndefinedElement {@code true} if elements in the collection can be {@link ModelType#UNDEFINED undefined}
+         * @return a builder that can be used to continue building the item definition
+         *
+         * @deprecated Properly configure the element definition used to construct this builder. Exposing this method on a collection builder is simply a workaround to ease migration to this API
+         */
+        @Deprecated
+        public final BUILDER setAllowUndefinedElement(boolean allowUndefinedElement) {
+            boolean requireDefined = !allowUndefinedElement;
+            if (elementBuilder != null || requireDefined != elementDefinition.isRequired()) {
+                getElementBuilder().setRequired(requireDefined);
+            }
+            //noinspection unchecked
+            return (BUILDER) this;
         }
 
         /**
@@ -105,9 +139,66 @@ public abstract class CollectionItemDefinition<E extends ItemDefinition> extends
             return super.setMin(minSize);
         }
 
-        private ELEMENT getElementDefinition() {
-            return elementDefinition;
+        /**
+         * Overrides the base implementation to instead update this builder's element definition.
+         * A collection itself cannot support an expression as it does not hold a string.
+         *
+         * @deprecated Properly configure the element definition used to construct this builder. Exposing this method on a collection builder is simply a workaround to ease migration to this API
+         */
+        @Deprecated
+        @SuppressWarnings("deprecation")
+        BUILDER setAllowExpression(boolean allowExpression) {
+            if (elementBuilder != null || elementDefinition.isAllowExpression() != allowExpression) {
+                if (elementDefinition instanceof SimpleItemDefinition) {
+                    SimpleItemDefinition.Builder idBuilder = (SimpleItemDefinition.Builder) getElementBuilder();
+                    idBuilder.setAllowExpression(allowExpression);
+                    elementBuilder = idBuilder;
+                } else if (elementDefinition instanceof CollectionItemDefinition) {
+                    // Historically this has been used to configure the collection element not the collection
+                    // itself. So try and do that.
+                    if (elementDefinition instanceof PrimitiveListItemDefinition) {
+                        PrimitiveListItemDefinition.Builder idBuilder = (PrimitiveListItemDefinition.Builder) getElementBuilder();
+                        idBuilder.setAllowExpression(allowExpression);
+                    } else if (elementDefinition instanceof PropertiesItemDefinition) {
+                        PropertiesItemDefinition.Builder idBuilder = (PropertiesItemDefinition.Builder) getElementBuilder();
+                        idBuilder.setAllowExpression(allowExpression);
+                    } else if (elementDefinition instanceof SimpleListItemDefinition) {
+                        SimpleListItemDefinition.Builder idBuilder = (SimpleListItemDefinition.Builder) getElementBuilder();
+                        idBuilder.setAllowExpression(allowExpression);
+                    } else if (elementDefinition instanceof SimpleMapItemDefinition) {
+                        SimpleMapItemDefinition.Builder idBuilder = (SimpleMapItemDefinition.Builder) getElementBuilder();
+                        idBuilder.setAllowExpression(allowExpression);
+                    } else if (elementDefinition instanceof StringListItemDefinition) {
+                        StringListItemDefinition.Builder idBuilder = (StringListItemDefinition.Builder) getElementBuilder();
+                        idBuilder.setAllowExpression(allowExpression);
+                    } else {
+                        // Must be one of the object type collections, or we missed one ^^^
+                        assert elementDefinition instanceof ObjectListItemDefinition
+                                || elementDefinition instanceof ObjectMapItemDefinition;
+                    }
+                } // else it's not an applicable setting anyway
+
+                if (elementBuilder != null) {
+                    super.setAllowExpression(allowExpression);
+                }
+            }
+            //noinspection unchecked
+            return (BUILDER) this;
         }
 
+        private ItemDefinition.Builder getElementBuilder() {
+            if (elementBuilder == null) {
+                elementBuilder = elementDefinition.getBuilderToCopy();
+            }
+            return elementBuilder;
+        }
+
+        @SuppressWarnings("unchecked")
+        private ELEMENT getElementDefinition() {
+            if (elementBuilder != null) {
+                elementDefinition = (ELEMENT) elementBuilder.build();
+            }
+            return elementDefinition;
+        }
     }
 }

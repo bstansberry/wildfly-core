@@ -31,7 +31,7 @@ import org.wildfly.management.api.model.validation.ParameterValidator;
  *
  * @author Brian Stansberry
  */
-abstract class ListItemDefinition<ELEMENT extends ItemDefinition> extends CollectionItemDefinition<ELEMENT> {
+public abstract class ListItemDefinition<ELEMENT extends ItemDefinition> extends CollectionItemDefinition<ELEMENT> {
 
     private final boolean allowDuplicates;
 
@@ -46,7 +46,7 @@ abstract class ListItemDefinition<ELEMENT extends ItemDefinition> extends Collec
     }
 
     /** Builder for creating a {@link ListItemDefinition} */
-    abstract static class Builder<BUILDER extends Builder, ITEM extends ListItemDefinition<ELEMENT>, ELEMENT extends ItemDefinition>
+    public abstract static class Builder<BUILDER extends Builder, ITEM extends ListItemDefinition<ELEMENT>, ELEMENT extends ItemDefinition>
             extends CollectionItemDefinition.Builder<BUILDER, ITEM, ELEMENT> {
 
         private Boolean allowDuplicates;

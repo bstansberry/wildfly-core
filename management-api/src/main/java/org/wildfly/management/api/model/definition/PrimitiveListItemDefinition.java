@@ -39,6 +39,11 @@ public class PrimitiveListItemDefinition extends ListItemDefinition<SimpleItemDe
         super(builder);
     }
 
+    @Override
+    public Builder getBuilderToCopy() {
+        return Builder.of(this);
+    }
+
     /** Builder for a {@link PrimitiveListItemDefinition}. */
     public static class Builder extends ListItemDefinition.Builder<Builder, PrimitiveListItemDefinition, SimpleItemDefinition> {
 
@@ -61,6 +66,14 @@ public class PrimitiveListItemDefinition extends ListItemDefinition<SimpleItemDe
         Builder(final String name, final PrimitiveListItemDefinition basis) {
             super(name, basis);
         }
+
+        @SuppressWarnings("deprecation")
+        @Override
+        @Deprecated
+        public Builder setAllowExpression(boolean allowExpression) {
+            return super.setAllowExpression(allowExpression);
+        }
+
 
         @Override
         public PrimitiveListItemDefinition build() {

@@ -39,6 +39,10 @@ public class ObjectTypeValidator extends ModelTypeValidator {
 
     private final Map<String, AttributeDefinition> allowedValues;
 
+    public ObjectTypeValidator(final AttributeDefinition... attributes) {
+        this(false, attributes);
+    }
+
     public ObjectTypeValidator(final boolean nullable, final AttributeDefinition... attributes) {
         super(nullable, true, false, ModelType.OBJECT);
         allowedValues = new HashMap<String, AttributeDefinition>(attributes.length);

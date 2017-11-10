@@ -40,10 +40,19 @@ public final class SimpleMapItemDefinition extends MapItemDefinition<SimpleItemD
         super(builder);
     }
 
+    @Override
+    public Builder getBuilderToCopy() {
+        return Builder.of(this);
+    }
+
     /** Builder for a {@link org.wildfly.management.api.model.definition.SimpleMapItemDefinition */
     public static final class Builder  extends MapItemDefinition.Builder<Builder, SimpleMapItemDefinition, SimpleItemDefinition> {
 
         public static Builder of(final String name, final ModelType valueType) {
+            return new Builder(name, SimpleItemDefinition.Builder.of(valueType).build(), true);
+        }
+
+        public static Builder of(final String name, final SimpleItemDefinition valueType) {
             return new Builder(name, valueType, true);
         }
 
@@ -55,16 +64,23 @@ public final class SimpleMapItemDefinition extends MapItemDefinition<SimpleItemD
             return new Builder(name, basis);
         }
 
-        Builder(final String name, final ModelType valueType, boolean setDefaultParserMarshaller) {
-            super(name, SimpleItemDefinition.Builder.of(valueType).build());
+        private Builder(final String name, final SimpleItemDefinition valueType, boolean setDefaultParserMarshaller) {
+            super(name, valueType);
             if (setDefaultParserMarshaller) {
                 this.setAttributeParser(AttributeParser.PROPERTIES_PARSER);
                 this.setAttributeMarshaller(AttributeMarshaller.PROPERTIES_MARSHALLER);
             }
         }
 
-        Builder(final String name, final SimpleMapItemDefinition basis) {
+        private Builder(final String name, final SimpleMapItemDefinition basis) {
             super(name, basis);
+        }
+
+        @SuppressWarnings("deprecation")
+        @Override
+        @Deprecated
+        public Builder setAllowExpression(boolean allowExpression) {
+            return super.setAllowExpression(allowExpression);
         }
 
         @Override

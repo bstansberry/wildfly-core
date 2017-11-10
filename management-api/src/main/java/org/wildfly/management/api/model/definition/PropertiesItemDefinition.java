@@ -22,6 +22,8 @@
 
 package org.wildfly.management.api.model.definition;
 
+import java.util.Objects;
+
 import org.jboss.dmr.ModelType;
 
 /**
@@ -42,6 +44,11 @@ public final class PropertiesItemDefinition extends MapItemDefinition<SimpleItem
 
     public ModelType getValueType() {
         return ModelType.STRING;
+    }
+
+    @Override
+    public Builder getBuilderToCopy() {
+        return Builder.of(this);
     }
 
     /**
@@ -106,11 +113,18 @@ public final class PropertiesItemDefinition extends MapItemDefinition<SimpleItem
             return super.setXmlName(xmlName);
         }
 
+        @SuppressWarnings("deprecation")
+        @Override
+        @Deprecated
+        public Builder setAllowExpression(boolean allowExpression) {
+            return super.setAllowExpression(allowExpression);
+        }
+
         @Override
         public PropertiesItemDefinition build() {
 
             String xmlName = this.getXmlName();
-            String elementName = this.getName().equals(xmlName) ? null : xmlName;
+            String elementName = Objects.equals(this.getName(), xmlName) ? null : xmlName;
             if (getAttributeMarshaller() == null) {
                 setAttributeMarshaller(new AttributeMarshallers.PropertiesAttributeMarshaller(this.wrapperElement, this.xmlNameExplicitlySet ? xmlName : elementName, this.wrapXmlElement));
             }

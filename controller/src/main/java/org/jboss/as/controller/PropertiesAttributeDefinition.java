@@ -29,16 +29,18 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
+
 import javax.xml.stream.XMLStreamException;
 
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.as.controller.descriptions.ResourceDescriptionResolver;
-import org.jboss.as.controller.operations.validation.ModelTypeValidator;
 import org.jboss.as.controller.parsing.ParseUtils;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 import org.jboss.dmr.Property;
 import org.jboss.staxmapper.XMLExtendedStreamReader;
+import org.wildfly.management.api.model.definition.ItemDefinition;
+import org.wildfly.management.api.model.definition.PropertiesItemDefinition;
 
 /**
  * Represents simple key=value map equivalent of java.util.Map<String,String>()
@@ -164,9 +166,9 @@ public final class PropertiesAttributeDefinition extends MapAttributeDefinition 
 
         @Override
         public PropertiesAttributeDefinition build() {
-            if (elementValidator == null) {
-                elementValidator = new ModelTypeValidator(ModelType.STRING);
-            }
+            // Set up the legacy business where by default a nillable collection means undefined elements are allowed
+            configureUndefinedElement();
+
             String xmlName = getXmlName();
             String elementName = getName().equals(xmlName) ? null : xmlName;
             if (getAttributeMarshaller() == null) {
@@ -177,6 +179,11 @@ public final class PropertiesAttributeDefinition extends MapAttributeDefinition 
             }
 
             return new PropertiesAttributeDefinition(this);
+        }
+
+        @Override
+        protected ItemDefinition.Builder createItemDefinitionBuilder() {
+            return PropertiesItemDefinition.Builder.of(getName());
         }
     }
 }

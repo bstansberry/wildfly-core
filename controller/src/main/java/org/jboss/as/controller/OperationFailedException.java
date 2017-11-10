@@ -126,6 +126,16 @@ public class OperationFailedException extends Exception implements OperationClie
     }
 
     /**
+     * Converts this exception into a {@link org.wildfly.management.api.OperationClientException}.
+     * @return the OperationClientException
+     */
+    public final org.wildfly.management.api.OperationClientException toModernForm() {
+        org.wildfly.management.api.OperationClientException result = new org.wildfly.management.api.OperationClientException(getMessage(), getCause(), getFailureDescription());
+        result.setStackTrace(getStackTrace());
+        return result;
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
