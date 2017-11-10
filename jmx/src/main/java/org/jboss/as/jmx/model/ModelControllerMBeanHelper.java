@@ -108,12 +108,53 @@ public class ModelControllerMBeanHelper {
     }
 
     int getMBeanCount() {
+        long start = System.nanoTime();
+        int result = new RootResourceIterator<Integer>(accessControlUtil, getRootResourceAndRegistration().getResource(), new ResourceAction<Integer>() {
+            int count;
+            @Override
+            public ObjectName onAddress(PathAddress address) {
+                return isExcludeAddress(address) ? null : ObjectNameAddressUtil.createObjectName(domain, address);
+            }
+
+            public boolean onResource(ObjectName address) {
+                count++;
+                return true;
+            }
+
+            public Integer getResult() {
+                return count;
+            }
+        }).iterate();
+        JmxLogger.ROOT_LOGGER.infof("Elapsed getMBeanCount time using the original RootResourceIterator approach was %d, resulting in a count of %d", (System.nanoTime() - start), result);
+
+        start = System.nanoTime();
+        result = new RootResourceIterator<Integer>(null, getRootResourceAndRegistration().getResource(), new ResourceAction<Integer>() {
+            int count;
+            @Override
+            public ObjectName onAddress(PathAddress address) {
+                return isExcludeAddress(address) ? null : ObjectNameAddressUtil.createObjectName(domain, address);
+            }
+
+            public boolean onResource(ObjectName address) {
+                count++;
+                return true;
+            }
+
+            public Integer getResult() {
+                return count;
+            }
+        }).iterate();
+        JmxLogger.ROOT_LOGGER.infof("Elapsed getMBeanCount time using the non-RBAC RootResourceIterator approach was %d, resulting in a count of %d", (System.nanoTime() - start), result);
+
+        start = System.nanoTime();
         Resource resource = getRootResourceAndRegistration().getResource();
-        int result = resource.getTreeSize();
+        result = getRootResourceAndRegistration().getResource().getTreeSize();
         Resource platform = resource.getChild(CORE_SERVICE_PLATFORM_MBEAN.getElement(0));
         if (platform != null) {
             result -= platform.getTreeSize();
         }
+        long elapsed = System.nanoTime() - start;
+        JmxLogger.ROOT_LOGGER.infof("Elapsed getMBeanCount time using the Resource.getMBeanCount() approach was %d, resulting in a count of %d", elapsed, result);
         return result;
     }
 
