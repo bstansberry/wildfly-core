@@ -65,7 +65,7 @@ public class ConfigurationFile {
         private final boolean removeExisting;
         private final boolean readOnly;
 
-        private InteractionPolicy(boolean requireExisting, boolean rejectExisting, boolean removeExisting, boolean readOnly) {
+        InteractionPolicy(boolean requireExisting, boolean rejectExisting, boolean removeExisting, boolean readOnly) {
             this.requireExisting = requireExisting;
             this.rejectExisting = rejectExisting;
             this.removeExisting = removeExisting;
@@ -130,6 +130,7 @@ public class ConfigurationFile {
     private final File snapshotsDirectory;
     // Policy governing how to interact with the physical file
     private final InteractionPolicy interactionPolicy;
+    private final boolean disableHistoryBackup;
     /* Backup copy of the most recent configuration, stored in the history dir.
        May be used as {@link #bootFile}; see {@link #reloadUsingLast} */
     private volatile File lastFile;
@@ -179,6 +180,9 @@ public class ConfigurationFile {
         } catch (IOException ioe) {
             throw ControllerLogger.ROOT_LOGGER.canonicalMainFileNotFound(ioe, file);
         }
+        // Unsupported, experimental, subject to removal at any time with absolutely no notice,
+        // known carcinogen, dislikes kittens and puppies, etc etc etc. You have been warned!
+        this.disableHistoryBackup = Boolean.getBoolean("wildfly.unsupported.disable.config.history.backup");
     }
 
     public boolean checkCanFindNewBootFile(final String bootFileName) {
@@ -528,7 +532,7 @@ public class ConfigurationFile {
 
     /** Backup the current version of the configuration to the versioned configuration history */
     void backup() throws ConfigurationPersistenceException {
-        if (!doneBootup.get()) {
+        if (disableHistoryBackup || !doneBootup.get()) {
             return;
         }
         try {
