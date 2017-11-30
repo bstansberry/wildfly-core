@@ -116,7 +116,7 @@ public final class MultiphaseOverallContext {
         serverGroupStatuses.put(serverGroup, rollback);
     }
 
-    public boolean hasHostLevelFailures() {
+    boolean hasHostLevelFailures() {
         ModelNode coordinatorResult = localContext.getLocalResponse();
         boolean domainFailed = coordinatorResult.isDefined() && coordinatorResult.has(FAILURE_DESCRIPTION);
         if (domainFailed) {
@@ -130,15 +130,15 @@ public final class MultiphaseOverallContext {
         return false;
     }
 
-    public boolean isFailureReported() {
+    boolean isFailureReported() {
         return failureReported;
     }
 
-    public void setFailureReported(boolean failureReported) {
-        this.failureReported = failureReported;
+    void setFailureReported() {
+        this.failureReported = true;
     }
 
-    public ModelNode getServerResult(String hostName, String serverName, String... stepLabels) {
+    ModelNode getServerResult(String hostName, String serverName, String... stepLabels) {
         ModelNode result;
         ServerIdentity id = new ServerIdentity(hostName, null, serverName);
         ModelNode serverResult = getServerResults().get(id);
@@ -172,9 +172,9 @@ public final class MultiphaseOverallContext {
     /*
      * Transform an operation for a server. This will also delegate to the host-controller result-transformer.
      */
-    public OperationTransformer.TransformedOperation transformServerOperation(final String hostName, final TransformingProxyController remoteProxyController,
-                                                                              final Transformers.TransformationInputs transformationInputs,
-                                                                              final ModelNode original) throws OperationFailedException {
+    OperationTransformer.TransformedOperation transformServerOperation(final String hostName, final TransformingProxyController remoteProxyController,
+                                                                       final Transformers.TransformationInputs transformationInputs,
+                                                                       final ModelNode original) throws OperationFailedException {
         final OperationTransformer.TransformedOperation transformed = remoteProxyController.transformOperation(transformationInputs, original);
         final HostControllerUpdateTask.ExecutedHostRequest hostRequest = finalResultFutures.get(hostName);
         if(hostRequest == null) {
@@ -190,7 +190,7 @@ public final class MultiphaseOverallContext {
         });
     }
 
-    protected void recordHostRequest(final String hostName, final HostControllerUpdateTask.ExecutedHostRequest request) {
+    void recordHostRequest(final String hostName, final HostControllerUpdateTask.ExecutedHostRequest request) {
         finalResultFutures.put(hostName, request);
     }
 

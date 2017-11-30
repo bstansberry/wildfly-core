@@ -377,7 +377,7 @@ public class DomainRolloutStepHandler implements OperationStepHandler {
                 // Create the result node first so the server results will end up before the failure stuff
                 context.getResult();
                 context.getFailureDescription().set(DomainControllerLogger.HOST_CONTROLLER_LOGGER.operationFailedOrRolledBack());
-                multiphaseContext.setFailureReported(true);
+                multiphaseContext.setFailureReported();
             }
         }
     }
@@ -527,7 +527,7 @@ public class DomainRolloutStepHandler implements OperationStepHandler {
         }
         if (domainFailure != null) {
             context.getFailureDescription().get(DOMAIN_FAILURE_DESCRIPTION).set(domainFailure);
-            multiphaseContext.setFailureReported(true);
+            multiphaseContext.setFailureReported();
             return true;
         }
         return false;
@@ -557,7 +557,7 @@ public class DomainRolloutStepHandler implements OperationStepHandler {
 
         if (hostFailureResults != null) {
             context.getFailureDescription().get(HOST_FAILURE_DESCRIPTIONS).set(hostFailureResults);
-            multiphaseContext.setFailureReported(true);
+            multiphaseContext.setFailureReported();
             return true;
         }
         return false;

@@ -182,7 +182,7 @@ public class DomainSlaveHandler implements OperationStepHandler {
                                             Set<String> outstanding, boolean timedOut, long timeout) {
 
         // Set rollback only
-        multiphaseContext.setFailureReported(true);
+        multiphaseContext.setFailureReported();
 
         // Cancel all HCs
         if (timedOut) {
