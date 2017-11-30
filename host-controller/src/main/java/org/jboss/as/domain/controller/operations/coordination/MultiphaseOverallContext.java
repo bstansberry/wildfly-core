@@ -175,7 +175,8 @@ public final class MultiphaseOverallContext {
     OperationTransformer.TransformedOperation transformServerOperation(final String hostName, final TransformingProxyController remoteProxyController,
                                                                        final Transformers.TransformationInputs transformationInputs,
                                                                        final ModelNode original) throws OperationFailedException {
-        final OperationTransformer.TransformedOperation transformed = remoteProxyController.transformOperation(transformationInputs, original);
+        //final OperationTransformer.TransformedOperation transformed = remoteProxyController.transformOperation(transformationInputs, original);
+        final OperationTransformer.TransformedOperation transformed = new OperationTransformer.TransformedOperation(original, OperationResultTransformer.ORIGINAL_RESULT);
         final HostControllerUpdateTask.ExecutedHostRequest hostRequest = finalResultFutures.get(hostName);
         if(hostRequest == null) {
             // in case it's local hosts-controller
@@ -184,6 +185,7 @@ public final class MultiphaseOverallContext {
         return new OperationTransformer.TransformedOperation(transformed.getTransformedOperation(), new OperationResultTransformer() {
             @Override
             public ModelNode transformResult(ModelNode result) {
+                // TODO this step1 business is pointless if 'transformed' is hard-coded to OperationResultTransformer.ORIGINAL_RESULT
                 final ModelNode step1 = transformed.transformResult(result);
                 return hostRequest.transformResult(step1);
             }
