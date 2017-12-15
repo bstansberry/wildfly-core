@@ -87,7 +87,7 @@ public class HostModelUtil {
                                           final LocalHostControllerInfoImpl localHostControllerInfo) {
 
         // register HostDefinition for /host=*:add()
-        root.registerSubModel(new HostDefinition(root, environment, ignoredDomainResourceRegistry, hostModelRegistrar, processType, authorizer, modelControllerResource, localHostControllerInfo));
+        root.registerSubModel(new HostDefinition(root, environment, ignoredDomainResourceRegistry, hostModelRegistrar, modelControllerResource, localHostControllerInfo));
 
         // Global operations
         GlobalOperationHandlers.registerGlobalOperations(root, processType);

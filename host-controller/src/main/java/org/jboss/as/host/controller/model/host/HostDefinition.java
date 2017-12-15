@@ -35,9 +35,7 @@ import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SER
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.PathElement;
-import org.jboss.as.controller.ProcessType;
 import org.jboss.as.controller.SimpleResourceDefinition;
-import org.jboss.as.controller.access.management.DelegatingConfigurableAuthorizer;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.PlaceholderResource;
@@ -61,8 +59,6 @@ public class HostDefinition extends SimpleResourceDefinition {
     private final HostControllerEnvironment environment;
     private final IgnoredDomainResourceRegistry ignoredDomainResourceRegistry;
     private final HostModelUtil.HostModelRegistrar hostModelRegistrar;
-    private final ProcessType processType;
-    private final DelegatingConfigurableAuthorizer authorizer;
     private final Resource modelControllerResource;
     private final LocalHostControllerInfo localHostControllerInfo;
 
@@ -71,8 +67,6 @@ public class HostDefinition extends SimpleResourceDefinition {
             final HostControllerEnvironment environment,
             final IgnoredDomainResourceRegistry ignoredDomainResourceRegistry,
             final HostModelUtil.HostModelRegistrar hostModelRegistrar,
-            final ProcessType processType,
-            final DelegatingConfigurableAuthorizer authorizer,
             final Resource modelControllerResource,
             final LocalHostControllerInfoImpl localHostControllerInfo) {
         super(new Parameters(PathElement.pathElement(HOST), HostModelUtil.getResourceDescriptionResolver()));
@@ -80,8 +74,6 @@ public class HostDefinition extends SimpleResourceDefinition {
         this.environment = environment;
         this.ignoredDomainResourceRegistry = ignoredDomainResourceRegistry;
         this.hostModelRegistrar = hostModelRegistrar;
-        this.processType = processType;
-        this.authorizer = authorizer;
         this.modelControllerResource = modelControllerResource;
         this.localHostControllerInfo = localHostControllerInfo;
     }
