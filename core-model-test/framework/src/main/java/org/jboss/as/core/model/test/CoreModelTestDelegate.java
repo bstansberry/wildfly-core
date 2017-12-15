@@ -21,6 +21,7 @@
 */
 package org.jboss.as.core.model.test;
 
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.ADD;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.CHILDREN;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.CORE_SERVICE;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.DEPLOYMENT;
@@ -95,7 +96,6 @@ import org.jboss.as.core.model.bridge.impl.LegacyControllerKernelServicesProxy;
 import org.jboss.as.core.model.bridge.local.ScopedKernelServicesBootstrap;
 import org.jboss.as.host.controller.HostRunningModeControl;
 import org.jboss.as.host.controller.RestartMode;
-import org.jboss.as.host.controller.operations.HostAddHandler;
 import org.jboss.as.host.controller.operations.LocalDomainControllerAddHandler;
 import org.jboss.as.host.controller.operations.RemoteDomainControllerAddHandler;
 import org.jboss.as.model.test.ChildFirstClassLoaderBuilder;
@@ -591,7 +591,7 @@ public class CoreModelTestDelegate {
                     }
                 }
                 // host=foo:add(), always has IS_DOMAIN_CONTROLLER defined.
-                if(HostAddHandler.OPERATION_NAME.equals(opName) && op.has(IS_DOMAIN_CONTROLLER)
+                if(ADD.equals(opName) && op.has(IS_DOMAIN_CONTROLLER)
                         && !op.get(IS_DOMAIN_CONTROLLER).equals(new ModelNode().setEmptyObject())) {
                     dcInBootOps = true;
                     break;

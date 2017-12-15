@@ -69,8 +69,8 @@ public abstract class LocalDomainControllerAddHandler implements OperationStepHa
         }
 
         // check if this is /host=foo:add() being performed after HC boot.
-        final boolean hostAdd = context.getAttachment(HostAddHandler.HOST_ADD_AFTER_BOOT) == null ? false :
-                context.getAttachment(HostAddHandler.HOST_ADD_AFTER_BOOT).booleanValue();
+        final boolean hostAdd = context.getAttachment(InitialHostDefinition.HOST_ADD_AFTER_BOOT) == null ? false :
+                context.getAttachment(InitialHostDefinition.HOST_ADD_AFTER_BOOT).booleanValue();
 
         if (context.isBooting() || hostAdd) {
             initializeDomain(hostAdd ? context.getCurrentAddress().getLastElement().getValue() : null);

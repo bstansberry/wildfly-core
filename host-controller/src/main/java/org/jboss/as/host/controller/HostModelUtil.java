@@ -39,7 +39,7 @@ import org.jboss.as.domain.controller.DomainController;
 import org.jboss.as.domain.management.security.WhoAmIOperation;
 import org.jboss.as.host.controller.descriptions.HostEnvironmentResourceDefinition;
 import org.jboss.as.host.controller.ignored.IgnoredDomainResourceRegistry;
-import org.jboss.as.host.controller.model.host.HostDefinition;
+import org.jboss.as.host.controller.operations.InitialHostDefinition;
 import org.jboss.as.host.controller.model.host.HostResourceDefinition;
 import org.jboss.as.host.controller.operations.LocalDomainControllerAddHandler;
 import org.jboss.as.host.controller.operations.LocalDomainControllerRemoveHandler;
@@ -87,7 +87,7 @@ public class HostModelUtil {
                                           final LocalHostControllerInfoImpl localHostControllerInfo) {
 
         // register HostDefinition for /host=*:add()
-        root.registerSubModel(new HostDefinition(root, environment, ignoredDomainResourceRegistry, hostModelRegistrar, modelControllerResource, localHostControllerInfo));
+        root.registerSubModel(new InitialHostDefinition(root, environment, ignoredDomainResourceRegistry, hostModelRegistrar, modelControllerResource, localHostControllerInfo));
 
         // Global operations
         GlobalOperationHandlers.registerGlobalOperations(root, processType);

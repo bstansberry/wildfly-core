@@ -104,7 +104,6 @@ import org.jboss.as.host.controller.logging.HostControllerLogger;
 import org.jboss.as.host.controller.model.host.AdminOnlyDomainConfigPolicy;
 import org.jboss.as.host.controller.model.host.HostResourceDefinition;
 import org.jboss.as.host.controller.operations.DomainControllerWriteAttributeHandler;
-import org.jboss.as.host.controller.operations.HostAddHandler;
 import org.jboss.as.host.controller.operations.RemoteDomainControllerAddHandler;
 import org.jboss.as.host.controller.resources.HttpManagementResourceDefinition;
 import org.jboss.as.host.controller.resources.NativeManagementResourceDefinition;
@@ -650,7 +649,7 @@ final class HostXml_6 extends CommonXml implements ManagementXmlDelegate {
 
         // Add a step to setup the ManagementResourceRegistrations for the root host resource
         final ModelNode hostAddOp = new ModelNode();
-        hostAddOp.get(OP).set(HostAddHandler.OPERATION_NAME); // /host=foo:add()
+        hostAddOp.get(OP).set(ADD); // /host=foo:add()
         hostAddOp.get(OP_ADDR).set(address);
 
         operationList.add(hostAddOp);
