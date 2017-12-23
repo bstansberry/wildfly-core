@@ -25,7 +25,7 @@ package org.jboss.as.host.controller.discovery;
 
 import java.util.Collections;
 import java.util.List;
-import org.jboss.as.controller.OperationFailedException;
+
 import org.jboss.dmr.ModelNode;
 
 /**
@@ -65,7 +65,7 @@ public class StaticDiscovery implements DiscoveryOption {
                 .validateParameter(StaticDiscoveryResourceDefinition.PORT.getName(), new ModelNode(parameters.getPort()));
             StaticDiscoveryResourceDefinition.PROTOCOL.getValidator()
                 .validateParameter(StaticDiscoveryResourceDefinition.PROTOCOL.getName(), new ModelNode(parameters.getProtocol()));
-        } catch (OperationFailedException e) {
+        } catch (org.wildfly.management.api.OperationFailedException e) {
             throw new IllegalStateException(e.getFailureDescription().asString());
         }
         return Collections.singletonList(this.parameters);

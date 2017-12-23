@@ -34,6 +34,7 @@ import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.core.security.AccessMechanism;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
+import org.wildfly.management.api.OperationFailedException;
 
 /**
  * Encapsulates the handling of the common elements in the {@code operation-headers} field of a request.

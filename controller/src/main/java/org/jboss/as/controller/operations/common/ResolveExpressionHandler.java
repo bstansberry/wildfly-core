@@ -87,7 +87,7 @@ public class ResolveExpressionHandler implements OperationStepHandler {
                 } catch (IllegalStateException e) {
                     final ModelNode failureDescription = ControllerLogger.ROOT_LOGGER.cannotResolveExpression(toResolve.asString()).getFailureDescription();
                     deferFailureReporting(context, failureDescription);
-                } catch (OperationFailedException e) {
+                } catch (org.wildfly.management.api.OperationFailedException e) {
                     deferFailureReporting(context, e.getFailureDescription());
                 }
             }

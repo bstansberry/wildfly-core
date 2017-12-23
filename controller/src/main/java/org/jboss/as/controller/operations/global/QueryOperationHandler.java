@@ -60,6 +60,7 @@ import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 import org.jboss.dmr.Property;
 
+
 /**
  *
  * @author Heiko Braun (c) 2011 Red Hat Inc.
@@ -155,7 +156,7 @@ public final class QueryOperationHandler extends GlobalOperationHandlers.Abstrac
                                 ModelNode result = context.getResult();
                                 try {
                                     filterAndReduce(filter, operator, select, result);
-                                } catch (OperationFailedException e) {
+                                } catch (org.wildfly.management.api.OperationFailedException e) {
                                     if (!context.hasFailureDescription()) {
                                         context.getFailureDescription().set(e.getMessage());
                                     } // else there already was a failure; don't overwrite its message
@@ -310,7 +311,7 @@ public final class QueryOperationHandler extends GlobalOperationHandlers.Abstrac
                 this.select = SELECT_ATT.validateOperation(operation);
                 // Use resolveModelAttribute for OPERATOR_ATT to pull out the default value
                 this.operator = Operator.valueOf(OPERATOR_ATT.resolveModelAttribute(ExpressionResolver.SIMPLE, operation).asString());
-            } catch (OperationFailedException e) {
+            } catch (org.wildfly.management.api.OperationFailedException e) {
                 // the validateOperation calls above would have already been invoked in QueryOperationHandler.execute
                 // so this shouldn't happen
                 throw new IllegalStateException(e);
@@ -354,7 +355,7 @@ public final class QueryOperationHandler extends GlobalOperationHandlers.Abstrac
                 try {
                     FilterReduceHandler.filterAndReduce(filter, operator, select, result);
                     ControllerLogger.MGMT_OP_LOGGER.tracef("Transformed response item to %s", responseItem);
-                } catch (OperationFailedException e) {
+                } catch (org.wildfly.management.api.OperationFailedException e) {
                     if (!responseItem.hasDefined(FAILURE_DESCRIPTION)) {
                         responseItem.get(FAILURE_DESCRIPTION).set(e.getMessage());
                     }  // else there already was a failure; don't overwrite its message

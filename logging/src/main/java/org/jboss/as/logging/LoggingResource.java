@@ -43,7 +43,6 @@ import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jboss.as.controller.ExpressionResolver;
-import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.registry.PlaceholderResource;
@@ -386,7 +385,7 @@ public class LoggingResource implements Resource {
                                 // Possible expressions need to be resolved for the path name. If not resolved the expression
                                 // may contain invalid path characters.
                                 path = ExpressionResolver.SIMPLE.resolveExpressions(fileModel.get(PathResourceDefinition.PATH.getName()));
-                            } catch (OperationFailedException e) {
+                            } catch (org.wildfly.management.api.OperationFailedException e) {
                                 // The expression could not be resolved for some reason. Collect all the unresolvable paths
                                 // and we'll log them once at the end
                                 unresolvableExpressions.add(fileModel.get(PathResourceDefinition.PATH.getName()).asString());

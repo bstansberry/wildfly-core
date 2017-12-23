@@ -49,7 +49,7 @@ public class ParametersOfValidator implements ParameterValidator, MinMaxValidato
     public void validateParameter(String parameterName, ModelNode value) throws OperationFailedException {
         try {
             delegate.validate(value);
-        } catch (OperationFailedException e) {
+        } catch (org.wildfly.management.api.OperationFailedException e) {
             final ModelNode failureDescription = new ModelNode().add(ControllerLogger.ROOT_LOGGER.validationFailed(parameterName));
             failureDescription.add(e.getFailureDescription());
             throw new OperationFailedException(e.getMessage(), e.getCause(), failureDescription);
@@ -61,7 +61,7 @@ public class ParametersOfValidator implements ParameterValidator, MinMaxValidato
     public void validateResolvedParameter(String parameterName, ModelNode value) throws OperationFailedException {
         try {
             delegate.validateResolved(value);
-        } catch (OperationFailedException e) {
+        } catch (org.wildfly.management.api.OperationFailedException e) {
             throw new OperationFailedException(e.getMessage(), e.getCause(), new ModelNode().set(parameterName + ": " + e.getFailureDescription().asString()));
         }
     }

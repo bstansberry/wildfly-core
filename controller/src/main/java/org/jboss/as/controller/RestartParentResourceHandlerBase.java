@@ -203,7 +203,7 @@ public abstract class RestartParentResourceHandlerBase implements OperationStepH
             try {
                 removeServices(context, serviceName, invalidatedParentModel);
                 recreateParentService(context, address, parentModel, null);
-            } catch (OperationFailedException e) {
+            } catch (org.wildfly.management.api.OperationFailedException e) {
                 throw ControllerLogger.ROOT_LOGGER.failedToRecoverServices(e);
             }
         }

@@ -30,9 +30,7 @@ import org.jboss.dmr.ModelNode;
  *
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
  */
-public class OperationFailedException extends Exception implements OperationClientException {
-
-    private final ModelNode failureDescription;
+public class OperationFailedException extends org.wildfly.management.api.OperationFailedException implements OperationClientException {
 
     private static final long serialVersionUID = -1896884563520054972L;
 
@@ -45,7 +43,7 @@ public class OperationFailedException extends Exception implements OperationClie
      * @param message the description of the failure. Cannot be {@code null}
      */
     public OperationFailedException(final String message) {
-        this(message, new ModelNode(message));
+        super(message);
     }
 
     /**
@@ -56,7 +54,7 @@ public class OperationFailedException extends Exception implements OperationClie
      * @param cause the cause (which is saved for later retrieval by the {@link #getCause()} method)
      */
     public OperationFailedException(final String message, final Throwable cause) {
-        this(message, cause, new ModelNode(message));
+        super(message, cause);
     }
 
     /**
@@ -70,8 +68,7 @@ public class OperationFailedException extends Exception implements OperationClie
      */
     @Deprecated
     public OperationFailedException(final ModelNode description) {
-        assert description != null : "description is null";
-        failureDescription = description;
+        super(description.asString(), description);
     }
 
     /**
@@ -82,9 +79,7 @@ public class OperationFailedException extends Exception implements OperationClie
      * @param description the description of the failure. Cannot be {@code null}
      */
     public OperationFailedException(final String msg, final ModelNode description) {
-        super(msg);
-        assert description != null : "description is null";
-        failureDescription = description;
+        super(msg, description);
     }
 
     /**
@@ -95,7 +90,7 @@ public class OperationFailedException extends Exception implements OperationClie
      * @param cause the cause (which is saved for later retrieval by the {@link #getCause()} method). Cannot be {@code null}
      */
     public OperationFailedException(final Throwable cause) {
-        this(cause.getMessage(), cause);
+        super(cause);
     }
 
     /**
@@ -107,9 +102,7 @@ public class OperationFailedException extends Exception implements OperationClie
      * @param description the description of the failure. Cannot be {@code null}
      */
     public OperationFailedException(final Throwable cause, final ModelNode description) {
-        super(cause);
-        assert description != null : "description is null";
-        failureDescription = description;
+        super(cause, description);
     }
 
     /**
@@ -120,21 +113,6 @@ public class OperationFailedException extends Exception implements OperationClie
      * @param description the description of the failure. Cannot be {@code null}
      */
     public OperationFailedException(final String msg, final Throwable cause, final ModelNode description) {
-        super(msg, cause);
-        assert description != null : "description is null";
-        failureDescription = description;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public ModelNode getFailureDescription() {
-        return failureDescription;
-    }
-
-    @Override
-    public String toString() {
-        return super.toString() + " [ " + failureDescription + " ]";
+        super(msg, cause, description);
     }
 }

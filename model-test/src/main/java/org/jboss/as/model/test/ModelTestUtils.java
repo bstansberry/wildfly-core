@@ -498,7 +498,7 @@ public class ModelTestUtils {
                     if (ad.isRequired() && value.isDefined()){
                         ad.getValidator().validateParameter(name, value);
                     }
-                } catch (OperationFailedException e) {
+                } catch (org.wildfly.management.api.OperationFailedException e) {
                     Assert.fail(getComparePathAsString(stack) + " validation for attribute '" + name + "' failed, " + e.getFailureDescription().asString());
                 }
 

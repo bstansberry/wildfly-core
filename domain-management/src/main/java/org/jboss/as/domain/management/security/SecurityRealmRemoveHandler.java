@@ -74,7 +74,7 @@ public class SecurityRealmRemoveHandler extends AbstractRemoveStepHandler {
         super.recoverServices(context, operation, model);
         try {
             SecurityRealmAddHandler.INSTANCE.installServices(context, context.getCurrentAddressValue(), model);
-        } catch (OperationFailedException e) {
+        } catch (org.wildfly.management.api.OperationFailedException e) {
             throw ControllerLogger.ROOT_LOGGER.failedToRecoverServices(e);
         }
     }

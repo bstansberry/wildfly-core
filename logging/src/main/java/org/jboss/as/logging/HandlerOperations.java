@@ -228,7 +228,7 @@ final class HandlerOperations {
                 LoggingLogger.ROOT_LOGGER.tracef("Adding handler '%s' at '%s'", name, LoggingOperations.getAddress(operation));
                 try {
                     configuration = createHandlerConfiguration(className, moduleName, name, logContextConfiguration);
-                } catch (IllegalArgumentException | OperationFailedException e) {
+                } catch (IllegalArgumentException | org.wildfly.management.api.OperationFailedException e) {
                     context.setRollbackOnly();
                     throw e;
                 }
@@ -253,7 +253,7 @@ final class HandlerOperations {
                 }
                 try {
                     configuration = createHandlerConfiguration(className, moduleName, name, logContextConfiguration);
-                } catch (IllegalArgumentException | OperationFailedException e) {
+                } catch (IllegalArgumentException | org.wildfly.management.api.OperationFailedException e) {
                     context.setRollbackOnly();
                     throw e;
                 }

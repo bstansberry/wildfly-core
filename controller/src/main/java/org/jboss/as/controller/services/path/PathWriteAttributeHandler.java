@@ -109,7 +109,7 @@ class PathWriteAttributeHandler extends AbstractWriteAttributeHandler<PathWriteA
             } else if (attributeName.equals(RELATIVE_TO)) {
                 try {
                     pathManager.changeRelativePath(pathName, backup.getRelativeTo(), false);
-                } catch (OperationFailedException e) {
+                } catch (org.wildfly.management.api.OperationFailedException e) {
                     //Should not happen since false passed in for the 'check' parameter
                     throw new RuntimeException(e);
                 }

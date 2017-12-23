@@ -179,7 +179,7 @@ public class SystemPropertyAddHandler implements OperationStepHandler{
                     final String setValue = VALUE.resolveModelAttribute(context, entry.getValue()).asString();
                     setProperty(entry.getKey(), setValue);
                     it.remove();
-                } catch (OperationFailedException resolutionFailure) {
+                } catch (org.wildfly.management.api.OperationFailedException resolutionFailure) {
                     context.setRollbackOnly();
                     throw resolutionFailure;
                 }  catch (RuntimeException resolutionFailure) {

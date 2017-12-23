@@ -48,5 +48,6 @@
         <module name="org.wildfly.security.elytron-private" />
         <module name="org.jboss.as.server" />
         <module name="org.jboss.as.deployment-repository"/>
+        <module name="org.wildfly.management-api"/>
     </dependencies>
 </module>

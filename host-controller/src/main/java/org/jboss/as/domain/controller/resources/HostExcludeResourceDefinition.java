@@ -230,7 +230,7 @@ public class HostExcludeResourceDefinition extends SimpleResourceDefinition {
             try {
                 DomainHostExcludeRegistry.VersionKey versionKey = getVersionKey(context, resource.getModel());
                 domainHostExcludeRegistry.removeVersionExcludeData(versionKey);
-            } catch (OperationFailedException e) {
+            } catch (org.wildfly.management.api.OperationFailedException e) {
                 throw new RuntimeException(e);
             }
         }

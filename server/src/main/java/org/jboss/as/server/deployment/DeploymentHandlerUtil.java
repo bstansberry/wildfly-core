@@ -135,7 +135,7 @@ public class DeploymentHandlerUtil {
             if (operation.hasDefined(OWNER.getName())) {
                 try {
                     notificationData.get(OWNER.getName()).set(OWNER.resolveModelAttribute(context, operation));
-                } catch (OperationFailedException ex) {//No resolvable owner we won't set one
+                } catch (org.wildfly.management.api.OperationFailedException ex) {//No resolvable owner we won't set one
                 }
             }
             notificationData.get(DEPLOYMENT).set(deploymentUnitName);
@@ -313,7 +313,7 @@ public class DeploymentHandlerUtil {
                         if (operation.hasDefined(OWNER.getName())) {
                             try {
                                 notificationData.get(OWNER.getName()).set(OWNER.resolveModelAttribute(context, operation));
-                            } catch (OperationFailedException ex) {//No resolvable owner we won't set one
+                            } catch (org.wildfly.management.api.OperationFailedException ex) {//No resolvable owner we won't set one
                             }
                         }
                         notificationData.get(DEPLOYMENT).set(deploymentUnitName);
@@ -360,7 +360,7 @@ public class DeploymentHandlerUtil {
             if (operation.hasDefined(OWNER.getName())) {
                 try {
                     notificationData.get(OWNER.getName()).set(OWNER.resolveModelAttribute(context, operation));
-                } catch (OperationFailedException ex) {//No resolvable owner we won't set one
+                } catch (org.wildfly.management.api.OperationFailedException ex) {//No resolvable owner we won't set one
                 }
             }
             notificationData.get(DEPLOYMENT).set(runtimeName);

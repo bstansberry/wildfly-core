@@ -33,6 +33,7 @@ import org.jboss.as.controller.operations.validation.ParameterValidator;
 import org.jboss.as.controller.parsing.ParseUtils;
 import org.jboss.dmr.ModelNode;
 import org.jboss.staxmapper.XMLExtendedStreamReader;
+import org.wildfly.management.api.OperationFailedException;
 
 /**
  * @author Tomaz Cerar (c) 2014 Red Hat Inc.

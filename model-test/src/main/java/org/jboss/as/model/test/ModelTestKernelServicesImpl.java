@@ -252,7 +252,7 @@ public abstract class ModelTestKernelServicesImpl<T extends ModelTestKernelServi
         try {
             executeForResult(operation, inputStreams);
             Assert.fail("Should have given error");
-        } catch (OperationFailedException expected) {
+        } catch (org.wildfly.management.api.OperationFailedException expected) {
         }
     }
 

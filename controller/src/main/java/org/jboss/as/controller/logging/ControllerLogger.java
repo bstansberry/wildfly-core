@@ -2537,7 +2537,7 @@ public interface ControllerLogger extends BasicLogger {
      * @return the runtime exception.
      */
     @Message(id = 225, value = "Failed to recover services during operation rollback")
-    RuntimeException failedToRecoverServices(@Param OperationFailedException cause);
+    RuntimeException failedToRecoverServices(@Param org.wildfly.management.api.OperationFailedException cause);
 
     /**
      * Creates an IllegalStateException indicating a subsystem with the given name has already been registered by

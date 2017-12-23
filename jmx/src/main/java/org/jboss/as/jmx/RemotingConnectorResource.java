@@ -26,7 +26,6 @@ import static org.jboss.as.jmx.CommonAttributes.REMOTING_CONNECTOR;
 
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.OperationContext;
-import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.OperationStepHandler;
 import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.ReloadRequiredWriteAttributeHandler;
@@ -90,7 +89,7 @@ public class RemotingConnectorResource extends SimpleResourceDefinition {
                 model.get(USE_MANAGEMENT_ENDPOINT.getName()).set(attributeValue);
                 try {
                     return !USE_MANAGEMENT_ENDPOINT.resolveModelAttribute(context, model).asBoolean();
-                } catch (OperationFailedException ofe) {
+                } catch (org.wildfly.management.api.OperationFailedException ofe) {
                     if (model.get(USE_MANAGEMENT_ENDPOINT.getName()).getType() == ModelType.EXPRESSION) {
                         // Must be a vault expression or something we can't resolve in Stage.MODEL.
                         // So we can only do nothing and hope for the best when they reload

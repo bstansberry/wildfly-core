@@ -147,7 +147,7 @@ public class SchemaValidator {
                     ModelNode input = new ModelNode(new ValueExpression(line));
                     try {
                         resolved = replacer.resolveExpressions(input).asString();
-                    } catch (OperationFailedException e) {
+                    } catch (org.wildfly.management.api.OperationFailedException e) {
                         // ignore, output the original line and see what happens ;)
                     }
                 }

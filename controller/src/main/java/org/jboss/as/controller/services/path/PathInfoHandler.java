@@ -156,7 +156,7 @@ public class PathInfoHandler extends AbstractRuntimeOnlyHandler {
                 // Resolve the model values
                 relativeTo = readAttributeValue(context, relativePathAttribute.relativeToAttribute);
                 path = readAttributeValue(context, relativePathAttribute.pathAttribute);
-            } catch (OperationFailedException ex) {
+            } catch (org.wildfly.management.api.OperationFailedException ex) {
                 return;
             }
             // Resolve paths

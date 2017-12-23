@@ -164,7 +164,7 @@ public class PathAddHandler implements OperationStepHandler {  // TODO make this
                     if (pathEventContext.isInstallServices()) {
                         try {
                             pathManager.removePathEntry(name, false);
-                        } catch (OperationFailedException e) {
+                        } catch (org.wildfly.management.api.OperationFailedException e) {
                             //Should not happen since 'false' passed in for the check parameter
                             throw new RuntimeException(e);
                         }

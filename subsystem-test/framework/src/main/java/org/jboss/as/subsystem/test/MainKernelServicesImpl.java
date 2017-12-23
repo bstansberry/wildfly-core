@@ -201,7 +201,7 @@ class MainKernelServicesImpl extends AbstractKernelServicesImpl {
 
             try {
                 return transformOperation(modelVersion, op, TransformerAttachmentGrabber.getAttachment());
-            } catch (OperationFailedException e) {
+            } catch (org.wildfly.management.api.OperationFailedException e) {
                 throw new RuntimeException(e);
             }
         } finally {

@@ -59,10 +59,11 @@
         <module name="org.jboss.as.protocol">
             <imports>
                 <include path="**" />
-            </imports> 
+            </imports>
         </module>
         <module name="org.jboss.as.remoting"/>
         <module name="org.wildfly.common"/>
+        <module name="org.wildfly.management-api"/>
         <module name="org.wildfly.security.elytron-private" services="import"/>
         <module name="org.jboss.as.server" services="import"/>
         <module name="org.jboss.as.version"/>

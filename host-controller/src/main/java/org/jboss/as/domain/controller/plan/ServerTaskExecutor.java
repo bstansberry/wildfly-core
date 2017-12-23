@@ -81,7 +81,7 @@ public abstract class ServerTaskExecutor {
     public int executeTask(final TransactionalProtocolClient.TransactionalOperationListener<ServerOperation> listener, final ServerUpdateTask task) {
         try {
             return execute(listener, task.getServerIdentity(), task.getOperation());
-        } catch (OperationFailedException e) {
+        } catch (org.wildfly.management.api.OperationFailedException e) {
             // Handle failures operation transformation failures
             final ServerIdentity identity = task.getServerIdentity();
             final ServerOperation serverOperation = new ServerOperation(identity, task.getOperation(), null, null, OperationResultTransformer.ORIGINAL_RESULT);

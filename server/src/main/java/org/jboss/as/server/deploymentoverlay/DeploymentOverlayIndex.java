@@ -22,11 +22,10 @@
 
 package org.jboss.as.server.deploymentoverlay;
 
-import org.jboss.as.controller.OperationContext;
-import org.jboss.as.controller.OperationFailedException;
-import org.jboss.as.controller.PathAddress;
-import org.jboss.as.controller.registry.Resource;
-import org.jboss.dmr.ModelNode;
+import static org.jboss.as.controller.PathElement.pathElement;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.CONTENT;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.DEPLOYMENT;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.DEPLOYMENT_OVERLAY;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -34,10 +33,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import static org.jboss.as.controller.PathElement.pathElement;
-import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.CONTENT;
-import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.DEPLOYMENT;
-import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.DEPLOYMENT_OVERLAY;
+import org.jboss.as.controller.OperationContext;
+import org.jboss.as.controller.PathAddress;
+import org.jboss.as.controller.registry.Resource;
+import org.jboss.dmr.ModelNode;
 
 /**
  * Service that aggregates all available deployment overrides
@@ -102,7 +101,7 @@ public class DeploymentOverlayIndex {
             ModelNode sha;
             try {
                 sha = DeploymentOverlayContentDefinition.CONTENT_ATTRIBUTE.resolveModelAttribute(context, cr.getModel());
-            } catch (OperationFailedException e) {
+            } catch (org.wildfly.management.api.OperationFailedException e) {
                 throw new RuntimeException(e);
             }
             String key = contentItem.startsWith("/") ? contentItem.substring(1) : contentItem;

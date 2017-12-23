@@ -31,7 +31,6 @@ import javax.net.ssl.SSLContext;
 
 import org.jboss.as.controller.ControlledProcessStateService;
 import org.jboss.as.controller.ExpressionResolver;
-import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.remoting.EndpointConfigFactory;
 import org.jboss.as.remoting.EndpointService;
 import org.jboss.as.remoting.RemotingServices;
@@ -106,7 +105,7 @@ public class DomainServerCommunicationServices  implements ServiceActivator, Ser
                     .addDependency(ControlledProcessStateService.SERVICE_NAME, ControlledProcessStateService.class, service.getProcessStateServiceInjectedValue())
                     .setInitialMode(ServiceController.Mode.ACTIVE).install();
 
-        } catch (OperationFailedException e) {
+        } catch (org.wildfly.management.api.OperationFailedException e) {
             throw new ServiceRegistryException(e);
         }
     }

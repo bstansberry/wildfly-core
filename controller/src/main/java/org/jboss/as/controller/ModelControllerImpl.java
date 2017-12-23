@@ -95,6 +95,7 @@ import org.jboss.as.core.security.AccessMechanism;
 import org.jboss.dmr.ModelNode;
 import org.jboss.msc.service.ServiceRegistry;
 import org.jboss.msc.service.ServiceTarget;
+import org.wildfly.management.api.OperationFailedException;
 import org.wildfly.security.auth.server.SecurityIdentity;
 
 /**
@@ -870,7 +871,7 @@ class ModelControllerImpl implements ModelController {
         return notificationSupport;
     }
 
-    ModelNode resolveExpressions(ModelNode node) throws OperationFailedException {
+    ModelNode resolveExpressions(ModelNode node) throws org.jboss.as.controller.OperationFailedException {
         return expressionResolver.resolveExpressions(node);
     }
 
@@ -913,7 +914,7 @@ class ModelControllerImpl implements ModelController {
     private class DefaultPrepareStepHandler implements OperationStepHandler {
 
         @Override
-        public void execute(OperationContext context, ModelNode operation) throws OperationFailedException {
+        public void execute(OperationContext context, ModelNode operation) throws org.jboss.as.controller.OperationFailedException {
             if (MGMT_OP_LOGGER.isTraceEnabled()) {
                 MGMT_OP_LOGGER.tracef("Executing %s %s", operation.get(OP), operation.get(OP_ADDR));
             }

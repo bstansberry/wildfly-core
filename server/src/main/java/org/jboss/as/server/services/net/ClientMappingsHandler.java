@@ -47,7 +47,7 @@ public class ClientMappingsHandler extends AbstractBindingWriteHandler {
     void handleRuntimeRollback(OperationContext context, ModelNode operation, String attributeName, ModelNode attributeValue, SocketBinding binding) {
         try {
             binding.setClientMappings(BindingAddHandler.parseClientMappings(context, attributeValue));
-        } catch (OperationFailedException e) {
+        } catch (org.wildfly.management.api.OperationFailedException e) {
             throw ControllerLogger.ROOT_LOGGER.failedToRecoverServices(e);
         }
     }

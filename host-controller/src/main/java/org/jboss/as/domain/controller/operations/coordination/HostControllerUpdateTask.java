@@ -44,7 +44,6 @@ import java.util.Collections;
 import java.util.List;
 
 import org.jboss.as.controller.OperationContext;
-import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.TransformingProxyController;
 import org.jboss.as.controller.client.MessageSeverity;
@@ -121,7 +120,7 @@ class HostControllerUpdateTask {
                 subsystemListener.operationPrepared(result);
                 return new ExecutedHostRequest(result.getFinalResult(), transformationResult);
             }
-        } catch (OperationFailedException e) {
+        } catch (org.wildfly.management.api.OperationFailedException e) {
             // Handle transformation failures
             final ProxyOperation proxyOperation = new ProxyOperation(name, operation, messageHandler, operationAttachments);
             final TransactionalProtocolClient.PreparedOperation<ProxyOperation> result = BlockingQueueOperationListener.FailedOperation.create(proxyOperation, e);

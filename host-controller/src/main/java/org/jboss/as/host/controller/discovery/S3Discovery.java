@@ -39,7 +39,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import org.jboss.as.controller.OperationFailedException;
+
 import org.jboss.as.host.controller.discovery.S3Util.AWSAuthConnection;
 import org.jboss.as.host.controller.discovery.S3Util.Bucket;
 import org.jboss.as.host.controller.discovery.S3Util.GetResponse;
@@ -157,7 +157,7 @@ public class S3Discovery implements DiscoveryOption {
                     StaticDiscoveryResourceDefinition.PROTOCOL.getValidator()
                             .validateParameter(StaticDiscoveryResourceDefinition.PROTOCOL.getName(), new ModelNode(discovery.getProtocol()));
                     options.add(discovery);
-                } catch (OperationFailedException e) {
+                } catch (org.wildfly.management.api.OperationFailedException e) {
                 }
             } else {
                 throw HostControllerLogger.ROOT_LOGGER.failedMarshallingDomainControllerData();

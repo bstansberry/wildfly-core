@@ -123,7 +123,7 @@ class OutboundSocketBindingWriteHandler extends AbstractWriteAttributeHandler<Bo
             } else {
                 LocalDestinationOutboundSocketBindingAddHandler.installOutboundSocketBindingService(context, unresolvedConfig);
             }
-        } catch (OperationFailedException e) {
+        } catch (org.wildfly.management.api.OperationFailedException e) {
             // Bizarro, as we installed the service before
             throw new RuntimeException(e);
         }

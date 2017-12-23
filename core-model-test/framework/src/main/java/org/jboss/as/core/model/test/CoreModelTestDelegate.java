@@ -83,7 +83,6 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
 import org.jboss.as.controller.ModelVersion;
-import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.ProcessType;
@@ -268,7 +267,7 @@ public class CoreModelTestDelegate {
         ModelNode legacyModel;
         try {
             legacyModel = legacyServices.executeForResult(op);
-        } catch (OperationFailedException e) {
+        } catch (org.wildfly.management.api.OperationFailedException e) {
             throw new RuntimeException(e);
         }
 
@@ -430,7 +429,7 @@ public class CoreModelTestDelegate {
                         if (!result.isDefined()) {
                                 attribute.set(new ModelNode());
                         }
-                    } catch (OperationFailedException e) {
+                    } catch (org.wildfly.management.api.OperationFailedException e) {
                         //TODO this might get thrown because the attribute does not exist in the legacy model?
                         //In which case it should perhaps be undefined
                         throw new RuntimeException(e);
