@@ -33,15 +33,12 @@ import org.wildfly.management.api._private.ControllerLoggerDuplicate;
  *
  * @author <a href="mailto:darran.lofthouse@jboss.com">Darran Lofthouse</a>
  */
-public class URIValidator extends StringLengthValidator {
+public final class URIValidator implements ParameterValidator, MinMaxValidator {
 
-    public URIValidator() {
-        super(1, Integer.MAX_VALUE);
-    }
+    public static final URIValidator INSTANCE = new URIValidator();
 
     @Override
     public void validateParameter(String parameterName, ModelNode value) throws OperationFailedException {
-        super.validateParameter(parameterName, value);
 
         String str = value.asString();
 
@@ -50,6 +47,16 @@ public class URIValidator extends StringLengthValidator {
         } catch (URISyntaxException e) {
             throw ControllerLoggerDuplicate.ROOT_LOGGER.badUriSyntax(str);
         }
+    }
+
+    @Override
+    public Long getMin() {
+        return 1L;
+    }
+
+    @Override
+    public Long getMax() {
+        return MAX_INT;
     }
 
 }

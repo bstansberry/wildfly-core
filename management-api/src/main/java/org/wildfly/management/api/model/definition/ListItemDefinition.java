@@ -23,177 +23,84 @@
 package org.wildfly.management.api.model.definition;
 
 import org.jboss.dmr.ModelType;
-import org.wildfly.common.Assert;
-import org.wildfly.management.api.model.validation.ListValidator;
 import org.wildfly.management.api.model.validation.ParameterValidator;
 
 /**
  * Defining characteristics of an {@link ItemDefinition item} whose {@link ItemDefinition#getType() type}
  * is {@link ModelType#LIST}.
  *
- * @author Brian Stansberry (c) 2011 Red Hat Inc.
+ * @author Brian Stansberry
  */
-abstract class ListItemDefinition extends ItemDefinition {
+abstract class ListItemDefinition<ELEMENT extends ItemDefinition> extends CollectionItemDefinition<ELEMENT> {
 
-    private final ParameterValidator elementValidator;
+    private final boolean allowDuplicates;
 
-    ListItemDefinition(ListItemDefinition.Builder<?, ?> builder) {
+    ListItemDefinition(ListItemDefinition.Builder<?, ?, ELEMENT> builder) {
         super(builder);
-        this.elementValidator = builder.getElementValidator();
+        this.allowDuplicates = builder.isAllowDuplicates();
     }
 
-    /**
-     * The validator used to validate elements in the list.
-     * @return the element validator
-     */
-    ParameterValidator getElementValidator() {
-        return elementValidator;
+    @Override
+    public final boolean isAllowDuplicates() {
+        return allowDuplicates;
     }
 
     /** Builder for creating a {@link ListItemDefinition} */
-    abstract static class Builder<BUILDER extends Builder, ITEM extends ListItemDefinition>
-            extends ItemDefinition.Builder<BUILDER, ITEM> {
+    abstract static class Builder<BUILDER extends Builder, ITEM extends ListItemDefinition<ELEMENT>, ELEMENT extends ItemDefinition>
+            extends CollectionItemDefinition.Builder<BUILDER, ITEM, ELEMENT> {
 
-        private ParameterValidator elementValidator;
-        private boolean allowNullElement;
-        private boolean allowDuplicates = true;
+        private Boolean allowDuplicates;
 
-        Builder(String attributeName) {
-            super(attributeName, ModelType.LIST);
+        Builder(String attributeName, ELEMENT elementDefinition) {
+            super(attributeName, ModelType.LIST, elementDefinition);
             this.setAttributeParser(AttributeParser.STRING_LIST);
         }
 
-        Builder(ListItemDefinition basis) {
+        Builder(ITEM basis) {
             this(null, basis);
         }
 
-        Builder(String name, ListItemDefinition basis) {
+        Builder(String name, ITEM basis) {
             super(name, basis);
-            this.elementValidator = basis.getElementValidator();
+            this.allowDuplicates = basis.isAllowDuplicates();
             this.setAttributeParser(AttributeParser.STRING_LIST);
         }
 
         /**
-         * Gets the validator to use for validating list elements.
-         * @return the validator, or {@code null} if no validator has been set
-         */
-        ParameterValidator getElementValidator() {
-            if (elementValidator == null) {
-                return null;
-            }
-
-            ParameterValidator toWrap = elementValidator;
-            ParameterValidator wrappedElementValidator = null;
-            if (elementValidator instanceof  NillableOrExpressionParameterValidator) {
-                // See if it's configured correctly already; if so don't re-wrap
-                NillableOrExpressionParameterValidator wrapped = (NillableOrExpressionParameterValidator) elementValidator;
-                Boolean allow = wrapped.getAllowNull();
-                if ((allow == null || allow) == allowNullElement
-                        && wrapped.isAllowExpression() == isAllowExpression()) {
-                    wrappedElementValidator = wrapped;
-                } else {
-                    // re-wrap
-                    toWrap = wrapped.getDelegate();
-                }
-            }
-            if (wrappedElementValidator == null) {
-                elementValidator = new NillableOrExpressionParameterValidator(toWrap, allowNullElement, isAllowExpression());
-            }
-            return elementValidator;
-        }
-
-        /**
-         * Sets the validator to use for validating list elements.
-         *
-         * @param elementValidator the validator
-         * @return a builder that can be used to continue building the item definition
-         *
-         * @throws IllegalArgumentException if {@code elementValidator} is {@code null}
-         */
-        @SuppressWarnings("unchecked")
-        public final BUILDER setElementValidator(ParameterValidator elementValidator) {
-            Assert.checkNotNullParam("elementValidator", elementValidator);
-            this.elementValidator = elementValidator;
-            // Setting an element validator invalidates any existing overall attribute validator
-            setListValidator(null);
-            return (BUILDER) this;
-        }
-
-        /**
-         * Sets an overall validator for the list.
+         * Sets an overall validator for the list. This is only relevant to operation parameter
+         * use cases. The item definition produced by this builder will directly enforce the item's
+         * {@link ItemDefinition#isRequired()} () required} and
+         * {@link ItemDefinition#isAllowExpression() allow expression} settings, so the given {@code validator}
+         * need not concern itself with those validations.
+         * <p>
+         * <strong>Usage note:</strong> Providing a validator should be limited to atypical custom validation cases.
+         * Standard validation against the item's definition (i.e. checking for correct type, size within
+         * min and max, presence of duplicates and validity of each element) will be automatically handled without
+         * requiring provision of a validator.
          *
          * @param validator the validator. {@code null} is allowed
          * @return a builder that can be used to continue building the item definition
          */
-        @SuppressWarnings("WeakerAccess")
-        public BUILDER setListValidator(ParameterValidator validator) {
-            return super.setValidator(validator);
+        @SuppressWarnings({"WeakerAccess", "UnusedReturnValue", "unused"})
+        public final BUILDER setListValidator(ParameterValidator validator) {
+            return super.setCollectionValidator(validator);
         }
 
         /**
-         * Overrides the superclass to throw {@code UnsupportedOperationException}. Use
-         * {@link #setElementValidator(ParameterValidator)} to configure element validation or
-         * use {@link #setListValidator(ParameterValidator)} to
-         * set an overall validator for the list.
+         * Sets whether duplicate elements in the list are allowed. If set to {@code false}, the list
+         * functions similarly to an ordered set.
          *
-         * @throws UnsupportedOperationException always
-         */
-        @Override
-        public BUILDER setValidator(ParameterValidator validator) {
-            // TODO remove this from the superclass and have a "simple" variant?
-            throw new UnsupportedOperationException();
-        }
-
-        /**
-         * Sets whether undefined list elements are valid.
-         * @param allowNullElement whether undefined elements are valid
+         * @param allowDuplicates {@code false} if duplicates are not allowed
          * @return a builder that can be used to continue building the item definition
          */
         @SuppressWarnings({"unchecked", "unused"})
-        public BUILDER setAllowNullElement(boolean allowNullElement) {
-            this.allowNullElement = allowNullElement;
-            return (BUILDER) this;
-        }
-
-        /**
-         * toggles default validator strategy to allow / not allow duplicate elements in list
-         * @param allowDuplicates false if duplicates are not allowed
-         * @return a builder that can be used to continue building the item definition
-         */
-        @SuppressWarnings({"unchecked", "unused"})
-        public BUILDER setAllowDuplicates(boolean allowDuplicates) {
+        public final BUILDER setAllowDuplicates(boolean allowDuplicates) {
             this.allowDuplicates = allowDuplicates;
             return (BUILDER) this;
         }
 
-        @Override
-        ParameterValidator getValidator() {
-            ParameterValidator result = super.getValidator();
-            if (result == null) {
-                ParameterValidator listElementValidator = getElementValidator();
-                // Subclasses must call setElementValidator before calling this
-                assert listElementValidator != null;
-                result = new ListValidator(getElementValidator(), getMinSize(), getMaxSize(), allowDuplicates);
-            }
-            return result;
-        }
-
-        @Override
-        Integer getMinSize() {
-            int minSize = super.getMinSize();
-            if (minSize < 0) {
-                setMinSize(0);
-            }
-            return minSize;
-        }
-
-        @Override
-        Integer getMaxSize() {
-            int maxSize = super.getMaxSize();
-            if (maxSize < 1) {
-                setMaxSize(Integer.MAX_VALUE);
-            }
-            return maxSize;
+        private boolean isAllowDuplicates() {
+            return allowDuplicates == null || allowDuplicates;
         }
     }
 }

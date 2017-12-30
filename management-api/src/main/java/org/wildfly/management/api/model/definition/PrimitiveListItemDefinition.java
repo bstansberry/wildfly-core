@@ -23,7 +23,6 @@
 package org.wildfly.management.api.model.definition;
 
 import org.jboss.dmr.ModelType;
-import org.wildfly.management.api.model.validation.ModelTypeValidator;
 
 /**
  * {@link ItemDefinition} for items whose values are lists with elements that are of a simple ModelType.
@@ -34,16 +33,14 @@ import org.wildfly.management.api.model.validation.ModelTypeValidator;
  *
  * @see SimpleListItemDefinition for an alternative that allows a higher degree of configurability.
  */
-public class PrimitiveListItemDefinition extends ListItemDefinition {
-    private final ModelType valueType;
+public class PrimitiveListItemDefinition extends ListItemDefinition<SimpleItemDefinition> {
 
-    PrimitiveListItemDefinition(final ListItemDefinition.Builder builder, ModelType valueType) {
+    PrimitiveListItemDefinition(final Builder builder) {
         super(builder);
-        this.valueType = valueType;
     }
 
     /** Builder for a {@link PrimitiveListItemDefinition}. */
-    public static class Builder extends ListItemDefinition.Builder<Builder, PrimitiveListItemDefinition> {
+    public static class Builder extends ListItemDefinition.Builder<Builder, PrimitiveListItemDefinition, SimpleItemDefinition> {
 
         public static Builder of(final String name, final ModelType valueType) {
             return new Builder(name, valueType);
@@ -57,22 +54,17 @@ public class PrimitiveListItemDefinition extends ListItemDefinition {
             return new Builder(name, basis);
         }
 
-        private final ModelType valueType;
-
         Builder(final String name, final ModelType valueType) {
-            super(name);
-            this.valueType = valueType;
-            setElementValidator(new ModelTypeValidator(valueType));
+            super(name, SimpleItemDefinition.Builder.of(valueType).build());
         }
 
         Builder(final String name, final PrimitiveListItemDefinition basis) {
-            super(basis);
-            this.valueType = basis.valueType;
+            super(name, basis);
         }
 
         @Override
         public PrimitiveListItemDefinition build() {
-            return new PrimitiveListItemDefinition(this, valueType);
+            return new PrimitiveListItemDefinition(this);
         }
     }
 }

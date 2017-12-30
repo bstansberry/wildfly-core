@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import org.jboss.dmr.ModelType;
-import org.wildfly.management.api.model.validation.ObjectTypeValidator;
 import org.wildfly.management.api.model.validation.ParameterValidator;
 
 /**
@@ -39,21 +38,22 @@ import org.wildfly.management.api.model.validation.ParameterValidator;
  *
  * @see MapItemDefinition
  */
-public class ObjectTypeItemDefinition extends ItemDefinition {
+public final class ObjectTypeItemDefinition extends ItemDefinition {
     private final ItemDefinition[] valueTypes;
     private final String suffix;
 
     private ObjectTypeItemDefinition(Builder builder) {
         super(builder);
-        this.valueTypes = builder.valueTypes;
-        this.suffix = builder.suffix == null ? "" : builder.suffix;
+        this.valueTypes = builder.getValueTypes();
+        String sfx = builder.getSuffix();
+        this.suffix = sfx == null ? "" : sfx;
     }
 
-    public final ItemDefinition[] getValueTypes() {
+    public ItemDefinition[] getValueTypes() {
         return valueTypes;
     }
 
-    public final String getSuffix() {
+    public String getSuffix() {
         return suffix;
     }
 
@@ -93,8 +93,8 @@ public class ObjectTypeItemDefinition extends ItemDefinition {
 
         private Builder(final String name, final ObjectTypeItemDefinition basis) {
             super(name, basis);
-            this.valueTypes = basis.valueTypes;
-            this.suffix = basis.suffix;
+            this.valueTypes = basis.getValueTypes();
+            this.suffix = basis.getSuffix();
         }
 
         /**
@@ -112,12 +112,21 @@ public class ObjectTypeItemDefinition extends ItemDefinition {
         }
 
         @Override
+        public Builder setValidator(ParameterValidator validator) {
+            return super.setValidator(validator);
+        }
+
+        @Override
         public ObjectTypeItemDefinition build() {
-            ParameterValidator validator = getValidator();
-            if (validator == null) {
-                setValidator(new ObjectTypeValidator(valueTypes));
-            }
             return new ObjectTypeItemDefinition(this);
+        }
+
+        private ItemDefinition[] getValueTypes() {
+            return valueTypes;
+        }
+
+        private String getSuffix() {
+            return suffix;
         }
     }
 

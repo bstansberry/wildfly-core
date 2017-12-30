@@ -76,16 +76,16 @@ public interface ControllerLoggerDuplicate extends BasicLogger {
      * An exception indicating the type is invalid.
      *
      * @param name        the name the invalid type was found for.
-     * @param validTypes  a collection of valid types.
+     * @param validType   the valid type.
      * @param invalidType the invalid type.
      *
      * @return the exception.
      */
     @Message(id = 97, value = "Wrong type for '%s'. Expected %s but was %s")
-    OperationFailedException incorrectType(String name, Collection<ModelType> validTypes, ModelType invalidType);
+    OperationFailedException incorrectType(String name, ModelType validType, ModelType invalidType);
 
     @Message(id = NONE, value = "Couldn't convert %s to %s")
-    String typeConversionError(ModelNode value, Collection<ModelType> validTypes);
+    String typeConversionError(ModelNode value, ModelType validType);
 
     /**
      * A message indicating the value, represented by the {@code value} parameter, is invalid and must be of the form
@@ -254,6 +254,17 @@ public interface ControllerLoggerDuplicate extends BasicLogger {
      *
      * @param value    the invalid value.
      * @param name     the name of the parameter.
+     * @param maxValue the minimum value required.
+     *
+     * @return the message.
+     */
+    String invalidMaxValue(double value, String name, long maxValue);
+
+    /**
+     * A message indicating the {@code value} is invalid for the parameter, represented by the {@code name} parameter.
+     *
+     * @param value    the invalid value.
+     * @param name     the name of the parameter.
      * @param minValue the minimum value required.
      *
      * @return the message.
@@ -271,6 +282,17 @@ public interface ControllerLoggerDuplicate extends BasicLogger {
      * @return the message.
      */
     String invalidMinValue(long value, String name, long minValue);
+
+    /**
+     * A message indicating the {@code value} is invalid for the parameter, represented by the {@code name} parameter.
+     *
+     * @param value    the invalid value.
+     * @param name     the name of the parameter.
+     * @param minValue the minimum value required.
+     *
+     * @return the message.
+     */
+    String invalidMinValue(double value, String name, long minValue);
 
     /**
      * Creates an exception indicating the {@code value} for the attribute, represented by the {@code name} parameter,
@@ -306,7 +328,7 @@ public interface ControllerLoggerDuplicate extends BasicLogger {
      * @return the message.
      */
     @Message(id = 129, value = "Invalid value %s for %s; legal values are %s")
-    String invalidValue(String value, String name, Collection<?> validValues);
+    OperationFailedException invalidValue(String value, String name, Collection<?> validValues);
 
     /**
      * Creates an exception indicating there are missing required attribute(s).

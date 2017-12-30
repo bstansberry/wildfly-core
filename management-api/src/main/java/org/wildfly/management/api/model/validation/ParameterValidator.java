@@ -23,8 +23,13 @@ import org.wildfly.management.api.OperationFailedException;
 
 /**
  * Performs validation on detyped operation parameters.
+ * <p>
+ * <strong>Expression and undefined value checking:</strong> A custom {@code ParameterValidator} implementation
+ * should not perform validation of values of type {@link org.jboss.dmr.ModelType#EXPRESSION} or
+ * {@link org.jboss.dmr.ModelType#UNDEFINED}, as that will have already been checked before any custom validator
+ * is invoked. The custom validator will not be invoked if the value is one of those types.
  *
- * @author Brian Stansberry (c) 2011 Red Hat Inc.
+ * @author Brian Stansberry
  */
 public interface ParameterValidator {
 
@@ -37,4 +42,17 @@ public interface ParameterValidator {
      * @throws OperationFailedException if the value is not valid
      */
     void validateParameter(String parameterName, ModelNode value) throws OperationFailedException;
+
+    /**
+     * Gets whether the standard validation performed based on the settings in an
+     * {@link org.wildfly.management.api.model.definition.ItemDefinition} should not be performed before this
+     * validator is invoked. If {@code false} (which is the default) this validator will not be invoked unless
+     * the value has already passed the standard validation. Note that this setting does not disable checks
+     * for valid {@code undefined} or expression values, which are always performed.
+     *
+     * @return {@code true} if the standard checks should not be performed.
+     */
+    default boolean replacesDefaultValidation() {
+        return false;
+    }
 }

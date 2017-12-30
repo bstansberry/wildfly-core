@@ -22,7 +22,6 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 import org.jboss.dmr.ModelNode;
-import org.jboss.dmr.ModelType;
 import org.wildfly.management.api.OperationFailedException;
 import org.wildfly.management.api._private.ControllerLoggerDuplicate;
 
@@ -31,24 +30,16 @@ import org.wildfly.management.api._private.ControllerLoggerDuplicate;
  *
  * @author Jason T, Greene
  */
-public class MaskedAddressValidator extends ModelTypeValidator {
+@SuppressWarnings("unused")
+public final class MaskedAddressValidator implements ParameterValidator {
 
-    public MaskedAddressValidator(final boolean nullable, final boolean allowExpressions) {
-        super(ModelType.STRING, true);
-    }
+    public static final MaskedAddressValidator INSTANCE = new MaskedAddressValidator();
 
     /**
      * {@inheritDoc}
      */
     @Override
     public void validateParameter(String parameterName, ModelNode value) throws OperationFailedException {
-        super.validateParameter(parameterName, value);
-        if (value.isDefined() && value.getType() != ModelType.EXPRESSION) {
-            parseMasked(value);
-        }
-    }
-
-    private static void parseMasked(ModelNode value) throws OperationFailedException {
         final String[] split = value.asString().split("/");
         if (split.length != 2) {
             throw new OperationFailedException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidAddressMaskValue(value.asString()));

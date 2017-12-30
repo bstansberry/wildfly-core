@@ -16,9 +16,16 @@ limitations under the License.
 
 package org.wildfly.management.api.model.definition;
 
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Set;
+
 import org.jboss.as.controller.client.helpers.MeasurementUnit;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
+import org.wildfly.management.api.model.validation.AllowedValuesValidator;
+import org.wildfly.management.api.model.validation.MinMaxValidator;
+import org.wildfly.management.api.model.validation.ParameterValidator;
 
 /**
  * {@link ItemDefinition} for an item whose {@link #getType() type} is a simple {@link org.jboss.dmr.ModelType},
@@ -36,6 +43,9 @@ public final class SimpleItemDefinition extends ItemDefinition {
     /** Builder for a {@link SimpleItemDefinition}. */
     public static final class Builder extends ItemDefinition.Builder<Builder, SimpleItemDefinition> {
 
+        private static final Set<ModelType> NUMERICS = EnumSet.of(ModelType.INT, ModelType.LONG, ModelType.DOUBLE, ModelType.BIG_INTEGER, ModelType.BIG_DECIMAL);
+        private static final Set<ModelType> HAS_LENGTH = EnumSet.of(ModelType.STRING, ModelType.BYTES);
+
         /**
          * Creates a builder for a simple {@link ItemDefinition}.
          * @param name the name of the item. Cannot be {@code null}
@@ -47,12 +57,23 @@ public final class SimpleItemDefinition extends ItemDefinition {
         }
 
         /**
+         * Creates a builder for a simple {@link ItemDefinition} where the item has no name. This is
+         * useful for defining items that are elements in a {@link CollectionItemDefinition}.
+         *
+         * @param type the type of the item. Cannot be {@code null}
+         * @return a builder that can be used to continue building the item definition
+         */
+        public static Builder of(ModelType type) {
+            return new Builder("", type);
+        }
+
+        /**
          * Creates a builder for a simple {@link ItemDefinition} whose initial settings will be based on
          * an existing item definition.
          * @param basis the existing item definition. Cannot be {@code null}
          * @return a builder that can be used to continue building the item definition
          */
-        public static Builder of(ItemDefinition basis) {
+        public static Builder of(SimpleItemDefinition basis) {
             return new Builder(null, basis);
         }
 
@@ -63,7 +84,7 @@ public final class SimpleItemDefinition extends ItemDefinition {
          * @param basis the existing item definition. Cannot be {@code null}
          * @return a builder that can be used to continue building the item definition
          */
-        public static Builder of(String name, ItemDefinition basis) {
+        public static Builder of(String name, SimpleItemDefinition basis) {
             return new Builder(name, basis);
         }
 
@@ -71,7 +92,7 @@ public final class SimpleItemDefinition extends ItemDefinition {
             super(itemName, type);
         }
 
-        Builder(String name, ItemDefinition basis) {
+        Builder(String name, SimpleItemDefinition basis) {
             super(name, basis);
         }
 
@@ -87,7 +108,10 @@ public final class SimpleItemDefinition extends ItemDefinition {
          */
         @Override
         public Builder setMin(long min) {
-            return super.setMin(min);
+            if (NUMERICS.contains(getType())) {
+                super.setMin(min);
+            }
+            return this;
         }
 
         /**
@@ -97,7 +121,34 @@ public final class SimpleItemDefinition extends ItemDefinition {
          */
         @Override
         public Builder setMax(long max) {
-            return super.setMax(max);
+            if (NUMERICS.contains(getType())) {
+                return super.setMax(max);
+            }
+            return this;
+        }
+
+        /**
+         * Sets a minimum value for a numeric type. Not relevant for non-numeric types.
+         * @param min the mimimum value
+         * @return a builder that can be used to continue building the item definition
+         */
+        public Builder setMinSize(long min) {
+            if (HAS_LENGTH.contains(getType())) {
+                super.setMin(min);
+            }
+            return this;
+        }
+
+        /**
+         * Sets a maximum value for a numeric type. Not relevant for non-numeric types.
+         * @param max the mimimum value
+         * @return a builder that can be used to continue building the item definition
+         */
+        public Builder setMaxSize(long max) {
+            if (HAS_LENGTH.contains(getType())) {
+                super.setMax(max);
+            }
+            return this;
         }
 
         /**
@@ -124,25 +175,120 @@ public final class SimpleItemDefinition extends ItemDefinition {
         }
 
         /**
-         * Sets allowed values for the item.
+         * Sets allowed values for the item. This is a convenience method that calls
+         * {@link #setAllowedValues(ModelNode...)} after creating a {@code ModelNode} array the values of whose nodes
+         * match the provided {@code allowedValues}.
          *
          * @param allowedValues values that are legal for this item
          * @return a builder that can be used to continue building the item definition
          */
-        @Override
         public Builder setAllowedValues(String ... allowedValues) {
-            return super.setAllowedValues(allowedValues);
+            assert allowedValues!= null;
+            ModelNode[] array = new ModelNode[allowedValues.length];
+            for (int i = 0; i < allowedValues.length; i++) {
+                array[i] = new ModelNode(allowedValues[i]);
+            }
+            return super.setAllowedValues(array);
         }
 
         /**
-         * Sets allowed values for the item
+         * Sets allowed values for the item. This is a convenience method that calls
+         * {@link #setAllowedValues(ModelNode...)} after creating a {@code ModelNode} array the values of whose nodes
+         * match the provided {@code allowedValues}.
          *
          * @param allowedValues values that are legal for this item
          * @return a builder that can be used to continue building the item definition
          */
-        @Override
         public Builder setAllowedValues(int ... allowedValues) {
-            return super.setAllowedValues(allowedValues);
+            assert allowedValues!= null;
+            ModelNode[] array = new ModelNode[allowedValues.length];
+            for (int i = 0; i < allowedValues.length; i++) {
+                array[i] = new ModelNode(allowedValues[i]);
+            }
+            return super.setAllowedValues(array);
+        }
+
+        /**
+         * Sets allowed values for the item. This is a convenience method that calls {@link #setAllowedValues(ModelNode...)}
+         * after creating a {@code ModelNode} array the values of whose nodes match the provided {@code allowedValues}.
+         *
+         * @param allowedValues values that are legal for this item
+         * @param <E> the type of the enum
+         * @return a builder that can be used to continue building the item definition
+         */
+        @SafeVarargs
+        public final <E extends Enum<E>> Builder setAllowedValues(final E... allowedValues) {
+            return setValidator(EnumValidator.create(allowedValues));
+        }
+
+        /**
+         * Sets allowed values for the item to all of the values of the given {@code enumType}.
+         * This is a convenience method that calls {@link #setAllowedValues(ModelNode...)}
+         * after creating a {@code ModelNode} array the values of whose nodes match the provided {@code allowedValues}.
+         *
+         * @param enumType the type of the enum
+         * @param <E> the type of the enum
+         * @return a builder that can be used to continue building the item definition
+         */
+        public <E extends Enum<E>> Builder setAllowedValues(final Class<E> enumType) {
+            return setValidator(EnumValidator.create(enumType));
+        }
+
+        /**
+         * Sets allowed values for the item to set of the values of the given {@code enumType}.
+         * This is a convenience method that calls {@link #setAllowedValues(ModelNode...)}
+         * after creating a {@code ModelNode} array the values of whose nodes match the provided {@code allowedValues}.
+         *
+         * @param enumType the type of the enum
+         * @param allowedValues values that are legal for this item
+         * @param <E> the type of the enum
+         * @return a builder that can be used to continue building the item definition
+         */
+        public <E extends Enum<E>> Builder setAllowedValues(final Class<E> enumType, final EnumSet<E> allowedValues) {
+            return setValidator(EnumValidator.create(enumType, allowedValues));
+        }
+
+        /**
+         * Sets the validator that should be used to validate item values. This is only relevant to operation parameter
+         * use cases. The item definition produced by this builder will directly enforce the item's
+         * {@link ItemDefinition#isRequired()} () required} and
+         * {@link ItemDefinition#isAllowExpression() allow expression} settings, so the given {@code validator}
+         * need not concern itself with those validations.
+         * <p>
+         * As a convenience, this method checks if {@code validator} implements
+         * {@link AllowedValuesValidator} or {@link MinMaxValidator} and if so calls {@link #setMin(long)},
+         * {@link #setMax(long)} or {@link #setAllowedValues(ModelNode...)} as appropriate.
+         * <p>
+         * <strong>Usage note:</strong> Providing a validator should be limited to atypical custom validation cases.
+         * Standard validation against the item's definition (i.e. checking for correct type, value or size within
+         * min and max, or adherence to a fixed set of allowed values) will be automatically handled without requiring
+         * provision of a validator.
+         *
+         * @param validator the validator. {@code null} is allowed
+         * @return a builder that can be used to continue building the item definition
+         */
+        @Override
+        public Builder setValidator(ParameterValidator validator) {
+            if (validator instanceof AllowedValuesValidator) {
+                List<ModelNode> allowed = ((AllowedValuesValidator) validator).getAllowedValues();
+                if (allowed == null) {
+                    setAllowedValues((ModelNode) null);
+                } else {
+                    setAllowedValues(allowed.toArray(new ModelNode[allowed.size()]));
+                }
+            }
+            if (validator instanceof MinMaxValidator) {
+                MinMaxValidator mmv = (MinMaxValidator) validator;
+                Long min = mmv.getMin();
+                if (min != null) {
+                    super.setMin(min); // call the superclass method to skip the type checks in our override
+                }
+                Long max = mmv.getMax();
+                if (max != null) {
+                    super.setMax(mmv.getMax()); // call the superclass method to skip the type checks in our override
+                }
+            }
+            return super.setValidator(validator);
         }
 
         /**

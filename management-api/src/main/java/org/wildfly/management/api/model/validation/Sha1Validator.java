@@ -22,44 +22,40 @@
 
 package org.wildfly.management.api.model.validation;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-
 import org.jboss.dmr.ModelNode;
-import org.wildfly.management.api.OperationFailedException;
-import org.wildfly.management.api._private.ControllerLoggerDuplicate;
 
 /**
- * Validates that a value can resolve to a multicast address.
+ * Validates that a parameter is a byte[] of an acceptable length to represent a SHA1 hash.
  *
- * @author Brian Stansberry (c) 2011 Red Hat Inc.
+ * @author Brian Stansberry
  */
 @SuppressWarnings("unused")
-public final class MulticastAddressValidator implements ParameterValidator, MinMaxValidator {
+public final class Sha1Validator implements ParameterValidator, MinMaxValidator {
 
-    public static final MulticastAddressValidator INSTANCE = new MulticastAddressValidator();
+    public static final Sha1Validator INSTANCE = new Sha1Validator();
 
-    @Override
-    public void validateParameter(String parameterName, ModelNode value) throws OperationFailedException {
-
-        String inetAddr = value.asString();
-        try {
-            final InetAddress mcastAddr = InetAddress.getByName(inetAddr);
-            if (!mcastAddr.isMulticastAddress()) {
-                throw ControllerLoggerDuplicate.ROOT_LOGGER.invalidMulticastAddress(inetAddr, parameterName);
-            }
-        } catch (final UnknownHostException e) {
-            throw ControllerLoggerDuplicate.ROOT_LOGGER.unknownMulticastAddress(e, inetAddr, parameterName);
-        }
+    /**
+     * Creates a Sha1Validator.
+     */
+    private Sha1Validator() {
     }
 
     @Override
     public Long getMin() {
-        return 1L;
+        return 20L;
     }
 
     @Override
     public Long getMax() {
-        return MAX_INT;
+        return 30L;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void validateParameter(String parameterName, ModelNode value) {
+        // no-op. This class is kind of just a lame way to configure the min and max for standard validation
+        // so we don't need to do anything beyond that here.
     }
 }

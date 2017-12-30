@@ -19,7 +19,6 @@
 package org.wildfly.management.api.model.validation;
 
 import org.jboss.dmr.ModelNode;
-import org.jboss.dmr.ModelType;
 import org.wildfly.common.net.Inet;
 import org.wildfly.management.api.OperationFailedException;
 
@@ -28,23 +27,19 @@ import org.wildfly.management.api.OperationFailedException;
  *
  * @author Brian Stansberry (c) 2011 Red Hat Inc.
  */
-public class InetAddressValidator extends ModelTypeValidator {
+@SuppressWarnings("unused")
+public final class InetAddressValidator implements ParameterValidator {
 
-    public InetAddressValidator() {
-        super(ModelType.STRING, true);
-    }
+    public static final InetAddressValidator INSTANCE = new InetAddressValidator();
 
     /**
      * {@inheritDoc}
      */
     @Override
     public void validateParameter(String parameterName, ModelNode value) throws OperationFailedException {
-        super.validateParameter(parameterName, value);
-        if (value.isDefined() && value.getType() != ModelType.EXPRESSION) {
-            String str = value.asString();
-            if (Inet.parseInetAddress(str) == null) {
-                throw new OperationFailedException("Address is invalid: \"" + str + "\"");
-            }
+        String str = value.asString();
+        if (Inet.parseInetAddress(str) == null) {
+            throw new OperationFailedException("Address is invalid: \"" + str + "\"");
         }
     }
 
