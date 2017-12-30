@@ -16,9 +16,15 @@ limitations under the License.
 
 package org.wildfly.management.api.model.definition;
 
+import java.util.EnumSet;
+import java.util.List;
+
 import org.jboss.as.controller.client.helpers.MeasurementUnit;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
+import org.wildfly.management.api.model.validation.AllowedValuesValidator;
+import org.wildfly.management.api.model.validation.MinMaxValidator;
+import org.wildfly.management.api.model.validation.ParameterValidator;
 
 /**
  * {@link ItemDefinition} for an item whose {@link #getType() type} is a simple {@link org.jboss.dmr.ModelType},
@@ -44,6 +50,17 @@ public final class SimpleItemDefinition extends ItemDefinition {
          */
         public static Builder of(String name, ModelType type) {
             return new Builder(name, type);
+        }
+
+        /**
+         * Creates a builder for a simple {@link ItemDefinition} where the item has no name. This is
+         * useful for defining items that are elements in a {@link CollectionItemDefinition}.
+         *
+         * @param type the type of the item. Cannot be {@code null}
+         * @return a builder that can be used to continue building the item definition
+         */
+        public static Builder of(ModelType type) {
+            return new Builder("", type);
         }
 
         /**
@@ -124,25 +141,110 @@ public final class SimpleItemDefinition extends ItemDefinition {
         }
 
         /**
-         * Sets allowed values for the item.
+         * Sets allowed values for the item. This is a convenience method that calls
+         * {@link #setAllowedValues(ModelNode...)} after creating a {@code ModelNode} array the values of whose nodes
+         * match the provided {@code allowedValues}.
          *
          * @param allowedValues values that are legal for this item
          * @return a builder that can be used to continue building the item definition
          */
-        @Override
         public Builder setAllowedValues(String ... allowedValues) {
-            return super.setAllowedValues(allowedValues);
+            assert allowedValues!= null;
+            ModelNode[] array = new ModelNode[allowedValues.length];
+            for (int i = 0; i < allowedValues.length; i++) {
+                array[i] = new ModelNode(allowedValues[i]);
+            }
+            return super.setAllowedValues(array);
         }
 
         /**
-         * Sets allowed values for the item
+         * Sets allowed values for the item. This is a convenience method that calls
+         * {@link #setAllowedValues(ModelNode...)} after creating a {@code ModelNode} array the values of whose nodes
+         * match the provided {@code allowedValues}.
          *
          * @param allowedValues values that are legal for this item
          * @return a builder that can be used to continue building the item definition
          */
-        @Override
         public Builder setAllowedValues(int ... allowedValues) {
-            return super.setAllowedValues(allowedValues);
+            assert allowedValues!= null;
+            ModelNode[] array = new ModelNode[allowedValues.length];
+            for (int i = 0; i < allowedValues.length; i++) {
+                array[i] = new ModelNode(allowedValues[i]);
+            }
+            return super.setAllowedValues(array);
+        }
+
+        /**
+         * Sets allowed values for the item. This is a convenience method that calls {@link #setAllowedValues(ModelNode...)}
+         * after creating a {@code ModelNode} array the values of whose nodes match the provided {@code allowedValues}.
+         *
+         * @param allowedValues values that are legal for this item
+         * @param <E> the type of the enum
+         * @return a builder that can be used to continue building the item definition
+         */
+        @SafeVarargs
+        public final <E extends Enum<E>> Builder setAllowedValues(final E... allowedValues) {
+            return setValidator(EnumValidator.create(allowedValues));
+        }
+
+        /**
+         * Sets allowed values for the item to all of the values of the given {@code enumType}.
+         * This is a convenience method that calls {@link #setAllowedValues(ModelNode...)}
+         * after creating a {@code ModelNode} array the values of whose nodes match the provided {@code allowedValues}.
+         *
+         * @param enumType the type of the enum
+         * @param <E> the type of the enum
+         * @return a builder that can be used to continue building the item definition
+         */
+        public <E extends Enum<E>> Builder setAllowedValues(final Class<E> enumType) {
+            return setValidator(EnumValidator.create(enumType));
+        }
+
+        /**
+         * Sets allowed values for the item to set of the values of the given {@code enumType}.
+         * This is a convenience method that calls {@link #setAllowedValues(ModelNode...)}
+         * after creating a {@code ModelNode} array the values of whose nodes match the provided {@code allowedValues}.
+         *
+         * @param enumType the type of the enum
+         * @param allowedValues values that are legal for this item
+         * @param <E> the type of the enum
+         * @return a builder that can be used to continue building the item definition
+         */
+        public <E extends Enum<E>> Builder setAllowedValues(final Class<E> enumType, final EnumSet<E> allowedValues) {
+            return setValidator(EnumValidator.create(enumType, allowedValues));
+        }
+
+        /**
+         * Sets the validator that should be used to validate item values. This is only relevant to operation parameter
+         * use cases. The item definition produced by this builder will directly enforce the item's
+         * {@link ItemDefinition#isRequired()} () required} and
+         * {@link ItemDefinition#isAllowExpression() allow expression} settings, so the given {@code validator}
+         * need not concern itself with those validations.
+         * <p>
+         * As a convenience, this method checks if {@code validator} implements
+         * {@link AllowedValuesValidator} or {@link MinMaxValidator} and if so calls {@link #setMin(long)},
+         * {@link #setMax(long)} or {@link #setAllowedValues(ModelNode...)} as appropriate.
+         * <p>
+         * <strong>Usage note:</strong> Providing a validator should be limited to atypical custom validation cases.
+         * Standard validation against the item's definition (i.e. checking for correct type, value or size within
+         * min and max, or adherence to a fixed set of allowed values) will be automatically handled without requiring
+         * provision of a validator.
+         *
+         * @param validator the validator. {@code null} is allowed
+         * @return a builder that can be used to continue building the item definition
+         */
+        @Override
+        public Builder setValidator(ParameterValidator validator) {
+            if (validator instanceof AllowedValuesValidator) {
+                List<ModelNode> allowed = ((AllowedValuesValidator) validator).getAllowedValues();
+                setAllowedValues(allowed.toArray(new ModelNode[allowed.size()]));
+            }
+            if (validator instanceof MinMaxValidator) {
+                MinMaxValidator mmv = (MinMaxValidator) validator;
+                setMin(mmv.getMin());
+                setMin(mmv.getMax());
+            }
+            return super.setValidator(validator);
         }
 
         /**

@@ -26,8 +26,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import org.jboss.dmr.ModelType;
-import org.wildfly.management.api.model.validation.ObjectTypeValidator;
-import org.wildfly.management.api.model.validation.ParameterValidator;
 
 /**
  * {@link ItemDefinition} for items of type {@link ModelType#OBJECT} that aren't maps, but
@@ -39,7 +37,7 @@ import org.wildfly.management.api.model.validation.ParameterValidator;
  *
  * @see MapItemDefinition
  */
-public class ObjectTypeItemDefinition extends ItemDefinition {
+public final class ObjectTypeItemDefinition extends ItemDefinition {
     private final ItemDefinition[] valueTypes;
     private final String suffix;
 
@@ -49,11 +47,11 @@ public class ObjectTypeItemDefinition extends ItemDefinition {
         this.suffix = builder.suffix == null ? "" : builder.suffix;
     }
 
-    public final ItemDefinition[] getValueTypes() {
+    public ItemDefinition[] getValueTypes() {
         return valueTypes;
     }
 
-    public final String getSuffix() {
+    public String getSuffix() {
         return suffix;
     }
 
@@ -109,10 +107,7 @@ public class ObjectTypeItemDefinition extends ItemDefinition {
 
         @Override
         public ObjectTypeItemDefinition build() {
-            ParameterValidator validator = getValidator();
-            if (validator == null) {
-                setValidator(new ObjectTypeValidator(valueTypes));
-            }
+            setMax(valueTypes.length);
             return new ObjectTypeItemDefinition(this);
         }
     }

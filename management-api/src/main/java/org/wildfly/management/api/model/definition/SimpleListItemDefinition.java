@@ -25,7 +25,7 @@ package org.wildfly.management.api.model.definition;
 import org.jboss.dmr.ModelType;
 
 /**
- * {@link ItemDefinition} for fields that represent lists with
+ * {@link ItemDefinition} for items that represent lists with
  * simple element types (i.e. not {@link ModelType#LIST} or {@link ModelType#OBJECT}.
  * The elements in the list are described by their own {@link ItemDefinition}, which allows a degree
  * of configurability that is not possible with the more straightforward {@link PrimitiveListItemDefinition}.
@@ -36,28 +36,17 @@ import org.jboss.dmr.ModelType;
  * @author Richard Achmatowicz (c) 2012 RedHat Inc.
  * @author <a href="mailto:tomaz.cerar@redhat.com">Tomaz Cerar</a>
  */
-public final class SimpleListItemDefinition extends ListItemDefinition {
-    private final SimpleItemDefinition valueType;
+public final class SimpleListItemDefinition extends ListItemDefinition<SimpleItemDefinition> {
 
-    private SimpleListItemDefinition(final ListItemDefinition.Builder builder, SimpleItemDefinition valueType) {
+    private SimpleListItemDefinition(final Builder builder) {
         super(builder);
-        this.valueType = valueType;
         // This class is not appropriate for lists with complex elements. Use ObjectListAttributeDefinition
-        assert valueType.getType() != ModelType.OBJECT && valueType.getType() != ModelType.LIST;
+        assert getElementDefinition().getType() != ModelType.OBJECT;
+        assert getElementDefinition().getType() != ModelType.LIST;
     }
 
-    public ItemDefinition getValueType() {
-        return valueType;
-    }
-
-
-    @Override
-    public CapabilityReferenceRecorder getReferenceRecorder() {
-        return valueType.getReferenceRecorder();
-    }
-
-    /** Builder for a {@link SimpleListItemDefinition}. */
-    public static final class Builder extends ListItemDefinition.Builder<Builder,SimpleListItemDefinition>{
+     /** Builder for a {@link SimpleListItemDefinition}. */
+    public static final class Builder extends ListItemDefinition.Builder<Builder,SimpleListItemDefinition, SimpleItemDefinition>{
 
         public static Builder of(final String name, final SimpleItemDefinition valueType) {
             return new Builder(name, valueType);
@@ -71,17 +60,12 @@ public final class SimpleListItemDefinition extends ListItemDefinition {
             return new Builder(name, basis);
         }
 
-        private final SimpleItemDefinition valueType;
-
         private Builder(final String name, final SimpleItemDefinition valueType) {
-            super(name);
-            this.valueType = valueType;
-            setElementValidator(valueType.getValidator());
+            super(name, valueType);
         }
 
         private Builder(final String name, final SimpleListItemDefinition basis) {
             super(name, basis);
-            valueType = basis.valueType;
         }
 
         @Override
@@ -93,7 +77,7 @@ public final class SimpleListItemDefinition extends ListItemDefinition {
             /*if (parser == null) {
                 parser = AttributeParser..
             }*/
-            return new SimpleListItemDefinition(this, valueType);
+            return new SimpleListItemDefinition(this);
         }
     }
 }

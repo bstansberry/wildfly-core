@@ -151,7 +151,7 @@ public interface AttributeMarshallers {
         @Override
         public void marshallSingleElement(ItemDefinition attribute, ModelNode property, boolean marshallDefault, XMLStreamWriter writer) throws XMLStreamException {
             ObjectMapItemDefinition map = ((ObjectMapItemDefinition) attribute);
-            ItemDefinition[] valueTypes = map.getValueType().getValueTypes();
+            ItemDefinition[] valueTypes = map.getElementDefinition().getValueTypes();
             writer.writeEmptyElement(elementName);
             Property p = property.asProperty();
             writer.writeAttribute(keyAttributeName, p.getName());
@@ -177,7 +177,7 @@ public interface AttributeMarshallers {
                     writer.writeStartElement(attribute.getXmlName());
                 }
                 for (ModelNode handler : resourceModel.get(attribute.getName()).asList()) {
-                    attr.getValueType().getMarshaller().marshallAsElement(attribute, handler, true, writer);
+                    attr.getElementDefinition().getMarshaller().marshallAsElement(attribute, handler, true, writer);
                 }
                 if (wrap) {
                     writer.writeEndElement();

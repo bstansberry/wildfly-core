@@ -25,7 +25,6 @@
 package org.wildfly.management.api.model.definition;
 
 import org.jboss.dmr.ModelType;
-import org.wildfly.management.api.model.validation.ModelTypeValidator;
 
 /**
  * {@link MapItemDefinition} for maps with keys of {@link ModelType#STRING} and
@@ -35,21 +34,14 @@ import org.wildfly.management.api.model.validation.ModelTypeValidator;
  * @since 7.2
  */
 @SuppressWarnings("WeakerAccess")
-public final class SimpleMapItemDefinition extends MapItemDefinition {
-
-    private final ModelType valueType;
+public final class SimpleMapItemDefinition extends MapItemDefinition<SimpleItemDefinition> {
 
     SimpleMapItemDefinition(final Builder builder) {
         super(builder);
-        this.valueType = builder.valueType;
-    }
-
-    public ModelType getValueType() {
-        return valueType;
     }
 
     /** Builder for a {@link org.wildfly.management.api.model.definition.SimpleMapItemDefinition */
-    public static class Builder  extends MapItemDefinition.Builder<Builder, SimpleMapItemDefinition> {
+    public static final class Builder  extends MapItemDefinition.Builder<Builder, SimpleMapItemDefinition, SimpleItemDefinition> {
 
         public static Builder of(final String name, final ModelType valueType) {
             return new Builder(name, valueType, true);
@@ -63,11 +55,8 @@ public final class SimpleMapItemDefinition extends MapItemDefinition {
             return new Builder(name, basis);
         }
 
-        private final ModelType valueType;
-
         Builder(final String name, final ModelType valueType, boolean setDefaultParserMarshaller) {
-            super(name);
-            this.valueType = valueType;
+            super(name, SimpleItemDefinition.Builder.of(valueType).build());
             if (setDefaultParserMarshaller) {
                 this.setAttributeParser(AttributeParser.PROPERTIES_PARSER);
                 this.setAttributeMarshaller(AttributeMarshaller.PROPERTIES_MARSHALLER);
@@ -76,15 +65,10 @@ public final class SimpleMapItemDefinition extends MapItemDefinition {
 
         Builder(final String name, final SimpleMapItemDefinition basis) {
             super(name, basis);
-            this.valueType = basis.valueType;
         }
 
         @Override
         public SimpleMapItemDefinition build() {
-            if (elementValidator == null) {
-                assert valueType != null;
-                elementValidator = new ModelTypeValidator(valueType);
-            }
             return new SimpleMapItemDefinition(this);
         }
     }

@@ -20,7 +20,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.jboss.dmr.ModelNode;
-import org.jboss.dmr.ModelType;
 import org.wildfly.management.api.OperationFailedException;
 import org.wildfly.management.api._private.ControllerLoggerDuplicate;
 
@@ -31,30 +30,34 @@ import org.wildfly.management.api._private.ControllerLoggerDuplicate;
  * @author wangc based on work of @author rwinston@apache.org
  *
  */
-public class SubnetValidator extends StringLengthValidator {
+@SuppressWarnings("unused")
+public final class SubnetValidator implements ParameterValidator, MinMaxValidator {
 
     private static final String IP_ADDRESS = "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})";
     private static final String SLASH_FORMAT = IP_ADDRESS + "/(\\d{1,3})";
     private static final Pattern cidrPattern = Pattern.compile(SLASH_FORMAT);
     private static final int NBITS = 32;
 
-    public SubnetValidator() {
-        super(1);
-    }
+    public static final SubnetValidator INSTANCE = new SubnetValidator();
 
     @Override
     public void validateParameter(String parameterName, ModelNode value) throws OperationFailedException {
-        super.validateParameter(parameterName, value);
-
-        if (value.isDefined() && value.getType() != ModelType.EXPRESSION) {
-            String subnet = value.asString();
-            try {
-                calculate(subnet);
-            } catch (IllegalArgumentException e) {
-                throw ControllerLoggerDuplicate.ROOT_LOGGER.invalidSubnetFormat(subnet, parameterName);
-            }
-
+        String subnet = value.asString();
+        try {
+            calculate(subnet);
+        } catch (IllegalArgumentException e) {
+            throw ControllerLoggerDuplicate.ROOT_LOGGER.invalidSubnetFormat(subnet, parameterName);
         }
+    }
+
+    @Override
+    public Long getMin() {
+        return 1L;
+    }
+
+    @Override
+    public Long getMax() {
+        return MAX_INT;
     }
 
     /*
@@ -64,36 +67,26 @@ public class SubnetValidator extends StringLengthValidator {
         Matcher matcher = cidrPattern.matcher(mask);
 
         if (matcher.matches()) {
-            matchAddress(matcher);
 
-            /* Create a binary netmask from the number of bits specification /x */
-            rangeCheck(Integer.parseInt(matcher.group(5)), 0, NBITS);
+            // IPv4 address parts must be 0-255
+            for (int i = 1; i <= 4; ++i) {
+                rangeCheck(Integer.parseInt(matcher.group(i)), 255);
+            }
+
+            // subnet mask parts must be 0-32
+            rangeCheck(Integer.parseInt(matcher.group(5)), NBITS);
         } else {
             throw new IllegalArgumentException("Could not parse [" + mask + "]");
         }
     }
 
     /*
-     * Convenience method to extract the components of a dotted decimal address and pack into an integer using a regex match
-     */
-    private int matchAddress(Matcher matcher) {
-        int addr = 0;
-        for (int i = 1; i <= 4; ++i) {
-            int n = (rangeCheck(Integer.parseInt(matcher.group(i)), 0, 255));
-            addr |= ((n & 0xff) << 8 * (4 - i));
-        }
-        return addr;
-    }
-
-    /*
      * Convenience function to check integer boundaries. Checks if a value x is in the range [begin,end]. Returns x if it is in
      * range, throws an exception otherwise.
      */
-    private int rangeCheck(int value, int begin, int end) {
-        if (value >= begin && value <= end) { // (begin,end]
-            return value;
+    private void rangeCheck(int value, int end) {
+        if (value < 0 || value > end) { // (begin,end]
+            throw new IllegalArgumentException("Value [" + value + "] not in range [0," + end + "]");
         }
-
-        throw new IllegalArgumentException("Value [" + value + "] not in range [" + begin + "," + end + "]");
     }
 }

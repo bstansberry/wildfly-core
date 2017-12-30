@@ -27,7 +27,9 @@ import java.util.List;
 import org.jboss.dmr.ModelNode;
 
 /**
- * A validator that requires that values match one of the items in a defined list.
+ * A validator that requires that values match one of the items in a defined list. The purpose
+ * of this interface is simply to allow a
+ * {@link org.wildfly.management.api.model.definition.SimpleItemDefinition.Builder}
  *
  * @author Brian Stansberry (c) 2011 Red Hat Inc.
  */
