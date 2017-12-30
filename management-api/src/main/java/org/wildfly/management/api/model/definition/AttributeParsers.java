@@ -145,7 +145,7 @@ public interface AttributeParsers {
 
             ModelNode paramVal = ParseUtils.parseAttributeValue(array[1], attribute.isAllowExpression(), attribute.getType());
             try {
-                attribute.getElementValidator().validateParameter(attribute.getXmlName(), paramVal);
+                ItemDefinitionValidator.validateItem(attribute.getElementDefinition(), paramVal);
             } catch (OperationFailedException e) {
                 throw new XMLStreamException(e.getFailureDescription().toString(), reader.getLocation());
             }
@@ -181,7 +181,7 @@ public interface AttributeParsers {
             assert attribute.getParser().isParseAsElement();
 
             ObjectMapItemDefinition map = ((ObjectMapItemDefinition) attribute);
-            ObjectTypeItemDefinition objectType = map.getValueType();
+            ObjectTypeItemDefinition objectType = map.getElementDefinition();
             ParseUtils.requireAttributes(reader, keyAttributeName);
             String key = reader.getAttributeValue(null, keyAttributeName);
             ModelNode op = operation.get(attribute.getName(), key);
@@ -265,7 +265,7 @@ public interface AttributeParsers {
         ObjectTypeItemDefinition getObjectType(ItemDefinition attribute) {
             assert attribute instanceof ObjectListItemDefinition;
             ObjectListItemDefinition list = ((ObjectListItemDefinition) attribute);
-            return list.getValueType();
+            return list.getElementDefinition();
         }
 
         @Override
@@ -273,7 +273,7 @@ public interface AttributeParsers {
             assert attribute instanceof ObjectListItemDefinition;
 
             ObjectListItemDefinition list = ((ObjectListItemDefinition) attribute);
-            ObjectTypeItemDefinition objectType = list.getValueType();
+            ObjectTypeItemDefinition objectType = list.getElementDefinition();
 
 
             ModelNode listValue = new ModelNode();

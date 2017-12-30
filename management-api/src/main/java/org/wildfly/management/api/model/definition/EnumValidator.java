@@ -20,7 +20,7 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-package org.wildfly.management.api.model.validation;
+package org.wildfly.management.api.model.definition;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,6 +34,9 @@ import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 import org.wildfly.management.api.OperationFailedException;
 import org.wildfly.management.api._private.ControllerLoggerDuplicate;
+import org.wildfly.management.api.model.validation.AllowedValuesValidator;
+import org.wildfly.management.api.model.validation.ModelTypeValidator;
+import org.wildfly.management.api.model.validation.ParameterValidator;
 
 /**
  * {@link ParameterValidator} that validates the value is a string matching
@@ -43,30 +46,11 @@ import org.wildfly.management.api._private.ControllerLoggerDuplicate;
  * @author Brian Stansberry
  * @author <a href="mailto:jperkins@redhat.com">James R. Perkins</a>
  */
-public class EnumValidator<E extends Enum<E>> extends ModelTypeValidator implements AllowedValuesValidator {
+final class EnumValidator<E extends Enum<E>> extends ModelTypeValidator implements AllowedValuesValidator {
 
     private final EnumSet<E> allowedValues;
     private final Class<E> enumType;
     private final Map<String, E> toStringMap = new HashMap<String, E>();
-
-    /**
-     * Creates a validator where the specified enum values are allowed
-     * @param enumType the type of the enum
-     * @param allowed  the allowed values. Cannot be {@code null}
-     */
-    @SafeVarargs
-    public EnumValidator(final Class<E> enumType, final E... allowed) {
-        this(enumType, setOf(enumType, allowed), true);
-    }
-
-    /**
-     * Creates a validator where the specified enum values are allowed
-     * @param enumType the type of the enum
-     * @param allowed  the allowed values. Cannot be {@code null}
-     */
-    public EnumValidator(final Class<E> enumType, final EnumSet<E> allowed) {
-        this(enumType, allowed, false);
-    }
 
     /**
      * Creates a validator where the specified enum values are allowed
@@ -90,13 +74,41 @@ public class EnumValidator<E extends Enum<E>> extends ModelTypeValidator impleme
         }
     }
 
+    /**
+     * Creates a new validator for the enum type with the allowed values equal to all values of the enum.
+     *
+     * @param enumType the type of the enum.
+     * @param <E>      the type of the enum.
+     *
+     * @return a new validator.
+     */
+    static <E extends Enum<E>> EnumValidator<E> create(final Class<E> enumType) {
+        assert enumType != null;
+        EnumSet<E> set = EnumSet.allOf(enumType);
+        return new EnumValidator<E>(enumType, set, true);
+    }
+
+    /**
+     * Creates a new validator for the enum type with the allowed values defined in the {@code allowed} parameter.
+     *
+     * @param allowed  the enum values that are allowed. Cannot be {@code null} or have zero elements
+     * @param <E>      the type of the enum.
+     *
+     * @return a new validator.
+     */
     @SafeVarargs
-    private static <T extends Enum<T>> EnumSet<T> setOf(Class<T> enumType, T... allowed) {
-        assert  enumType != null;
-        assert  allowed != null;
-        EnumSet<T> set = EnumSet.noneOf(enumType);
-        Collections.addAll(set, allowed);
-        return set;
+    static <E extends Enum<E>> EnumValidator<E> create(final E... allowed) {
+        assert allowed != null;
+        assert allowed.length > 0;
+        Class<E> enumType = allowed[0].getDeclaringClass();
+        EnumSet<E> set;
+        if (allowed.length == 1) {
+            set = EnumSet.of(allowed[0]);
+        } else {
+            set = EnumSet.noneOf(enumType);
+            Collections.addAll(set, allowed);
+        }
+        return new EnumValidator<E>(enumType, set, true);
     }
 
     /**
@@ -108,49 +120,38 @@ public class EnumValidator<E extends Enum<E>> extends ModelTypeValidator impleme
      *
      * @return a new validator.
      */
-    @SafeVarargs
-    public static <E extends Enum<E>> EnumValidator<E> create(final Class<E> enumType, final E... allowed) {
-        return new EnumValidator<E>(enumType, allowed);
-    }
-
-    /**
-     * Creates a new validator for the enum type with the allowed values defined in the {@code allowed} parameter.
-     *
-     * @param enumType the type of the enum.
-     * @param allowed  the enum values that are allowed.
-     * @param <E>      the type of the enum.
-     *
-     * @return a new validator.
-     */
-    public static <E extends Enum<E>> EnumValidator<E> create(final Class<E> enumType, final EnumSet<E> allowed) {
-        return new EnumValidator<E>(enumType, allowed);
+    static <E extends Enum<E>> EnumValidator<E> create(final Class<E> enumType, final EnumSet<E> allowed) {
+        return new EnumValidator<E>(enumType, allowed, false);
     }
 
     @Override
     public void validateParameter(String parameterName, ModelNode value) throws OperationFailedException {
         super.validateParameter(parameterName, value);
-        ModelType type = value.getType();
-        if (type == ModelType.STRING || type == ModelType.EXPRESSION) {
-            String tuString = value.resolve().asString(); // Sorry, no support for resolving against vault!
-            E enumValue;
-            try {
-                enumValue = Enum.valueOf(enumType, tuString.toUpperCase(Locale.ENGLISH));
-            } catch (IllegalArgumentException e) {
-                // valueof failed - are we using the toString representation of the Enum type?
-                enumValue = toStringMap.get(tuString);
-            }
-            if (enumValue == null || !allowedValues.contains(enumValue)) {
-                throw ControllerLoggerDuplicate.ROOT_LOGGER.invalidEnumValue(tuString, parameterName, toStringMap.keySet());
-            }
-            // Hack to store the allowed value in the model, not the user input
-            if (type != ModelType.EXPRESSION) {
-                try {
-                    value.set(enumValue.toString());
-                } catch (Exception e) {
-                    // node must be protected.
-                }
-            }
+
+        String tuString = value.asString(); // Sorry, no support for resolving against vault!
+        E enumValue;
+        try {
+            enumValue = Enum.valueOf(enumType, tuString.toUpperCase(Locale.ENGLISH));
+        } catch (IllegalArgumentException e) {
+            // valueof failed - are we using the toString representation of the Enum type?
+            enumValue = toStringMap.get(tuString);
         }
+        if (enumValue == null || !allowedValues.contains(enumValue)) {
+            throw ControllerLoggerDuplicate.ROOT_LOGGER.invalidEnumValue(tuString, parameterName, toStringMap.keySet());
+        }
+
+        // Hack to store the allowed value in the model, not the user input
+        try {
+            value.set(enumValue.toString());
+        } catch (Exception e) {
+            // node must be protected.
+        }
+    }
+
+    @Override
+    public boolean replacesDefaultValidation() {
+        // We replace default validation because we do case-insensitive checks
+        return true;
     }
 
     @Override

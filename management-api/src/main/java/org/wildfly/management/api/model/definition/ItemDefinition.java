@@ -27,10 +27,7 @@ import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 import org.wildfly.management.api.SchemaVersion;
 import org.wildfly.management.api.capability.RuntimeCapability;
-import org.wildfly.management.api.model.validation.BytesValidator;
-import org.wildfly.management.api.model.validation.ModelTypeValidator;
 import org.wildfly.management.api.model.validation.ParameterValidator;
-import org.wildfly.management.api.model.validation.StringLengthValidator;
 
 /**
  * Common characteristics of an {@link AttributeDefinition attribute} in a {@link ResourceTypeDefinition},
@@ -69,8 +66,6 @@ public class ItemDefinition {
     private final String[] requires;
     private final Long min;
     private final Long max;
-    private final Integer minSize;
-    private final Integer maxSize;
     private final ModelNode[] allowedValues;
     private final ParameterCorrector valueCorrector;
     private final ParameterValidator validator;
@@ -102,12 +97,14 @@ public class ItemDefinition {
         this.alternatives = toCopy.alternatives;
         this.requires = toCopy.requires;
         this.valueCorrector = toCopy.corrector;
-        this.min = toCopy.min;
-        this.max = toCopy.max;
-        this.minSize = toCopy.getMinSize();
-        this.maxSize = toCopy.getMaxSize();
-        this.validator = wrapValidator(toCopy.getValidator(), required, alternatives, allowExpression,
-                type, minSize, maxSize);
+        if (this instanceof ObjectTypeItemDefinition) {
+            // size is not meaningful as this is not a map
+            this.min = this.max = null;
+        } else {
+            this.min = calcMin(this.type, toCopy.min);
+            this.max = calcMax(this.type, toCopy.max);
+        }
+        this.validator = toCopy.validator;
         AttributeMarshaller marshaller = toCopy.attributeMarshaller;
         this.attributeMarshaller = marshaller != null ? marshaller : AttributeMarshaller.SIMPLE;
         this.deprecationData = toCopy.deprecated;
@@ -128,41 +125,36 @@ public class ItemDefinition {
         this.since = toCopy.since;
     }
 
-    private static ParameterValidator wrapValidator(ParameterValidator toWrap, boolean required,
-                                                    String[] alternatives, boolean allowExpression, ModelType type,
-                                                    Integer minSize, Integer maxSize) {
-        NillableOrExpressionParameterValidator result = null;
-        boolean hasAlternatives = alternatives != null && alternatives.length > 0;
-        boolean nullOK = !required || hasAlternatives;
-        if (toWrap == null) {
-            if (type == ModelType.STRING) {
-                // If sizing was specified, use it. If unspecified use defaults we've used since early AS 7
-                int min = minSize == null ? 1 : minSize;
-                int max = maxSize == null ? Integer.MAX_VALUE : maxSize;
-                toWrap = new StringLengthValidator(min, max);
-            } else if (type == ModelType.BYTES) {
-                // If sizing was specified, use it. If unspecified use defaults equivalent to no min or max
-                int min = minSize == null ? 0 : minSize;
-                int max = maxSize == null ? Integer.MAX_VALUE : maxSize;
-                toWrap = new BytesValidator(min, max); // don't need to allow null here; the wrapper will deal with null
-            } else {
-                toWrap = new ModelTypeValidator(type);
-            }
-        } else if (toWrap instanceof NillableOrExpressionParameterValidator) {
-            // Avoid re-wrapping
-            NillableOrExpressionParameterValidator current = (NillableOrExpressionParameterValidator) toWrap;
-            if (allowExpression == current.isAllowExpression() &&
-                    nullOK == current.getAllowNull()) {
-                result = current;
-            } else {
-                toWrap = current.getDelegate();
-            }
+    private static Long calcMin(ModelType type, Long configured) {
+        switch (type) {
+            case INT:
+                return configured == null ? Integer.MIN_VALUE : Math.max(configured, Integer.MIN_VALUE);
+            case LONG:
+            case DOUBLE:
+                return configured == null ? Long.MIN_VALUE : configured;
+            case OBJECT:
+            case LIST:
+            case STRING:
+                return configured == null ? 1 : Math.max(configured, 0);
+            default:
+                return null;
         }
-        if (result == null) {
-            result = new NillableOrExpressionParameterValidator(toWrap, nullOK, allowExpression);
-        }
+    }
 
-        return result;
+    private static Long calcMax(ModelType type, Long configured) {
+        switch (type) {
+            case LONG:
+            case DOUBLE:
+                return configured == null ? Long.MAX_VALUE : configured;
+            case INT:
+                return configured == null ? Integer.MAX_VALUE : Math.min(configured, Integer.MAX_VALUE);
+            case LIST:
+            case OBJECT:
+            case STRING:
+                return configured == null ? Integer.MAX_VALUE : Math.max(configured, 0);
+            default:
+                return null;
+        }
     }
 
     /**
@@ -303,36 +295,61 @@ public class ItemDefinition {
     }
 
     /**
-     * Gets the minimum value for this item, if there is one. Only relevant for items whose value is a numeric
-     * {@link #getType() type}.
+     * Gets the minimum value, length or size for this item, if there is one. Only relevant for items whose value is
+     * a numeric {@link #getType() type}, for types that have a length ({@link ModelType#STRING}, {@link ModelType#BYTES},
+     * {@link ModelType#LIST}) or for a value of type {@link ModelType#OBJECT} for which it represents a maximum
+     * number of keys in the object.
+     * <p>
+     * If no mimimum was explicitly configured, the default minimum depends on the item's {@link #getType()}:
+     * <ul>
+     *  <li>For {@link ModelType#INT}, {@link ModelType#LONG} and {@link ModelType#DOUBLE} the default is
+     *  {@link Long#MIN_VALUE}</li>
+     *  <li>For {@link ModelType#LIST}, {@link ModelType#OBJECT}and {@link ModelType#STRING} the default is {@code 0}</li>
+     *  <li>For all other types the default is {@code null}</li>
+     * </ul>
      *
-     * @return the minimum value, or {@code null} if no such value is configured
+     * @return the minimum, or {@code null} if no such value is configured or any sort of max is not
+     *         relevant given the item's type
      */
     public Long getMin() {
         return min;
     }
 
     /**
-     * Gets the maximum value for this item, if there is one. Only relevant for items whose value is a numeric
-     * {@link #getType() type}.
+     * Gets the maximum value, length or size for this item, if there is one. Only relevant for items whose value is
+     * a numeric {@link #getType() type}, for types that have a length ({@link ModelType#STRING}, {@link ModelType#BYTES},
+     * {@link ModelType#LIST}) or for a value of type {@link ModelType#OBJECT} for which it represents a maximum
+     * number of keys in the object.
+     * <p>
+     * If no maximum was explicitly configured, the default maximum depends on the item's {@link #getType()}:
+     * <ul>
+     *  <li>For {@link ModelType#INT}, {@link ModelType#LIST}, {@link ModelType#OBJECT} and {@link ModelType#STRING}
+     *  the default is {@link Integer#MAX_VALUE}</li>
+     *  <li>For {@link ModelType#LONG} and {@link ModelType#DOUBLE} the default is {@link Long#MAX_VALUE}</li>
+     *  <li>For all other types the default is {@code null}</li>
+     * </ul>
      *
-     * @return the maximum value, or {@code null} if no such value is configured
+     * @return the maximum, or {@code null} if no such value is configured or any sort of max is not
+     *         relevant given the item's type
+     *
      */
     public Long getMax() {
         return max;
     }
 
     /**
-     * Convenience method that gets the minimum value for this item, if there is one, but constrained to a valid int
-     * range. Only relevant for items whose value is a numeric {@link #getType() type}. This method will convert any
-     * value returned by {@link #getMin()} that is less than {@link Integer#MIN_VALUE} to {@link Integer#MIN_VALUE}.
-     * It will make no attempt to determine whether that is a reasonable thing to do, e.g. by checking this item's
-     * {@link #getType() type}, so it is the responsibility of the caller to check whether constraining to an int range
-     * is appropriate.
+     * Convenience method that gets the minimum value, sizer or length for this item, if there is one, but constrained
+     * to a valid int range. Only relevant for items whose value is a numeric {@link #getType() type} or one whose
+     * value's type has a size or length. This method will convert any value returned by {@link #getMin()} that is less
+     * than {@link Integer#MIN_VALUE} to {@link Integer#MIN_VALUE}. It will make no attempt to determine whether that
+     * is a reasonable thing to do, e.g. by checking this item's {@link #getType() type}, so it is the responsibility
+     * of the caller to check whether constraining to an int range is appropriate.
      *
      * @return the minimum value, or {@code null} if no such value is configured
      *
      * @throws IllegalStateException if {@link #getMin()} returns a value greater than {@link Integer#MAX_VALUE}
+     *
+     * @see #getMin()
      */
     @SuppressWarnings("unused")
     public Integer getMinAsInteger() {
@@ -351,16 +368,18 @@ public class ItemDefinition {
     }
 
     /**
-     * Convenience method that gets the maximum value for this item, if there is one, but constrained to a valid int
-     * range. Only relevant for items whose value is a numeric {@link #getType() type}. This method will convert any
-     * value returned by {@link #getMax()} that is greater than {@link Integer#MAX_VALUE} to {@link Integer#MAX_VALUE}.
-     * It will make no attempt to determine whether that is a reasonable thing to do, e.g. by checking this item's
-     * {@link #getType() type}, so it is the responsibility of the caller to check whether constraining to an int range
-     * is appropriate.
+     * Convenience method that gets the maximum value, size or length for this item, if there is one, but constrained
+     * to a valid int range. Only relevant for items whose value is a numeric {@link #getType() type} or one whose
+     * value's type has a size or length. This method will convert any value returned by {@link #getMax()} that is
+     * greater than {@link Integer#MAX_VALUE} to {@link Integer#MAX_VALUE}. It will make no attempt to determine whether
+     * that is a reasonable thing to do, e.g. by checking this item's {@link #getType() type}, so it is the
+     * responsibility of the caller to check whether constraining to an int range is appropriate.
      *
      * @return the maximum value, or {@code null} if no such value is configured
      *
      * @throws IllegalStateException if {@link #getMax()} returns a value less than {@link Integer#MIN_VALUE}
+     *
+     * @see #getMax()
      */
     @SuppressWarnings("unused")
     public Integer getMaxAsInteger() {
@@ -376,28 +395,6 @@ public class ItemDefinition {
                 return (int) minLong;
             }
         }
-    }
-
-    /**
-     * Gets the minimum size for this item, if there is one. Only relevant for items whose value is a
-     * {@link #getType() type} that can logically have a size, e.g. {@code LIST}, {@code STRING}, {@code BYTES}
-     * or an {@code OBJECT} that represents a map.
-     *
-     * @return the minimum size, or {@code null} if no such value is configured
-     */
-    public Integer getMinSize() {
-        return minSize;
-    }
-
-    /**
-     * Gets the maximum size for this item, if there is one. Only relevant for items whose value is a
-     * {@link #getType() type} that can logically have a size, e.g. {@code LIST}, {@code STRING}, {@code BYTES}
-     * or an {@code OBJECT} that represents a map.
-     *
-     * @return the maximum size, or {@code null} if no such value is configured
-     */
-    public Integer getMaxSize() {
-        return maxSize;
     }
 
     /**
@@ -478,8 +475,6 @@ public class ItemDefinition {
         private ParameterValidator validator;
         private Long min;
         private Long max;
-        private Integer minSize;
-        private Integer maxSize;
         private AttributeMarshaller attributeMarshaller = null;
         private DeprecationData deprecated = null;
         private AttributeParser parser;
@@ -588,15 +583,21 @@ public class ItemDefinition {
         }
 
         /**
-         * Sets the validator that should be used to validate item values. The resulting item definition
-         * will wrap this validator in one that enforces the item's
+         * Sets the validator that should be used to validate item values. This is only relevant to operation parameter
+         * use cases. The item definition produced by this builder will directly enforce the item's
          * {@link ItemDefinition#isRequired()} () required} and
          * {@link ItemDefinition#isAllowExpression() allow expression} settings, so the given {@code validator}
-         * need not concern itself with those validations. This is only relevant to operation parameter uses.
+         * need not concern itself with those validations.
+         * <p>
+         * <strong>Usage note:</strong> Providing a validator should be limited to atypical custom validation cases.
+         * Standard validation against the item's definition (i.e. checking for correct type, value or size within
+         * min and max, or adherence to a fixed set of allowed values) will be automatically handled without requiring
+         * provision of a validator.
+         *
          * @param validator the validator. {@code null} is allowed
          * @return a builder that can be used to continue building the item definition
          */
-        public BUILDER setValidator(ParameterValidator validator) {
+         BUILDER setValidator(ParameterValidator validator) {
             this.validator = validator;
             return (BUILDER) this;
         }
@@ -668,32 +669,6 @@ public class ItemDefinition {
          */
         public final BUILDER setRequires(String... requires) {
             this.requires = requires;
-            return (BUILDER) this;
-        }
-
-        /**
-         * Sets a maximum size for a collection-type item or one whose value is a string or byte[].
-         * The value represents the maximum number of elements in the collection, or the maximum length of
-         * the string or array. <strong>It does not represent a maximum value for a numeric item and should
-         * not be configured for numeric items.</strong>
-         * @param maxSize the maximum size
-         * @return a builder that can be used to continue building the item definition
-         */
-        public final BUILDER setMaxSize(final int maxSize) {
-            this.maxSize = maxSize;
-            return (BUILDER) this;
-        }
-
-        /**
-         * Sets a minimum size description for a collection-type item or one whose value is a string or byte[].
-         * The value represents the minimum number of elements in the collection, or the minimum length of
-         * the string or array. <strong>It does not represent a minimum value for a numeric item and should
-         * not be configured for numeric items.</strong>
-         * @param minSize the minimum size
-         * @return a builder that can be used to continue building the item definition
-         */
-        public final BUILDER setMinSize(final int minSize) {
-            this.minSize = minSize;
             return (BUILDER) this;
         }
 
@@ -862,18 +837,18 @@ public class ItemDefinition {
             return (BUILDER)this;
         }
 
-        public BUILDER setAllowExpression(boolean allowExpression) {
+        BUILDER setAllowExpression(boolean allowExpression) {
             this.allowExpression = allowExpression;
             return (BUILDER) this;
         }
 
-        public BUILDER setAllowedValues(ModelNode ... allowedValues) {
+        BUILDER setAllowedValues(ModelNode ... allowedValues) {
             assert allowedValues!= null;
             this.allowedValues = allowedValues;
             return (BUILDER) this;
         }
 
-        public BUILDER setAllowedValues(String ... allowedValues) {
+        BUILDER setAllowedValues(int ... allowedValues) {
             assert allowedValues!= null;
             this.allowedValues = new ModelNode[allowedValues.length];
             for (int i = 0; i < allowedValues.length; i++) {
@@ -882,16 +857,7 @@ public class ItemDefinition {
             return (BUILDER) this;
         }
 
-        public BUILDER setAllowedValues(int ... allowedValues) {
-            assert allowedValues!= null;
-            this.allowedValues = new ModelNode[allowedValues.length];
-            for (int i = 0; i < allowedValues.length; i++) {
-                this.allowedValues[i] = new ModelNode(allowedValues[i]);
-            }
-            return (BUILDER) this;
-        }
-
-        public BUILDER setMeasurementUnit(MeasurementUnit unit) {
+        BUILDER setMeasurementUnit(MeasurementUnit unit) {
             this.measurementUnit = unit;
             return (BUILDER) this;
         }
@@ -923,22 +889,6 @@ public class ItemDefinition {
 
         String getXmlName() {
             return xmlName;
-        }
-
-        boolean isAllowExpression() {
-            return allowExpression;
-        }
-
-        Integer getMinSize() {
-            return minSize;
-        }
-
-        Integer getMaxSize() {
-            return maxSize;
-        }
-
-        ParameterValidator getValidator() {
-            return validator;
         }
 
         AttributeMarshaller getAttributeMarshaller() {

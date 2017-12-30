@@ -23,7 +23,6 @@
 package org.wildfly.management.api.model.definition;
 
 import org.jboss.dmr.ModelType;
-import org.wildfly.management.api.model.validation.ModelTypeValidator;
 
 /**
  * {@link MapItemDefinition} for maps with both keys and values of {@link ModelType#STRING}.
@@ -35,7 +34,7 @@ import org.wildfly.management.api.model.validation.ModelTypeValidator;
  * @deprecated Use {@link SimpleMapItemDefinition} and configure an {@link AttributeMarshaller} and {@link AttributeParser}
  */
 @Deprecated
-public final class PropertiesItemDefinition extends MapItemDefinition {
+public final class PropertiesItemDefinition extends MapItemDefinition<SimpleItemDefinition> {
 
     private PropertiesItemDefinition(Builder builder) {
         super(builder);
@@ -50,7 +49,7 @@ public final class PropertiesItemDefinition extends MapItemDefinition {
      * @deprecated Use {@link SimpleMapItemDefinition.Builder} and configure an {@link AttributeMarshaller} and {@link AttributeParser}
      */
     @Deprecated
-    public static final class Builder extends MapItemDefinition.Builder<Builder, PropertiesItemDefinition> {
+    public static final class Builder extends MapItemDefinition.Builder<Builder, PropertiesItemDefinition, SimpleItemDefinition> {
 
         public static Builder of(final String name) {
             return new Builder(name);
@@ -69,7 +68,7 @@ public final class PropertiesItemDefinition extends MapItemDefinition {
         private boolean xmlNameExplicitlySet = false;
 
         private Builder(final String name) {
-            super(name);
+            super(name, SimpleItemDefinition.Builder.of(ModelType.STRING).build());
         }
 
         private Builder(final String name, final PropertiesItemDefinition basis) {
@@ -109,9 +108,6 @@ public final class PropertiesItemDefinition extends MapItemDefinition {
 
         @Override
         public PropertiesItemDefinition build() {
-            if (this.elementValidator == null) {
-                this.elementValidator = new ModelTypeValidator(ModelType.STRING);
-            }
 
             String xmlName = this.getXmlName();
             String elementName = this.getName().equals(xmlName) ? null : xmlName;

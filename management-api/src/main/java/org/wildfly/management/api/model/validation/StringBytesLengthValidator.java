@@ -28,16 +28,19 @@ import org.wildfly.management.api._private.ControllerLoggerDuplicate;
  *
  * @author Stefano Maestri (c) 2011 Red Hat Inc.
  */
-public class StringBytesLengthValidator extends ModelTypeValidator implements MinMaxValidator {
-    protected final int min;
-    protected final int max;
+@SuppressWarnings("unused")
+public final class StringBytesLengthValidator extends ModelTypeValidator implements MinMaxValidator {
+
+    private final int min;
+    private final int max;
 
     public StringBytesLengthValidator(final int min) {
         this(min, Integer.MAX_VALUE);
     }
 
+    @SuppressWarnings("WeakerAccess")
     public StringBytesLengthValidator(final int min, final int max) {
-        super(ModelType.STRING, false);
+        super(ModelType.STRING);
         this.min = min;
         this.max = max;
     }
@@ -47,16 +50,18 @@ public class StringBytesLengthValidator extends ModelTypeValidator implements Mi
      */
     @Override
     public void validateParameter(String parameterName, ModelNode value) throws OperationFailedException {
-        super.validateParameter(parameterName, value);
-        if (value.isDefined() && value.getType() != ModelType.EXPRESSION) {
-            String str = value.asString();
-            if (str.getBytes().length < min) {
-                throw new OperationFailedException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidMinBytesLength(str, parameterName, min));
-            }
-            else if (str.getBytes().length > max) {
-                throw new OperationFailedException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidMaxBytesLength(str, parameterName, max));
-            }
+        String str = value.asString();
+        if (str.getBytes().length < min) {
+            throw new OperationFailedException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidMinBytesLength(str, parameterName, min));
         }
+        else if (str.getBytes().length > max) {
+            throw new OperationFailedException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidMaxBytesLength(str, parameterName, max));
+        }
+    }
+
+    @Override
+    public boolean replacesDefaultValidation() {
+        return true;
     }
 
     @Override

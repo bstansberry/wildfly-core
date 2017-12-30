@@ -27,20 +27,14 @@ import org.jboss.dmr.ModelType;
  * @author Tomaz Cerar
  * @since 11.0
  */
-public class ObjectMapItemDefinition extends MapItemDefinition {
-    private final ObjectTypeItemDefinition valueType;
+public class ObjectMapItemDefinition extends MapItemDefinition<ObjectTypeItemDefinition> {
 
     private ObjectMapItemDefinition(final Builder builder) {
         super(builder);
-        this.valueType = builder.valueType;
-    }
-
-    public final ObjectTypeItemDefinition getValueType() {
-        return valueType;
     }
 
     /** Builder for an {@link ObjectMapItemDefinition}. */
-    public static final class Builder extends MapItemDefinition.Builder<Builder, ObjectMapItemDefinition> {
+    public static final class Builder extends MapItemDefinition.Builder<Builder, ObjectMapItemDefinition, ObjectTypeItemDefinition> {
 
         public static Builder of(final String name, final ObjectTypeItemDefinition valueType) {
             return new Builder(name, valueType);
@@ -54,19 +48,14 @@ public class ObjectMapItemDefinition extends MapItemDefinition {
             return new Builder(name, basis);
         }
 
-        private final ObjectTypeItemDefinition valueType;
-
         private Builder(final String name, final ObjectTypeItemDefinition valueType) {
-            super(name);
-            this.valueType = valueType;
-            setElementValidator(valueType.getValidator());
+            super(name, valueType);
             setAttributeParser(AttributeParsers.OBJECT_MAP_WRAPPED);
             setAttributeMarshaller(AttributeMarshaller.OBJECT_MAP_MARSHALLER);
         }
 
         private Builder(final String name, final ObjectMapItemDefinition basis) {
             super(name, basis);
-            this.valueType = basis.valueType;
         }
 
         @Override

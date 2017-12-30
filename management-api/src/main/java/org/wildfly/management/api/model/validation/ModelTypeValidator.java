@@ -20,11 +20,6 @@ package org.wildfly.management.api.model.validation;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
@@ -32,18 +27,21 @@ import org.wildfly.management.api.OperationFailedException;
 import org.wildfly.management.api._private.ControllerLoggerDuplicate;
 
 /**
- * Validates that the given parameter is of the correct type.
+ * Base class for custom validators that perform the basic function of validating that the given parameter is
+ * of the correct type. This class is public but only has protected constructors because the only reason to
+ * instantiate an instance of this class is to perform additional validation via a subclass.
  * <p>
- * Note on strict type matching:
+ * Note on type matching:
  * </p>
  * <p>
- * The constructor takes a parameter {@code strictType}. If {@code strictType} is {@code false}, nodes being validated do not
- * need to precisely match the type(s) passed to the constructor; rather a limited set of value conversions
+ * The constructor takes a parameter {@code strictType}. If {@code strictType} is {@code true}, nodes being validated do
+ * not need to precisely match the type(s) passed to the constructor; rather a limited set of value conversions
  * will be attempted, and if the node value can be converted, the node is considered to match the required type.
  * The conversions are:
  * <ul>
  * <li>For BIG_DECIMAL, BIG_INTEGER, DOUBLE, INT, LONG and PROPERTY, the related ModelNode.asXXX() method is invoked; if
- * no exception is thrown the type is considered to match.</li>
+ * no exception is thrown the type is considered to match. For INT and LONG the numeric value must also fit in the<
+ * legal range for an int or a long respectively./li>
  * <li>For BOOLEAN, if the node is of type BOOLEAN it is considered to match. If it is of type STRING with a value
  * ignoring case of "true" or "false" it is considered to match.</li>
  * <li>For OBJECT, if the node is of type OBJECT or PROPERTY it is considered to match. If it is of type LIST and each element
@@ -61,51 +59,30 @@ public class ModelTypeValidator implements ParameterValidator {
     private static final BigInteger BIGINTEGER_MAX = BigInteger.valueOf(Integer.MAX_VALUE);
     private static final BigInteger BIGINTEGER_MIN = BigInteger.valueOf(Integer.MIN_VALUE);
 
-    private static final Map<EnumSet<ModelType>, Set<ModelType>> flagSets = new ConcurrentHashMap<>(16);
-    private static Set<ModelType> sharedSetOf(ModelType firstValidType, ModelType... otherValidTypes) {
-        EnumSet<ModelType> baseSet = EnumSet.of(firstValidType, otherValidTypes);
-        Set<ModelType> result = flagSets.get(baseSet);
-        if (result == null) {
-            Set<ModelType> immutable = Collections.unmodifiableSet(baseSet);
-            Set<ModelType> existing = flagSets.putIfAbsent(baseSet, immutable);
-            result = existing == null ? immutable : existing;
-        }
-        return result;
-    }
-
-    private final Set<ModelType> validTypes;
+    private final ModelType validType;
     private final boolean strictType;
 
     /**
-     * Same as {@code ModelTypeValidator(type, false, false, false)}.
+     * Creates a ModelTypeValidator that allows the given type with non-strict checking.
+     * Same as {@code ModelTypeValidator(type, false)}. This constructor is protected because the only reason to
+     * instantiate an instance of this class is to perform additional validation via a subclass.
      *
      * @param type the valid type. Cannot be {@code null}
      */
-    public ModelTypeValidator(final ModelType type) {
-        this(false, type);
+    protected ModelTypeValidator(final ModelType type) {
+        this(type, false);
     }
 
     /**
-     * Creates a ModelTypeValidator that allows the given type.
+     * Creates a ModelTypeValidator that allows the given type. This constructor is protected because the only reason to
+     * instantiate an instance of this class is to perform additional validation via a subclass.
      *
      * @param type the valid type. Cannot be {@code null}
-     * @param strictType {@code true} if the type of a node must precisely match {@code type}; {@code false} if the value
+     * @param strictType {@code true} if the type of a value must precisely match {@code type}; {@code false} if the value
      *              conversions described in the class javadoc can be performed to check for compatible types
      */
-    public ModelTypeValidator(final ModelType type, final boolean strictType) {
-        this(strictType, type);
-    }
-
-    /**
-     * Creates a ModelTypeValidator that allows potentially more than one type.
-     *
-     * @param strictType {@code true} if the type of a node must precisely match {@code type}; {@code false} if the value
-     *              conversions described in the class javadoc can be performed to check for compatible types
-     * @param firstValidType a valid type. Cannot be {@code null}
-     * @param otherValidTypes additional valid types. May be {@code null}
-     */
-    public ModelTypeValidator(final boolean strictType, ModelType firstValidType, ModelType... otherValidTypes) {
-        this.validTypes = sharedSetOf(firstValidType, otherValidTypes);
+    protected ModelTypeValidator(final ModelType type, final boolean strictType) {
+        this.validType = type;
         this.strictType = strictType;
     }
 
@@ -114,39 +91,39 @@ public class ModelTypeValidator implements ParameterValidator {
      */
     @Override
     public void validateParameter(String parameterName, ModelNode value) throws OperationFailedException {
-        RuntimeException cause = null;
-        if (value.isDefined()) {
-            boolean matched = false;
-            if (strictType) {
-                matched = validTypes.contains(value.getType());
-            } else {
-                for (ModelType validType : validTypes) {
-                    try {
-                        if (matches(value, validType)) {
-                            matched = true;
-                            break;
-                        }
-                    } catch (RuntimeException e) {
-                        cause = e;
-                    }
+        validateType(parameterName, value, validType, strictType);
+    }
+
+    /**
+     * Validates if the given {@code value} has a type consistent with the given {@code validType}, throwing
+     * an {@link OperationFailedException} if not. See "Note on type matching" in the class documentation
+     * for a description of the matching algorithm.
+     * <p>
+     * An {@link ModelNode#isDefined()} undefined} value will throw an OFE unless {@code validType} is {@link ModelType#UNDEFINED}.
+     *
+     * @param parameterName the name of the parameter being validated. Cannot be {@code null}
+     * @param value         the value being validated. Cannot be {@code null}
+     * @param validType     the legal type for the value. Cannot be {@code null}
+     * @param strictType    {@code true} if the {@link ModelNode#getType() type of the value} must exactly match {@code validType}; {@code false} if various type conversions can be attempted
+     * @throws OperationFailedException if the value is not valid
+     */
+    public static void validateType(String parameterName, ModelNode value, ModelType validType, boolean strictType) throws OperationFailedException {
+        ModelType valueType = value.getType();
+        if (validType != valueType) {
+            try {
+                if (!strictType || !matches(value, valueType, validType)) {
+                    throw ControllerLoggerDuplicate.ROOT_LOGGER.incorrectType(parameterName, validType, valueType);
                 }
-            }
-            if (!matched) {
-                if (cause == null) {
-                    throw ControllerLoggerDuplicate.ROOT_LOGGER.incorrectType(parameterName, validTypes, value.getType());
-                }
+            } catch (RuntimeException e) {
                 String message = String.format("%s. %s",
-                        ControllerLoggerDuplicate.ROOT_LOGGER.incorrectType(parameterName, validTypes, value.getType()).getLocalizedMessage(),
-                        ControllerLoggerDuplicate.ROOT_LOGGER.typeConversionError(value, validTypes));
-                throw new OperationFailedException(message, cause);
+                        ControllerLoggerDuplicate.ROOT_LOGGER.incorrectType(parameterName, validType, valueType).getLocalizedMessage(),
+                        ControllerLoggerDuplicate.ROOT_LOGGER.typeConversionError(value, validType));
+                throw new OperationFailedException(message, e);
             }
         }
     }
 
-    private boolean matches(ModelNode value, ModelType validType) {
-        if (validType == value.getType()) {
-            return true;
-        }
+    private static boolean matches(ModelNode value, ModelType valueType, ModelType validType) {
 
         switch (validType) {
             case BIG_DECIMAL: {
@@ -162,7 +139,7 @@ public class ModelTypeValidator implements ParameterValidator {
                 return true;
             }
             case INT: {
-                switch (value.getType()) {
+                switch (valueType) {
                     case BIG_DECIMAL:
                         BigDecimal valueBigDecimal = value.asBigDecimal();
                         return (valueBigDecimal.compareTo(BIGDECIMAL_MAX) <= 0) && (valueBigDecimal.compareTo(BIGDECIMAL_MIN) >= 0);
@@ -183,7 +160,7 @@ public class ModelTypeValidator implements ParameterValidator {
                 }
             }
             case LONG: {
-                switch (value.getType()) {
+                switch (valueType) {
                     case BIG_DECIMAL:
                         BigDecimal valueBigDecimal = value.asBigDecimal();
                         return (valueBigDecimal.compareTo(BIGDECIMAL_MAX) <= 0) && (valueBigDecimal.compareTo(BIGDECIMAL_MIN) >= 0);
@@ -209,7 +186,7 @@ public class ModelTypeValidator implements ParameterValidator {
             }
             case BOOLEAN: {
                 // Allow some type conversions, not others.
-                switch (value.getType()) {
+                switch (valueType) {
                     case STRING: {
                         String s = value.asString();
                         if ("false".equalsIgnoreCase(s) || "true".equalsIgnoreCase(s)) {
@@ -219,17 +196,13 @@ public class ModelTypeValidator implements ParameterValidator {
                         // that results in the added typeConversionError message
                         throw new RuntimeException();
                     }
-                    case BOOLEAN:
-                        //case INT:
-                        return true;
                 }
                 return false;
             }
             case OBJECT: {
                 // We accept OBJECT, PROPERTY or LIST where all elements are PROPERTY
-                switch (value.getType()) {
+                switch (valueType) {
                     case PROPERTY:
-                    case OBJECT:
                         return true;
                     case LIST: {
                         for (ModelNode node : value.asList()) {
@@ -244,14 +217,13 @@ public class ModelTypeValidator implements ParameterValidator {
             }
             case STRING: {
                 // Allow some type conversions, not others.
-                switch (value.getType()) {
+                switch (valueType) {
                     case BIG_DECIMAL:
                     case BIG_INTEGER:
                     case BOOLEAN:
                     case DOUBLE:
                     case INT:
                     case LONG:
-                    case STRING:
                         return true;
                 }
                 return false;

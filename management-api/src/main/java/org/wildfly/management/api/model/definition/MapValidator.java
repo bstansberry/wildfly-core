@@ -16,7 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301, USA.
  */
-package org.wildfly.management.api.model.validation;
+package org.wildfly.management.api.model.definition;
 
 import java.util.List;
 
@@ -26,6 +26,8 @@ import org.jboss.dmr.Property;
 import org.wildfly.common.Assert;
 import org.wildfly.management.api.OperationFailedException;
 import org.wildfly.management.api._private.ControllerLoggerDuplicate;
+import org.wildfly.management.api.model.validation.ModelTypeValidator;
+import org.wildfly.management.api.model.validation.ParameterValidator;
 
 /**
  * Validates parameters of type {@link ModelType#OBJECT}.
@@ -33,7 +35,7 @@ import org.wildfly.management.api._private.ControllerLoggerDuplicate;
  * @author Brian Stansberry (c) 2011 Red Hat Inc.
  *
  */
-public class MapValidator extends ModelTypeValidator implements ParameterValidator {
+final class MapValidator extends ModelTypeValidator implements ParameterValidator {
 
     private final int min;
     private final int max;
@@ -44,7 +46,7 @@ public class MapValidator extends ModelTypeValidator implements ParameterValidat
      *
      * @param elementValidator validator for list elements
      */
-    public MapValidator(ParameterValidator elementValidator) {
+    MapValidator(ParameterValidator elementValidator) {
         this(elementValidator, 1, Integer.MAX_VALUE);
     }
 
@@ -55,7 +57,7 @@ public class MapValidator extends ModelTypeValidator implements ParameterValidat
      * @param minSize minimum number of elements in the list
      * @param maxSize maximum number of elements in the list
      */
-    public MapValidator(ParameterValidator elementValidator, int minSize, int maxSize) {
+    MapValidator(ParameterValidator elementValidator, int minSize, int maxSize) {
         super(ModelType.OBJECT, false);
         Assert.checkNotNullParam("elementValidator", elementValidator);
         this.min = minSize;

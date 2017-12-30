@@ -23,21 +23,20 @@
 package org.wildfly.management.api.model.definition;
 
 import org.jboss.dmr.ModelType;
-import org.wildfly.management.api.model.validation.ModelTypeValidator;
 
 /**
  * {@link ItemDefinition} for items whose values are lists with elements that are of {@link ModelType#STRING}.
  *
  * @author <a href="mailto:tomaz.cerar@redhat.com">Tomaz Cerar</a>
  */
-public final class StringListItemDefinition extends PrimitiveListItemDefinition {
+public final class StringListItemDefinition extends ListItemDefinition<SimpleItemDefinition> {
 
     private StringListItemDefinition(Builder builder) {
-        super(builder, ModelType.STRING);
+        super(builder);
     }
 
     /** Builder for a {@link StringListItemDefinition}. */
-    public static class Builder extends ListItemDefinition.Builder<Builder, StringListItemDefinition> {
+    public static final class Builder extends ListItemDefinition.Builder<Builder, StringListItemDefinition, SimpleItemDefinition> {
 
         public static Builder of(final String name) {
             return new Builder(name);
@@ -52,10 +51,9 @@ public final class StringListItemDefinition extends PrimitiveListItemDefinition 
         }
 
         private Builder(final String name) {
-            super(name);
+            super(name, SimpleItemDefinition.Builder.of(ModelType.STRING).build());
             setAttributeParser(AttributeParser.STRING_LIST);
             setAttributeMarshaller(AttributeMarshaller.STRING_LIST);
-            setElementValidator(new ModelTypeValidator(ModelType.STRING));
         }
 
         private Builder(final String name, final StringListItemDefinition basis) {

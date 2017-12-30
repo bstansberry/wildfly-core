@@ -1,5 +1,5 @@
 /*
-Copyright 2016 Red Hat, Inc.
+Copyright 2017 Red Hat, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,29 +14,33 @@ See the License for the specific language governing permissions and
 limitations under the License.
  */
 
-package org.wildfly.management.api.model.validation;
+package org.wildfly.management.api.model.definition;
+
+import java.util.Arrays;
+import java.util.List;
 
 import org.jboss.dmr.ModelNode;
-import org.wildfly.management.api.ResourceAddress;
 import org.wildfly.management.api.OperationFailedException;
-import org.wildfly.management.api._private.ControllerLoggerDuplicate;
+import org.wildfly.management.api.model.validation.ParameterValidator;
 
 /**
- * Validates that a node can be converted to a {@link ResourceAddress}.
+ * {@link ParameterValidator} that combines the validation of other validators
+ * by executing each of them in turn.
  *
  * @author Brian Stansberry
  */
-@SuppressWarnings("unused")
-public class PathAddressValidator implements ParameterValidator {
+final class CombinedValidator implements ParameterValidator {
 
-    public static final PathAddressValidator INSTANCE = new PathAddressValidator();
+    private final List<ParameterValidator> validators;
+
+    CombinedValidator(ParameterValidator... toCombine) {
+        validators = Arrays.asList(toCombine);
+    }
 
     @Override
     public void validateParameter(String parameterName, ModelNode value) throws OperationFailedException {
-        try {
-            ResourceAddress.pathAddress(value);
-        } catch (IllegalArgumentException iae) {
-            throw ControllerLoggerDuplicate.ROOT_LOGGER.invalidAddressFormat(value);
+        for (ParameterValidator pv : validators) {
+            pv.validateParameter(parameterName, value);
         }
     }
 }

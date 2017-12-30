@@ -46,7 +46,7 @@ public abstract class AttributeMarshaller {
      * </p>
      * @param attribute - attribute for which marshaling is being done
      * @param resourceModel the model, a non-null node of {@link org.jboss.dmr.ModelType#OBJECT}.
-     * @return {@code true} if the given {@code resourceModel} has a defined value under this attribute's {@link AttributeDefinition#getName()} () name}.
+     * @return {@code true} if the given {@code resourceModel} has a defined value under this attribute's {@link ItemDefinition#getName()} () name}.
      */
     public boolean isMarshallable(final ItemDefinition attribute, final ModelNode resourceModel) {
         return isMarshallable(attribute,resourceModel, true);
@@ -58,8 +58,8 @@ public abstract class AttributeMarshaller {
      * @param attribute - attribute for which marshaling is being done
      * @param resourceModel   the model, a non-null node of {@link org.jboss.dmr.ModelType#OBJECT}.
      * @param marshallDefault {@code true} if the value should be marshalled even if it matches the default value
-     * @return {@code true} if the given {@code resourceModel} has a defined value under this attribute's {@link AttributeDefinition#getName()} () name}
-     *         and {@code marshallDefault} is {@code true} or that value differs from this attribute's {@link AttributeDefinition#getDefaultValue() default value}.
+     * @return {@code true} if the given {@code resourceModel} has a defined value under this attribute's {@link ItemDefinition#getName()} () name}
+     *         and {@code marshallDefault} is {@code true} or that value differs from this attribute's {@link ItemDefinition#getDefaultValue() default value}.
      */
     public boolean isMarshallable(final ItemDefinition attribute, final ModelNode resourceModel, final boolean marshallDefault) {
         return resourceModel.hasDefined(attribute.getName()) && (marshallDefault || !resourceModel.get(attribute.getName()).equals(attribute.getDefaultValue()));
@@ -184,7 +184,7 @@ public abstract class AttributeMarshaller {
         ObjectTypeItemDefinition getObjectType(ItemDefinition attribute) {
             assert attribute instanceof ObjectListItemDefinition;
             ObjectListItemDefinition list = ((ObjectListItemDefinition) attribute);
-            return list.getValueType();
+            return list.getElementDefinition();
         }
 
         private boolean isMarshallable(ItemDefinition[] valueTypes, ModelNode element){

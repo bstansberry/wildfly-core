@@ -29,20 +29,14 @@ package org.wildfly.management.api.model.definition;
  * @author Richard Achmatowicz (c) 2012 RedHat Inc.
  * @author <a href="mailto:tomaz.cerar@redhat.com">Tomaz Cerar</a>
  */
-public class ObjectListItemDefinition extends ListItemDefinition {
-    private final ObjectTypeItemDefinition valueType;
+public class ObjectListItemDefinition extends ListItemDefinition<ObjectTypeItemDefinition> {
 
     private ObjectListItemDefinition(Builder builder) {
         super(builder);
-        this.valueType = builder.valueType;
-    }
-
-    public final ObjectTypeItemDefinition getValueType() {
-        return valueType;
     }
 
     /** Builder for an {@link org.wildfly.management.api.model.definition.ObjectListItemDefinition}. */
-    public static final class Builder extends ListItemDefinition.Builder<Builder, ObjectListItemDefinition> {
+    public static final class Builder extends ListItemDefinition.Builder<Builder, ObjectListItemDefinition, ObjectTypeItemDefinition> {
 
         public static Builder of(final String name, final ObjectTypeItemDefinition valueType) {
             return new Builder(name, valueType);
@@ -56,19 +50,14 @@ public class ObjectListItemDefinition extends ListItemDefinition {
             return new Builder(name, basis);
         }
 
-        private final ObjectTypeItemDefinition valueType;
-
         private Builder(final String name, final ObjectTypeItemDefinition valueType) {
-            super(name);
-            this.valueType = valueType;
-            setElementValidator(valueType.getValidator());
+            super(name, valueType);
             setAttributeParser(AttributeParser.OBJECT_LIST_PARSER);
             setAttributeMarshaller(AttributeMarshaller.OBJECT_LIST_MARSHALLER);
         }
 
         private Builder(final String name, final ObjectListItemDefinition basis) {
             super(name, basis);
-            this.valueType = basis.valueType;
         }
 
         public ObjectListItemDefinition build() {

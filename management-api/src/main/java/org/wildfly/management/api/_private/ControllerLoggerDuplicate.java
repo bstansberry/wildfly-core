@@ -76,16 +76,16 @@ public interface ControllerLoggerDuplicate extends BasicLogger {
      * An exception indicating the type is invalid.
      *
      * @param name        the name the invalid type was found for.
-     * @param validTypes  a collection of valid types.
+     * @param validType   the valid type.
      * @param invalidType the invalid type.
      *
      * @return the exception.
      */
     @Message(id = 97, value = "Wrong type for '%s'. Expected %s but was %s")
-    OperationFailedException incorrectType(String name, Collection<ModelType> validTypes, ModelType invalidType);
+    OperationFailedException incorrectType(String name, ModelType validType, ModelType invalidType);
 
     @Message(id = NONE, value = "Couldn't convert %s to %s")
-    String typeConversionError(ModelNode value, Collection<ModelType> validTypes);
+    String typeConversionError(ModelNode value, ModelType validType);
 
     /**
      * A message indicating the value, represented by the {@code value} parameter, is invalid and must be of the form
@@ -306,7 +306,7 @@ public interface ControllerLoggerDuplicate extends BasicLogger {
      * @return the message.
      */
     @Message(id = 129, value = "Invalid value %s for %s; legal values are %s")
-    String invalidValue(String value, String name, Collection<?> validValues);
+    OperationFailedException invalidValue(String value, String name, Collection<?> validValues);
 
     /**
      * Creates an exception indicating there are missing required attribute(s).

@@ -29,6 +29,9 @@ package org.wildfly.management.api.model.validation;
  */
 public interface MinMaxValidator {
 
+    long MIN_INT = Integer.MIN_VALUE;
+    long MAX_INT = Integer.MAX_VALUE;
+
     /**
      * Gets the minimum, if there is one.
      *

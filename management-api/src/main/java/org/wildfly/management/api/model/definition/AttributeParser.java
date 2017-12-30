@@ -31,7 +31,6 @@ import javax.xml.stream.XMLStreamReader;
 import org.jboss.dmr.ModelNode;
 import org.jboss.staxmapper.XMLExtendedStreamReader;
 import org.wildfly.management.api.OperationFailedException;
-import org.wildfly.management.api.model.validation.ParameterValidator;
 
 /**
  * @author Tomaz Cerar (c) 2014 Red Hat Inc.
@@ -40,7 +39,7 @@ public abstract class AttributeParser {
 
     /**
      * Creates a {@link ModelNode} using the given {@code value} after first validating the node
-     * against {@link AttributeDefinition#getValidator() this object's validator}., and then stores it in the given {@code operation}
+     * against {@link ItemDefinition#getValidator() this object's validator}., and then stores it in the given {@code operation}
      * model node as a key/value pair whose key is this attribute's getName() name}.
      * <p>
      * If {@code value} is {@code null} an {@link org.jboss.dmr.ModelType#UNDEFINED undefined} node will be stored if such a value
@@ -65,7 +64,7 @@ public abstract class AttributeParser {
 
     /**
      * Creates and returns a {@link ModelNode} using the given {@code value} after first validating the node
-     * against {@link AttributeDefinition#getValidator() this object's validator}.
+     * against {@link ItemDefinition#getValidator() this object's validator}.
      * <p>
      * If {@code value} is {@code null} an {@link org.jboss.dmr.ModelType#UNDEFINED undefined} node will be returned.
      * </p>
@@ -87,16 +86,14 @@ public abstract class AttributeParser {
 
     private ModelNode parse(final ItemDefinition attribute, final String value) throws OperationFailedException {
         ModelNode node = ParseUtils.parseAttributeValue(value, attribute.isAllowExpression(), attribute.getType());
-        final ParameterValidator validator;
+        ItemDefinition validating;
         // A bit yuck, but I didn't want to introduce a new type just for this
-        if (attribute instanceof ListItemDefinition) {
-            validator = ((ListItemDefinition) attribute).getElementValidator();
-        } else if (attribute instanceof MapItemDefinition) {
-            validator = ((MapItemDefinition) attribute).getElementValidator();
+        if (attribute instanceof CollectionItemDefinition) {
+            validating = ((CollectionItemDefinition) attribute).getElementDefinition();
         } else {
-            validator = attribute.getValidator();
+            validating = attribute;
         }
-        validator.validateParameter(attribute.getXmlName(), node);
+        ItemDefinitionValidator.validateItem(validating, node);
 
         return node;
     }
