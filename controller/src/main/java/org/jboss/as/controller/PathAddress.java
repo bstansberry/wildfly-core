@@ -314,7 +314,11 @@ public class PathAddress implements Iterable<PathElement> {
      * @param create {@code true} to create the last part of the node if it does not exist
      * @return the submodel
      * @throws NoSuchElementException if the model contains no such element
+     *
+     * @deprecated manipulating a deep DMR node tree via PathAddress is no longer how the management layer works
+     *             internally, so this method has become legacy cruft
      */
+    @Deprecated
     public ModelNode navigate(ModelNode model, boolean create) throws NoSuchElementException {
         final Iterator<PathElement> i = pathAddressList.iterator();
         while (i.hasNext()) {
@@ -337,7 +341,11 @@ public class PathAddress implements Iterable<PathElement> {
      * @param model the model node
      * @return the submodel
      * @throws NoSuchElementException if the model contains no such element
+     *
+     * @deprecated manipulating a deep DMR node tree via PathAddress is no longer how the management layer works
+     *             internally, so this method has become legacy cruft
      */
+    @Deprecated
     public ModelNode remove(ModelNode model) throws NoSuchElementException {
         final Iterator<PathElement> i = pathAddressList.iterator();
         while (i.hasNext()) {
