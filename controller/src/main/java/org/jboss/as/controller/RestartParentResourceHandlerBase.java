@@ -21,8 +21,6 @@
  */
 package org.jboss.as.controller;
 
-import java.util.NoSuchElementException;
-
 import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.controller.operations.common.Util;
 import org.jboss.as.controller.registry.Resource;
@@ -215,7 +213,7 @@ public abstract class RestartParentResourceHandlerBase implements OperationStepH
         try {
             Resource resource = ctx.readResourceFromRoot(address);
             return Resource.Tools.readModel(resource);
-        } catch (NoSuchElementException e) {
+        } catch (Resource.NoSuchResourceException e) {
             return null;
         }
     }
@@ -224,7 +222,7 @@ public abstract class RestartParentResourceHandlerBase implements OperationStepH
         try {
             Resource resource = ctx.getOriginalRootResource().navigate(address);
             return Resource.Tools.readModel(resource);
-        } catch (NoSuchElementException e) {
+        } catch (Resource.NoSuchResourceException e) {
             return null;
         }
     }
