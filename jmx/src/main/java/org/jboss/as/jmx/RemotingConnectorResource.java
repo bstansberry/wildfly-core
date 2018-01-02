@@ -37,6 +37,7 @@ import org.jboss.as.controller.capability.RuntimeCapability;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
+import org.wildfly.management.api.OperationClientException;
 
 /**
  *
@@ -90,7 +91,7 @@ public class RemotingConnectorResource extends SimpleResourceDefinition {
                 model.get(USE_MANAGEMENT_ENDPOINT.getName()).set(attributeValue);
                 try {
                     return !USE_MANAGEMENT_ENDPOINT.resolveModelAttribute(context, model).asBoolean();
-                } catch (OperationFailedException ofe) {
+                } catch (OperationFailedException | OperationClientException ofe) {
                     if (model.get(USE_MANAGEMENT_ENDPOINT.getName()).getType() == ModelType.EXPRESSION) {
                         // Must be a vault expression or something we can't resolve in Stage.MODEL.
                         // So we can only do nothing and hope for the best when they reload

@@ -40,6 +40,7 @@ import org.jboss.as.controller.operations.common.Util;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.as.domain.management.logging.DomainManagementLogger;
 import org.jboss.dmr.ModelNode;
+import org.wildfly.management.api.model.NoSuchResourceException;
 
 /**
  * {@link OperationContext.Stage#MODEL} handler that validates a security realm resource has at most one
@@ -109,7 +110,7 @@ class AuthenticationValidatingHandler implements OperationStepHandler {
         try {
             context.readResource(PathAddress.EMPTY_ADDRESS, false);
             return true;
-        } catch (Resource.NoSuchResourceException nsre) {
+        } catch (Resource.NoSuchResourceException | NoSuchResourceException nsre) {
             return false;
         }
     }

@@ -46,6 +46,7 @@ import org.jboss.as.domain.management.logging.DomainManagementLogger;
 import org.jboss.as.domain.management._private.DomainManagementResolver;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
+import org.wildfly.management.api.model.NoSuchResourceException;
 
 /**
  * {@link org.jboss.as.controller.OperationStepHandler} to cancel an
@@ -81,7 +82,7 @@ public class CancelActiveOperationHandler implements OperationStepHandler {
                     Cancellable cancellable = Cancellable.class.cast(context.readResource(PathAddress.EMPTY_ADDRESS));
                     DomainManagementLogger.ROOT_LOGGER.debugf("Cancelling %s", cancellable);
                     cancelled = cancellable.cancel();
-                } catch (Resource.NoSuchResourceException nsre) {
+                } catch (Resource.NoSuchResourceException | NoSuchResourceException nsre) {
                     // resource is gone; return 'false'
                 }
                 context.getResult().set(cancelled);

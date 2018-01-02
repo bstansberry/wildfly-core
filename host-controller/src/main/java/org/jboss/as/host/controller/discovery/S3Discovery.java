@@ -49,6 +49,7 @@ import org.jboss.as.host.controller.discovery.S3Util.S3Object;
 import org.jboss.as.host.controller.logging.HostControllerLogger;
 import org.jboss.as.remoting.Protocol;
 import org.jboss.dmr.ModelNode;
+import org.wildfly.management.api.OperationClientException;
 
 /**
  * Handle domain controller discovery via Amazon's S3 storage.
@@ -157,7 +158,9 @@ public class S3Discovery implements DiscoveryOption {
                     StaticDiscoveryResourceDefinition.PROTOCOL.getValidator()
                             .validateParameter(StaticDiscoveryResourceDefinition.PROTOCOL.getName(), new ModelNode(discovery.getProtocol()));
                     options.add(discovery);
-                } catch (OperationFailedException e) {
+                } catch (OperationFailedException | OperationClientException e) {
+                    // ignore; we'll fail below if none are able to pass
+                    // TODO debug log?
                 }
             } else {
                 throw HostControllerLogger.ROOT_LOGGER.failedMarshallingDomainControllerData();

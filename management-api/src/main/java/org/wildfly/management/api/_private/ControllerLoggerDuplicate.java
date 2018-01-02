@@ -35,7 +35,7 @@ import org.jboss.logging.annotations.Message;
 import org.jboss.logging.annotations.MessageLogger;
 import org.jboss.logging.annotations.Param;
 import org.wildfly.management.api.AddressElement;
-import org.wildfly.management.api.OperationFailedException;
+import org.wildfly.management.api.OperationClientException;
 
 /**
  * Duplicates messages from ControllerLogger.
@@ -55,10 +55,10 @@ public interface ControllerLoggerDuplicate extends BasicLogger {
      *
      * @param name the name of the duplicate entry.
      *
-     * @return an {@link OperationFailedRuntimeException} for the error.
+     * @return an {@link OperationClientException} for the error.
      */
     @Message(id = 71, value = "Duplicate path element '%s' found")
-    OperationFailedRuntimeException duplicateElement(String name);
+    OperationClientException duplicateElement(String name);
 
     /**
      * Creates an exception indicating an element, represented by the {@code name} parameter, has already been
@@ -82,7 +82,7 @@ public interface ControllerLoggerDuplicate extends BasicLogger {
      * @return the exception.
      */
     @Message(id = 97, value = "Wrong type for '%s'. Expected %s but was %s")
-    OperationFailedException incorrectType(String name, ModelType validType, ModelType invalidType);
+    OperationClientException incorrectType(String name, ModelType validType, ModelType invalidType);
 
     @Message(id = NONE, value = "Couldn't convert %s to %s")
     String typeConversionError(ModelNode value, ModelType validType);
@@ -169,10 +169,10 @@ public interface ControllerLoggerDuplicate extends BasicLogger {
      * @param element the path element
      * @param key the invalid value.
      *
-     * @return an {@link OperationFailedRuntimeException} for the error.
+     * @return an {@link OperationClientException} for the error.
      */
     @Message(id = 110, value = "Invalid resource address element '%s'. The key '%s' is not valid for an element in a resource address.")
-    String invalidPathElementKey(String element, String key);
+    OperationClientException invalidPathElementKey(String element, String key);
 
     /**
      * A message indicating the {@code value} parameter is invalid and must have a maximum length, represented by the
@@ -282,7 +282,7 @@ public interface ControllerLoggerDuplicate extends BasicLogger {
      * @return a {@link XMLStreamException} for the error.
      */
     @Message(id = 119, value = "Value %s for attribute %s is not a valid multicast address")
-    OperationFailedException invalidMulticastAddress(String value, String name);
+    OperationClientException invalidMulticastAddress(String value, String name);
 
     /**
      * Creates an exception indicating the {@code value} is invalid.
@@ -291,10 +291,10 @@ public interface ControllerLoggerDuplicate extends BasicLogger {
      * @param value the invalid value.
      * @param character the invalid character
      *
-     * @return an {@link OperationFailedRuntimeException} for the error.
+     * @return an {@link OperationClientException} for the error.
      */
     @Message(id = 128, value = "Invalid resource address element '%s'. The value '%s' is not valid for an element in a resource address. Character '%s' is not allowed.")
-    String invalidPathElementValue(String element, String value, Character character);
+    OperationClientException invalidPathElementValue(String element, String value, Character character);
 
     /**
      * A message indicating the {@code value} for the parameter, represented by the {@code name} parameter, is invalid.
@@ -306,7 +306,7 @@ public interface ControllerLoggerDuplicate extends BasicLogger {
      * @return the message.
      */
     @Message(id = 129, value = "Invalid value %s for %s; legal values are %s")
-    OperationFailedException invalidValue(String value, String name, Collection<?> validValues);
+    OperationClientException invalidValue(String value, String name, Collection<?> validValues);
 
     /**
      * Creates an exception indicating there are missing required attribute(s).
@@ -338,7 +338,7 @@ public interface ControllerLoggerDuplicate extends BasicLogger {
      * @return the exception.
      */
     @Message(id = 155, value = "'%s' may not be null")
-    OperationFailedException nullNotAllowed(String name);
+    OperationClientException nullNotAllowed(String name);
 
     /**
      * Creates an exception indicating an unexpected attribute, represented by the {@code name} parameter, was
@@ -407,10 +407,10 @@ public interface ControllerLoggerDuplicate extends BasicLogger {
      * @param value the parameter value.
      * @param parameterName the parameter name.
      * @param allowedValues a set containing the allowed values.
-     * @return an {@link OperationFailedException} for the error.
+     * @return an {@link OperationClientException} for the error.
      */
     @Message(id = 248, value="Invalid value %s for %s; legal values are %s")
-    OperationFailedException invalidEnumValue(String value, String parameterName, Set<?> allowedValues);
+    OperationClientException invalidEnumValue(String value, String parameterName, Set<?> allowedValues);
 
     /**
      * An exception indicating the {@code name} may not be {@link ModelType#EXPRESSION}.
@@ -420,7 +420,7 @@ public interface ControllerLoggerDuplicate extends BasicLogger {
      * @return the exception.
      */
     @Message(id = 264, value = "%s may not be ModelType.EXPRESSION")
-    OperationFailedException expressionNotAllowed(String name);
+    OperationClientException expressionNotAllowed(String name);
 
     /**
      * Creates an exception indicating the {@code value} for the attribute, represented by the {@code name} parameter,
@@ -433,7 +433,7 @@ public interface ControllerLoggerDuplicate extends BasicLogger {
      * @return a {@link XMLStreamException} for the error.
      */
     @Message(id = 266, value = "Value %s for attribute %s is not a valid multicast address")
-    OperationFailedException unknownMulticastAddress(@Cause UnknownHostException cause, String value, String name);
+    OperationClientException unknownMulticastAddress(@Cause UnknownHostException cause, String value, String name);
 
     @Message(id = 283, value = "Could not marshal attribute as element: %s")
     UnsupportedOperationException couldNotMarshalAttributeAsElement(String attributeName);
@@ -442,10 +442,10 @@ public interface ControllerLoggerDuplicate extends BasicLogger {
     UnsupportedOperationException couldNotMarshalAttributeAsAttribute(String attributeName);
 
     @Message(id = 341, value="A uri with bad syntax '%s' was passed for validation.")
-    OperationFailedException badUriSyntax(String uri);
+    OperationClientException badUriSyntax(String uri);
 
     @Message(id = 372, value="List attribute '%s' contains duplicates, which are not allowed")
-    OperationFailedException duplicateElementsInList(String name);
+    OperationClientException duplicateElementsInList(String name);
 
     @Message(id = 376, value = "Unexpected attribute '%s' encountered. Valid attributes are: '%s'")
     XMLStreamException unexpectedAttribute(QName name, StringBuilder possibleAttributes, @Param Location location);
@@ -457,7 +457,7 @@ public interface ControllerLoggerDuplicate extends BasicLogger {
     IllegalArgumentException illegalCLIStylePathAddress(String pathAddress);
 
     @Message(id = 390, value = "An invalid key '%s' has been supplied for parameter '%s'")
-    OperationFailedException invalidKeyForObjectType(String key, String parameter);
+    OperationClientException invalidKeyForObjectType(String key, String parameter);
 
     @Message(id = 394, value = "Capability '%s' does not provide services of type '%s'")
     IllegalArgumentException invalidCapabilityServiceType(String capabilityName, Class<?> serviceType);
@@ -487,9 +487,9 @@ public interface ControllerLoggerDuplicate extends BasicLogger {
      */
     @Message(id = 420, value = "'%s' is an invalid value for parameter %s. Values must have a minimum length of %d bytes")
     String invalidMinBytesLength(String str, String parameterName, int min);    @Message(id = 433, value = "'%s' is not a valid representation of a resource address")
-    OperationFailedException invalidAddressFormat(ModelNode address);
+    OperationClientException invalidAddressFormat(ModelNode address);
 
     @Message(id = 439, value = "Value %s for attribute %s is not a valid subnet format")
-    OperationFailedException invalidSubnetFormat(String value, String name);
+    OperationClientException invalidSubnetFormat(String value, String name);
 
 }

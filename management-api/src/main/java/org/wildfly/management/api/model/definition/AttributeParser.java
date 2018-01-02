@@ -30,7 +30,7 @@ import javax.xml.stream.XMLStreamReader;
 
 import org.jboss.dmr.ModelNode;
 import org.jboss.staxmapper.XMLExtendedStreamReader;
-import org.wildfly.management.api.OperationFailedException;
+import org.wildfly.management.api.OperationClientException;
 
 /**
  * @author Tomaz Cerar (c) 2014 Red Hat Inc.
@@ -79,12 +79,12 @@ public abstract class AttributeParser {
     public ModelNode parse(final ItemDefinition attribute, final String value, final XMLStreamReader reader) throws XMLStreamException {
         try {
             return parse(attribute, value);
-        } catch (OperationFailedException e) {
+        } catch (OperationClientException e) {
             throw new XMLStreamException(e.getFailureDescription().toString(), reader.getLocation());
         }
     }
 
-    private ModelNode parse(final ItemDefinition attribute, final String value) throws OperationFailedException {
+    private ModelNode parse(final ItemDefinition attribute, final String value) throws OperationClientException {
         ModelNode node = ParseUtils.parseAttributeValue(value, attribute.isAllowExpression(), attribute.getType());
         ItemDefinition validating;
         // A bit yuck, but I didn't want to introduce a new type just for this

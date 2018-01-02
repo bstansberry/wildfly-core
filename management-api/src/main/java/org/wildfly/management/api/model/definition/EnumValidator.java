@@ -32,7 +32,7 @@ import java.util.Map;
 
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
-import org.wildfly.management.api.OperationFailedException;
+import org.wildfly.management.api.OperationClientException;
 import org.wildfly.management.api._private.ControllerLoggerDuplicate;
 import org.wildfly.management.api.model.validation.AllowedValuesValidator;
 import org.wildfly.management.api.model.validation.ModelTypeValidator;
@@ -125,7 +125,7 @@ final class EnumValidator<E extends Enum<E>> extends ModelTypeValidator implemen
     }
 
     @Override
-    public void validateParameter(String parameterName, ModelNode value) throws OperationFailedException {
+    public void validateParameter(String parameterName, ModelNode value) throws OperationClientException {
         super.validateParameter(parameterName, value);
 
         String tuString = value.asString(); // Sorry, no support for resolving against vault!

@@ -20,7 +20,7 @@ package org.wildfly.management.api.model.validation;
 
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
-import org.wildfly.management.api.OperationFailedException;
+import org.wildfly.management.api.OperationClientException;
 import org.wildfly.management.api._private.ControllerLoggerDuplicate;
 
 /**
@@ -49,13 +49,13 @@ public final class StringBytesLengthValidator extends ModelTypeValidator impleme
      * {@inheritDoc}
      */
     @Override
-    public void validateParameter(String parameterName, ModelNode value) throws OperationFailedException {
+    public void validateParameter(String parameterName, ModelNode value) throws OperationClientException {
         String str = value.asString();
         if (str.getBytes().length < min) {
-            throw new OperationFailedException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidMinBytesLength(str, parameterName, min));
+            throw new OperationClientException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidMinBytesLength(str, parameterName, min));
         }
         else if (str.getBytes().length > max) {
-            throw new OperationFailedException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidMaxBytesLength(str, parameterName, max));
+            throw new OperationClientException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidMaxBytesLength(str, parameterName, max));
         }
     }
 

@@ -22,7 +22,6 @@
 
 package org.wildfly.management.api;
 
-import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.Property;
 import org.wildfly.management.api._private.ControllerLoggerDuplicate;
 
@@ -78,11 +77,11 @@ public final class AddressElement {
     AddressElement(final String key, final String value) {
         if (!isValidKey(key)) {
             final String element = key + "=" + value;
-            throw new OperationClientIllegalArgumentException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidPathElementKey(element, key));
+            throw ControllerLoggerDuplicate.ROOT_LOGGER.invalidPathElementKey(element, key);
         }
         if (value == null || value.isEmpty()) {
             final String element = key + "=" + value;
-            throw new OperationClientIllegalArgumentException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidPathElementValue(element, value, ' '));
+            throw ControllerLoggerDuplicate.ROOT_LOGGER.invalidPathElementValue(element, value, ' ');
         }
         boolean multiTarget = false;
         if(key.equals(WILDCARD_VALUE)) {
@@ -235,25 +234,5 @@ public final class AddressElement {
     @Override
     public String toString() {
         return "\"" + key + "\" => \"" + value + "\"";
-    }
-
-    /**
-     * AS7-2905. An IAE that implements OperationClientException. Allows PathElement to continue to throw IAE
-     * in case client code expects that failure type, but lets operation handling code detect that the
-     * IAE is a client error.
-     */
-    private static class OperationClientIllegalArgumentException extends IllegalArgumentException implements OperationClientException {
-
-        private static final long serialVersionUID = -9073168544821068948L;
-
-        private OperationClientIllegalArgumentException(final String msg) {
-            super(msg);
-            assert msg != null : "msg is null";
-        }
-
-        @Override
-        public ModelNode getFailureDescription() {
-            return new ModelNode(getLocalizedMessage());
-        }
     }
 }

@@ -51,6 +51,7 @@ import org.jboss.dmr.ValueExpression;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.wildfly.management.api.OperationClientException;
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -147,7 +148,7 @@ public class SchemaValidator {
                     ModelNode input = new ModelNode(new ValueExpression(line));
                     try {
                         resolved = replacer.resolveExpressions(input).asString();
-                    } catch (OperationFailedException e) {
+                    } catch (OperationFailedException | OperationClientException e) {
                         // ignore, output the original line and see what happens ;)
                     }
                 }

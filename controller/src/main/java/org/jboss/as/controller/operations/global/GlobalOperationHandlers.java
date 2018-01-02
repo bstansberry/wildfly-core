@@ -78,6 +78,7 @@ import org.jboss.as.controller.registry.Resource;
 import org.jboss.as.controller.registry.WildcardReadResourceDescriptionAddressHack;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
+import org.wildfly.management.api.model.NoSuchResourceException;
 
 /**
  * Global {@code OperationHandler}s.
@@ -388,7 +389,7 @@ public class GlobalOperationHandlers {
                 // Just report the failure to the filter and complete normally
                 filteredData.addAccessRestrictedResource(base);
                 ControllerLogger.MGMT_OP_LOGGER.tracef("Caught ResourceNotAddressableException in %s", this);
-            } catch (Resource.NoSuchResourceException e) {
+            } catch (Resource.NoSuchResourceException | NoSuchResourceException e) {
                 // It's possible this is a remote failure, in which case we
                 // don't get ResourceNotAddressableException. So see if
                 // it was due to any authorization denial
@@ -476,7 +477,7 @@ public class GlobalOperationHandlers {
                                     }
                                 }
                             });
-                        } catch (Resource.NoSuchResourceException e) {
+                        } catch (Resource.NoSuchResourceException | NoSuchResourceException e) {
                             // just discard the result to avoid leaking the inaccessible address
                         }
                     }
@@ -725,7 +726,7 @@ public class GlobalOperationHandlers {
                                 }
                             }
                         });
-                    } catch (Resource.NoSuchResourceException e) {
+                    } catch (Resource.NoSuchResourceException | NoSuchResourceException e) {
                         // just discard the result to avoid leaking the inaccessible address
                     }
                 }
@@ -845,7 +846,7 @@ public class GlobalOperationHandlers {
                 filteredData.addAccessRestrictedResource(base);
                 filtered.set(true);
                 ControllerLogger.MGMT_OP_LOGGER.tracef("Caught ResourceNotAddressableException in remote execution from %s", proxyHandler);
-            } catch (Resource.NoSuchResourceException e) {
+            } catch (Resource.NoSuchResourceException | NoSuchResourceException e) {
                 // It's possible this is a remote failure, in which case we
                 // don't get ResourceNotAddressableException. So see if
                 // it was due to any authorization denial
@@ -990,7 +991,7 @@ public class GlobalOperationHandlers {
         public void execute(OperationContext context, ModelNode operation) throws OperationFailedException {
             try {
                 wrapped.execute(context, operation);
-            } catch (Resource.NoSuchResourceException e) {
+            } catch (Resource.NoSuchResourceException | NoSuchResourceException e) {
                 availableResponse.unavailable = true;
             }
         }

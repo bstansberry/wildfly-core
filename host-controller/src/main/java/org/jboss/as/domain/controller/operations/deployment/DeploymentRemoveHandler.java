@@ -46,6 +46,7 @@ import org.jboss.as.repository.DeploymentFileRepository;
 import org.jboss.as.server.deployment.DeploymentUtils;
 import org.jboss.as.server.deployment.ModelContentReference;
 import org.jboss.dmr.ModelNode;
+import org.wildfly.management.api.model.NoSuchResourceException;
 
 /**
  * Handles removal of a deployment from the model. This can be used at either the domain deployments level
@@ -92,7 +93,7 @@ public abstract class DeploymentRemoveHandler implements OperationStepHandler {
                             Set<String> newHashes;
                             try {
                                 newHashes = DeploymentUtils.getDeploymentHexHash(context.readResource(PathAddress.EMPTY_ADDRESS, false).getModel());
-                            } catch (Resource.NoSuchResourceException ex) {
+                            } catch (Resource.NoSuchResourceException | NoSuchResourceException ex) {
                                 newHashes = Collections.emptySet();
                             }
                             removeContent(address, newHashes, deploymentHashes);

@@ -20,7 +20,7 @@ package org.wildfly.management.api.model.validation;
 
 import org.jboss.dmr.ModelNode;
 import org.wildfly.common.net.Inet;
-import org.wildfly.management.api.OperationFailedException;
+import org.wildfly.management.api.OperationClientException;
 
 /**
  * Validates that the given parameter is a string that can be converted into an InetAddress.
@@ -36,10 +36,10 @@ public final class InetAddressValidator implements ParameterValidator {
      * {@inheritDoc}
      */
     @Override
-    public void validateParameter(String parameterName, ModelNode value) throws OperationFailedException {
+    public void validateParameter(String parameterName, ModelNode value) throws OperationClientException {
         String str = value.asString();
         if (Inet.parseInetAddress(str) == null) {
-            throw new OperationFailedException("Address is invalid: \"" + str + "\"");
+            throw new OperationClientException("Address is invalid: \"" + str + "\"");
         }
     }
 

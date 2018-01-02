@@ -19,7 +19,7 @@
 package org.wildfly.management.api.model.validation;
 
 import org.jboss.dmr.ModelNode;
-import org.wildfly.management.api.OperationFailedException;
+import org.wildfly.management.api.OperationClientException;
 
 /**
  * Performs validation on detyped operation parameters.
@@ -39,9 +39,9 @@ public interface ParameterValidator {
      * @param parameterName the name of the parameter. Cannot be {@code null}
      * @param value the parameter value. Cannot be {@code null}
      *
-     * @throws OperationFailedException if the value is not valid
+     * @throws OperationClientException if the value is not valid
      */
-    void validateParameter(String parameterName, ModelNode value) throws OperationFailedException;
+    void validateParameter(String parameterName, ModelNode value) throws OperationClientException;
 
     /**
      * Gets whether the standard validation performed based on the settings in an

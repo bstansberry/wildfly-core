@@ -151,6 +151,7 @@ import org.jboss.as.server.services.net.LocalDestinationOutboundSocketBindingRes
 import org.jboss.as.server.services.net.RemoteDestinationOutboundSocketBindingResourceDefinition;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.Property;
+import org.wildfly.management.api.OperationClientException;
 
 /**
  * Factory creating the boot operations for a {@linkplain ManagedServer}.
@@ -371,7 +372,7 @@ public final class ManagedServerOperationsFactory {
                     if (boottimeOnly && !SystemPropertyResourceDefinition.BOOT_TIME.resolveModelAttribute(domainController.getExpressionResolver(), propResource).asBoolean()) {
                         continue;
                     }
-                } catch (OperationFailedException e) {
+                } catch (OperationFailedException | OperationClientException e) {
                     throw new IllegalStateException(e);
                 }
                 String val = propResource.hasDefined(VALUE) ? propResource.get(VALUE).asString() : null;

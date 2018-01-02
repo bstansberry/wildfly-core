@@ -33,6 +33,7 @@ import org.jboss.as.controller.operations.validation.ParameterValidator;
 import org.jboss.as.controller.parsing.ParseUtils;
 import org.jboss.dmr.ModelNode;
 import org.jboss.staxmapper.XMLExtendedStreamReader;
+import org.wildfly.management.api.OperationClientException;
 
 /**
  * @author Tomaz Cerar (c) 2014 Red Hat Inc.
@@ -83,6 +84,8 @@ public abstract class AttributeParser {
         try {
             return parse(attribute, value);
         } catch (OperationFailedException e) {
+            throw new XMLStreamException(e.getFailureDescription().toString(), reader.getLocation());
+        } catch (OperationClientException e) {
             throw new XMLStreamException(e.getFailureDescription().toString(), reader.getLocation());
         }
     }

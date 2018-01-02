@@ -48,6 +48,7 @@ import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.remoting3.Endpoint;
+import org.wildfly.management.api.model.NoSuchResourceException;
 import org.xnio.OptionMap;
 
 /**
@@ -185,7 +186,7 @@ public final class ManagementRemotingServices extends RemotingServices {
         try {
             remotingConnector = context.readResourceFromRoot(
                     PathAddress.pathAddress(PathElement.pathElement(SUBSYSTEM, "jmx"), PathElement.pathElement("remoting-connector", "jmx")), false).getModel();
-        } catch (Resource.NoSuchResourceException ex) {
+        } catch (Resource.NoSuchResourceException | NoSuchResourceException ex) {
             return;
         }
         if (!remotingConnector.hasDefined(USE_MGMT_ENDPOINT) ||

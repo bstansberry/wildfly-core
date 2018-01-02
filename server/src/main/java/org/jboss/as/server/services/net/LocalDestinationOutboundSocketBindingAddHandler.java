@@ -49,6 +49,7 @@ import org.jboss.as.network.SocketBinding;
 import org.jboss.as.network.SocketBindingManager;
 import org.jboss.dmr.ModelNode;
 import org.jboss.msc.service.ServiceController;
+import org.wildfly.management.api.model.NoSuchResourceException;
 
 /**
  * Handles "add" operation for a local-destination outbound-socket-binding
@@ -88,7 +89,7 @@ public class LocalDestinationOutboundSocketBindingAddHandler extends AbstractAdd
                     try {
                         resource = context.readResourceFromRoot(context.getCurrentAddress().getParent(), false);
                         validation(socketBindingGroupName, outboundSocketBindingName, resource, true, new ArrayList<String>());
-                    } catch (Resource.NoSuchResourceException e) {
+                    } catch (Resource.NoSuchResourceException | NoSuchResourceException e) {
                         // this occurs in the case of an ignored server-group being added to a slave.
                         // for all other cases, the parent element is always present.
                         return;

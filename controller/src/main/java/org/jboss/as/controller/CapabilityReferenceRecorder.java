@@ -28,6 +28,7 @@ import org.jboss.as.controller.capability.RuntimeCapability;
 import org.jboss.as.controller.registry.ImmutableManagementResourceRegistration;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.dmr.ModelNode;
+import org.wildfly.management.api.OperationClientException;
 
 /**
  * Records information about capability reference information encoded in an attribute's value.
@@ -287,7 +288,7 @@ public interface CapabilityReferenceRecorder {
                     AttributeDefinition ad = attributes[i];
                     dynamicParts[i] = ad.resolveModelAttribute(context, model).asString();
                 }
-            } catch (OperationFailedException e) {
+            } catch (OperationFailedException | OperationClientException e) {
                 throw new RuntimeException(e);
             }
             dynamicParts[attributes.length] = attributeValue;

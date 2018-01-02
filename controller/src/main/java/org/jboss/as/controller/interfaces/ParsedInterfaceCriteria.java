@@ -43,6 +43,7 @@ import org.jboss.as.controller.parsing.ParseUtils;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 import org.jboss.dmr.Property;
+import org.wildfly.management.api.OperationClientException;
 
 /**
  * Utility class to create an interface criteria based on a {@link ModelNode} description
@@ -119,7 +120,7 @@ public final class ParsedInterfaceCriteria {
                 parsed = validation == null ? new ParsedInterfaceCriteria(criteriaSet) : new ParsedInterfaceCriteria(validation);
             } catch (ParsingException p) {
                 return new ParsedInterfaceCriteria(p.msg);
-            } catch (OperationFailedException e) {
+            } catch (OperationFailedException | OperationClientException e) {
                 return new ParsedInterfaceCriteria(e.getMessage());
             }
         }

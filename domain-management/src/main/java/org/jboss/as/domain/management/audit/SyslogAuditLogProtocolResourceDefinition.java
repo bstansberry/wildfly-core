@@ -63,6 +63,7 @@ import org.jboss.as.domain.management.logging.DomainManagementLogger;
 import org.jboss.as.domain.management.security.KeystoreAttributes;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
+import org.wildfly.management.api.model.NoSuchResourceException;
 
 /**
  *
@@ -312,7 +313,7 @@ public abstract class SyslogAuditLogProtocolResourceDefinition extends SimpleRes
                 Resource handleResource = context.readResourceFromRoot(handlerAddress);
                 String name = Util.getNameFromAddress(handlerAddress);
                 auditLogger.getUpdater().updateHandler(SyslogAuditLogHandlerResourceDefinition.createHandler(pathManager, context, name, handleResource, environmentReader));
-            } catch (Resource.NoSuchResourceException ignored) {
+            } catch (Resource.NoSuchResourceException | NoSuchResourceException ignored) {
                 // WFCORE-810 handler resource has been removed in this same op, so we do nothing
             }
         }

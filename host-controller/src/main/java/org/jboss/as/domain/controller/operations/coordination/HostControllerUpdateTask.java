@@ -64,6 +64,7 @@ import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 import org.jboss.dmr.Property;
 import org.jboss.threads.AsyncFuture;
+import org.wildfly.management.api.OperationClientException;
 
 /**
  * @author Emanuel Muckenhuber
@@ -121,7 +122,7 @@ class HostControllerUpdateTask {
                 subsystemListener.operationPrepared(result);
                 return new ExecutedHostRequest(result.getFinalResult(), transformationResult);
             }
-        } catch (OperationFailedException e) {
+        } catch (OperationFailedException | OperationClientException e) {
             // Handle transformation failures
             final ProxyOperation proxyOperation = new ProxyOperation(name, operation, messageHandler, operationAttachments);
             final TransactionalProtocolClient.PreparedOperation<ProxyOperation> result = BlockingQueueOperationListener.FailedOperation.create(proxyOperation, e);

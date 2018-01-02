@@ -20,7 +20,7 @@ import org.jboss.dmr.ModelNode;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceRegistry;
-import org.wildfly.management.api.OperationFailedException;
+import org.wildfly.management.api.OperationClientException;
 import org.wildfly.management.api.ResourceAddress;
 import org.wildfly.management.api.AddressElement;
 import org.wildfly.management.api.capability.CapabilityServiceSupport;
@@ -262,7 +262,7 @@ public interface RuntimeUpdateContext extends RuntimeOperationContext {
     /**
      * Requests that one of a capability's optional requirements hereafter be treated as required, until the process is
      * stopped or reloaded. This request will only be granted if the required capability is already present; otherwise
-     * an {@link OperationFailedException} will be thrown.
+     * an {@link OperationClientException} will be thrown.
      * <p>
      * This method should be used only if the caller is not sure whether the capability is required until
      * a {@link RuntimeReadHandler} or a {@link RuntimeUpdateHandler} executes.
@@ -276,9 +276,9 @@ public interface RuntimeUpdateContext extends RuntimeOperationContext {
      * @param attribute the name of the attribute that triggered this requirement, or {@code null} if no single
      *                  attribute was responsible
      *
-     * @throws OperationFailedException if the requested capability is not available
+     * @throws OperationClientException if the requested capability is not available
      */
-    void requireOptionalCapability(String required, String dependent, String attribute) throws OperationFailedException;
+    void requireOptionalCapability(String required, String dependent, String attribute) throws OperationClientException;
 
     /**
      * Gets the runtime API associated with a given capability, if there is one.

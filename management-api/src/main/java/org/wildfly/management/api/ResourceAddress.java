@@ -37,7 +37,6 @@ import org.jboss.dmr.ModelType;
 import org.jboss.dmr.Property;
 import org.wildfly.common.Assert;
 import org.wildfly.management.api._private.ControllerLoggerDuplicate;
-import org.wildfly.management.api._private.OperationFailedRuntimeException;
 
 /**
  * An address of a resource in the management model. An address is composed of a list
@@ -209,7 +208,7 @@ public final class ResourceAddress implements Iterable<AddressElement> {
         return parsedAddress;
     }
 
-    private static OperationFailedRuntimeException duplicateElement(final String name) {
+    private static OperationClientException duplicateElement(final String name) {
         return ControllerLoggerDuplicate.ROOT_LOGGER.duplicateElement(name);
     }
 

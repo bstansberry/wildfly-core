@@ -71,6 +71,7 @@ import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
+import org.wildfly.management.api.OperationClientException;
 import org.wildfly.security.manager.WildFlySecurityManager;
 
 /**
@@ -156,7 +157,7 @@ public class PathInfoHandler extends AbstractRuntimeOnlyHandler {
                 // Resolve the model values
                 relativeTo = readAttributeValue(context, relativePathAttribute.relativeToAttribute);
                 path = readAttributeValue(context, relativePathAttribute.pathAttribute);
-            } catch (OperationFailedException ex) {
+            } catch (OperationFailedException | OperationClientException ex) {
                 return;
             }
             // Resolve paths

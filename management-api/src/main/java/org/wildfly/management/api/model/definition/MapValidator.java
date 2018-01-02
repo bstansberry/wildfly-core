@@ -24,7 +24,7 @@ import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 import org.jboss.dmr.Property;
 import org.wildfly.common.Assert;
-import org.wildfly.management.api.OperationFailedException;
+import org.wildfly.management.api.OperationClientException;
 import org.wildfly.management.api._private.ControllerLoggerDuplicate;
 import org.wildfly.management.api.model.validation.ModelTypeValidator;
 import org.wildfly.management.api.model.validation.ParameterValidator;
@@ -66,16 +66,16 @@ final class MapValidator extends ModelTypeValidator implements ParameterValidato
     }
 
     @Override
-    public void validateParameter(String parameterName, ModelNode value) throws OperationFailedException {
+    public void validateParameter(String parameterName, ModelNode value) throws OperationClientException {
         super.validateParameter(parameterName, value);
         if (value.isDefined()) {
             List<Property> list = value.asPropertyList();
             int size = list.size();
             if (size < min) {
-                throw new OperationFailedException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidMinSize(size, parameterName, min));
+                throw new OperationClientException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidMinSize(size, parameterName, min));
             }
             else if (size > max) {
-                throw new OperationFailedException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidMaxSize(size, parameterName, max));
+                throw new OperationClientException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidMaxSize(size, parameterName, max));
             }
             else {
                 for (Property property : list) {

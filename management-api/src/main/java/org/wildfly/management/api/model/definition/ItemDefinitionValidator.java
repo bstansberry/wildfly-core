@@ -23,7 +23,7 @@ import java.util.Set;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 import org.jboss.dmr.Property;
-import org.wildfly.management.api.OperationFailedException;
+import org.wildfly.management.api.OperationClientException;
 import org.wildfly.management.api._private.ControllerLoggerDuplicate;
 import org.wildfly.management.api.model.validation.ModelTypeValidator;
 import org.wildfly.management.api.model.validation.ParameterValidator;
@@ -39,7 +39,7 @@ final class ItemDefinitionValidator {
         // prevent instantiation
     }
 
-    static void validateItem(ItemDefinition itemDefinition, ModelNode value) throws OperationFailedException {
+    static void validateItem(ItemDefinition itemDefinition, ModelNode value) throws OperationClientException {
         switch (value.getType()) {
             case EXPRESSION:
                 if (!itemDefinition.isAllowExpression()) {
@@ -64,7 +64,7 @@ final class ItemDefinitionValidator {
         }
     }
 
-    private static void performStandardCheck(ItemDefinition itemDefinition, ModelNode value, String itemName) throws OperationFailedException {
+    private static void performStandardCheck(ItemDefinition itemDefinition, ModelNode value, String itemName) throws OperationClientException {
         ModelType type = itemDefinition.getType();
         // First, perform a simple type check
         ModelTypeValidator.validateType(itemName, value, type, false);
@@ -82,7 +82,7 @@ final class ItemDefinitionValidator {
         }
     }
 
-    private static void validateCollectionType(CollectionItemDefinition cid, ModelNode value, String itemName, ModelType type) throws OperationFailedException {
+    private static void validateCollectionType(CollectionItemDefinition cid, ModelNode value, String itemName, ModelType type) throws OperationClientException {
         // Check size
         validateMinMax(cid, value, type);
 
@@ -103,7 +103,7 @@ final class ItemDefinitionValidator {
         }
     }
 
-    private static void validateObjectType(ObjectTypeItemDefinition itemDefinition, ModelNode value) throws OperationFailedException {
+    private static void validateObjectType(ObjectTypeItemDefinition itemDefinition, ModelNode value) throws OperationClientException {
         for (ItemDefinition ad : itemDefinition.getValueTypes()) {
             String key = ad.getName();
             // Don't modify the value by calls to get(), because that's best in general.
@@ -115,7 +115,7 @@ final class ItemDefinitionValidator {
         }
     }
 
-    private static void validateMinMax(ItemDefinition itemDefinition, ModelNode value, ModelType type) throws OperationFailedException {
+    private static void validateMinMax(ItemDefinition itemDefinition, ModelNode value, ModelType type) throws OperationClientException {
         Long minL = itemDefinition.getMin();
         Long maxL = itemDefinition.getMax();
         if (minL != null || maxL != null) {
@@ -130,9 +130,9 @@ final class ItemDefinitionValidator {
                     String str = value.asString();
                     length = str.length();
                     if (length < minI) {
-                        throw new OperationFailedException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidMinLength(str, itemDefinition.getName(), minI));
+                        throw new OperationClientException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidMinLength(str, itemDefinition.getName(), minI));
                     } else if (length > maxI) {
-                        throw new OperationFailedException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidMaxLength(str, itemDefinition.getName(), maxI));
+                        throw new OperationClientException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidMaxLength(str, itemDefinition.getName(), maxI));
                     }
                     break;
                 }
@@ -140,9 +140,9 @@ final class ItemDefinitionValidator {
                     // Length check
                     length = value.asBytes().length;
                     if (length < minI) {
-                        throw new OperationFailedException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidMinSize(length, itemDefinition.getName(), minI));
+                        throw new OperationClientException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidMinSize(length, itemDefinition.getName(), minI));
                     } else if (length > maxI) {
-                        throw new OperationFailedException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidMaxSize(length, itemDefinition.getName(), maxI));
+                        throw new OperationClientException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidMaxSize(length, itemDefinition.getName(), maxI));
                     }
                     break;
                 }
@@ -152,9 +152,9 @@ final class ItemDefinitionValidator {
                     // int range check or collection size check
                     int val = value.asInt(); // asInt returns size for LIST or OBJECT
                     if (val < minI) {
-                        throw new OperationFailedException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidMinValue(val, itemDefinition.getName(), minI));
+                        throw new OperationClientException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidMinValue(val, itemDefinition.getName(), minI));
                     } else if (val > maxI) {
-                        throw new OperationFailedException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidMaxValue(val, itemDefinition.getName(), maxI));
+                        throw new OperationClientException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidMaxValue(val, itemDefinition.getName(), maxI));
                     }
                     break;
                 }
@@ -163,9 +163,9 @@ final class ItemDefinitionValidator {
                     // long range check
                     long val = value.asLong();
                     if (val < min) {
-                        throw new OperationFailedException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidMinValue(val, itemDefinition.getName(), min));
+                        throw new OperationClientException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidMinValue(val, itemDefinition.getName(), min));
                     } else if (val > max) {
-                        throw new OperationFailedException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidMaxValue(val, itemDefinition.getName(), max));
+                        throw new OperationClientException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidMaxValue(val, itemDefinition.getName(), max));
                     }
                     break;
                 }
@@ -174,9 +174,9 @@ final class ItemDefinitionValidator {
                     // long range check but only if explicitly configured
                     long val = value.asLong();
                     if (minL != null && val < min) {
-                        throw new OperationFailedException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidMinValue(val, itemDefinition.getName(), min));
+                        throw new OperationClientException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidMinValue(val, itemDefinition.getName(), min));
                     } else if (maxL != null && val > max) {
-                        throw new OperationFailedException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidMaxValue(val, itemDefinition.getName(), max));
+                        throw new OperationClientException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidMaxValue(val, itemDefinition.getName(), max));
                     }
                     break;
                 }
@@ -184,7 +184,7 @@ final class ItemDefinitionValidator {
         }
     }
 
-    private static void validateAllowedValues(ItemDefinition itemDefinition, ModelNode value) throws OperationFailedException {
+    private static void validateAllowedValues(ItemDefinition itemDefinition, ModelNode value) throws OperationClientException {
         List<ModelNode> allowed = itemDefinition.getAllowedValues();
         if (!allowed.isEmpty() && !allowed.contains(value)) {
             throw ControllerLoggerDuplicate.ROOT_LOGGER.invalidValue(value.asString(), itemDefinition.getName(), allowed);

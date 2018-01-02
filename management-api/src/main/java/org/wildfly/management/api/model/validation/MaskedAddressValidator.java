@@ -22,7 +22,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 import org.jboss.dmr.ModelNode;
-import org.wildfly.management.api.OperationFailedException;
+import org.wildfly.management.api.OperationClientException;
 import org.wildfly.management.api._private.ControllerLoggerDuplicate;
 
 /**
@@ -39,10 +39,10 @@ public final class MaskedAddressValidator implements ParameterValidator {
      * {@inheritDoc}
      */
     @Override
-    public void validateParameter(String parameterName, ModelNode value) throws OperationFailedException {
+    public void validateParameter(String parameterName, ModelNode value) throws OperationClientException {
         final String[] split = value.asString().split("/");
         if (split.length != 2) {
-            throw new OperationFailedException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidAddressMaskValue(value.asString()));
+            throw new OperationClientException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidAddressMaskValue(value.asString()));
         }
         try {
             // TODO - replace with non-dns routine
@@ -51,14 +51,14 @@ public final class MaskedAddressValidator implements ParameterValidator {
 
             int max = address.getAddress().length * 8;
             if (mask > max) {
-                throw new OperationFailedException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidAddressMask(split[1], "> " + max));
+                throw new OperationClientException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidAddressMask(split[1], "> " + max));
             } else if (mask < 0) {
-                throw new OperationFailedException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidAddressMask(split[1], "< 0"));
+                throw new OperationClientException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidAddressMask(split[1], "< 0"));
             }
         } catch (final UnknownHostException e) {
-            throw new OperationFailedException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidAddressValue(split[0], e.getLocalizedMessage()));
+            throw new OperationClientException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidAddressValue(split[0], e.getLocalizedMessage()));
         } catch (final NumberFormatException e) {
-            throw new OperationFailedException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidAddressMask(split[1], e.getLocalizedMessage()));
+            throw new OperationClientException(ControllerLoggerDuplicate.ROOT_LOGGER.invalidAddressMask(split[1], e.getLocalizedMessage()));
         }
     }
 }

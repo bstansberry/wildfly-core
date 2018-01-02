@@ -37,6 +37,7 @@ import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.operations.common.Util;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.dmr.ModelNode;
+import org.wildfly.management.api.model.NoSuchResourceException;
 
 /**
  * Add handler that adds a placeholder resource if not present, but otherwise just converts
@@ -56,7 +57,7 @@ class RemotingEndpointAdd extends ModelOnlyAddStepHandler {
         // which calls this OSH in a separate op from the one that calls RemotingSubystemAdd
         try {
             return context.readResourceForUpdate(PathAddress.EMPTY_ADDRESS);
-        } catch (Resource.NoSuchResourceException ignored) {
+        } catch (Resource.NoSuchResourceException | NoSuchResourceException ignored) {
             //
         }
         return super.createResource(context);

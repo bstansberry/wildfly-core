@@ -38,6 +38,7 @@ import org.jboss.as.controller.registry.AttributeAccess;
 import org.jboss.as.controller.registry.ImmutableManagementResourceRegistration;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.dmr.ModelNode;
+import org.wildfly.management.api.model.NoSuchResourceException;
 
 /**
  * Base class for handlers that remove resources.
@@ -250,7 +251,7 @@ public abstract class AbstractRemoveStepHandler implements OperationStepHandler 
         try {
             context.readResource(PathAddress.EMPTY_ADDRESS, false);
             return true;
-        } catch (Resource.NoSuchResourceException nsre) {
+        } catch (Resource.NoSuchResourceException | NoSuchResourceException nsre) {
             return false;
         }
     }

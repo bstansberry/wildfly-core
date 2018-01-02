@@ -29,6 +29,7 @@ import org.jboss.as.controller.registry.Resource;
 import org.jboss.dmr.ModelNode;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
+import org.wildfly.management.api.model.NoSuchResourceException;
 
 /**
  * Simple {@link org.jboss.as.controller.AbstractWriteAttributeHandler} that, if allowed,
@@ -174,7 +175,7 @@ public abstract class RestartParentWriteAttributeHandler extends AbstractWriteAt
         try {
             Resource resource = ctx.readResourceFromRoot(address);
             return Resource.Tools.readModel(resource);
-        } catch (Resource.NoSuchResourceException e) {
+        } catch (Resource.NoSuchResourceException | NoSuchResourceException e) {
             return null;
         }
     }
@@ -183,7 +184,7 @@ public abstract class RestartParentWriteAttributeHandler extends AbstractWriteAt
         try {
             Resource resource = ctx.getOriginalRootResource().navigate(address);
             return Resource.Tools.readModel(resource);
-        } catch (Resource.NoSuchResourceException e) {
+        } catch (Resource.NoSuchResourceException | NoSuchResourceException e) {
             return null;
         }
     }

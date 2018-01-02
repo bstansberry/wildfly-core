@@ -44,6 +44,7 @@ import org.jboss.as.domain.controller.ServerIdentity;
 import org.jboss.as.domain.controller.logging.DomainControllerLogger;
 import org.jboss.dmr.ModelNode;
 import org.jboss.threads.AsyncFuture;
+import org.wildfly.management.api.OperationClientException;
 
 /**
  * @author Emanuel Muckenhuber
@@ -81,7 +82,7 @@ public abstract class ServerTaskExecutor {
     public int executeTask(final TransactionalProtocolClient.TransactionalOperationListener<ServerOperation> listener, final ServerUpdateTask task) {
         try {
             return execute(listener, task.getServerIdentity(), task.getOperation());
-        } catch (OperationFailedException e) {
+        } catch (OperationFailedException | OperationClientException e) {
             // Handle failures operation transformation failures
             final ServerIdentity identity = task.getServerIdentity();
             final ServerOperation serverOperation = new ServerOperation(identity, task.getOperation(), null, null, OperationResultTransformer.ORIGINAL_RESULT);

@@ -45,5 +45,6 @@
         <module name="org.jboss.stdio"/>
         <module name="org.jboss.vfs"/>
         <module name="org.wildfly.common"/>
+        <module name="org.wildfly.management-api"/>
     </dependencies>
 </module>

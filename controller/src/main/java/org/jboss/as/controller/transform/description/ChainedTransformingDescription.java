@@ -46,6 +46,7 @@ import org.jboss.as.controller.transform.ResourceTransformer;
 import org.jboss.as.controller.transform.TransformationContext;
 import org.jboss.as.controller.transform.description.ChainedTransformationDescriptionBuilderImpl.ModelVersionPair;
 import org.jboss.dmr.ModelNode;
+import org.wildfly.management.api.model.NoSuchResourceException;
 
 /**
  * Placeholder transformer implementation for chained transformers. It uses {@link org.jboss.as.controller.registry.OperationTransformerRegistry.PlaceholderResolver} to override how the transformers for the child resources
@@ -120,7 +121,7 @@ class ChainedTransformingDescription extends AbstractDescription implements Tran
             try {
                 Resource currentResource = current.readResourceFromRoot(address);
                 resolver.getDescription().getResourceTransformer().transformResource(current, address, currentResource);
-            } catch (Resource.NoSuchResourceException e) {
+            } catch (Resource.NoSuchResourceException | NoSuchResourceException e) {
                 //The resource was rejected/discarded
                 continue;
             }

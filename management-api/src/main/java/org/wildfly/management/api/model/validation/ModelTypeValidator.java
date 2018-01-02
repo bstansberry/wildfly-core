@@ -23,7 +23,7 @@ import java.math.BigInteger;
 
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
-import org.wildfly.management.api.OperationFailedException;
+import org.wildfly.management.api.OperationClientException;
 import org.wildfly.management.api._private.ControllerLoggerDuplicate;
 
 /**
@@ -90,13 +90,13 @@ public class ModelTypeValidator implements ParameterValidator {
      * {@inheritDoc}
      */
     @Override
-    public void validateParameter(String parameterName, ModelNode value) throws OperationFailedException {
+    public void validateParameter(String parameterName, ModelNode value) throws OperationClientException {
         validateType(parameterName, value, validType, strictType);
     }
 
     /**
      * Validates if the given {@code value} has a type consistent with the given {@code validType}, throwing
-     * an {@link OperationFailedException} if not. See "Note on type matching" in the class documentation
+     * an {@link OperationClientException} if not. See "Note on type matching" in the class documentation
      * for a description of the matching algorithm.
      * <p>
      * An {@link ModelNode#isDefined()} undefined} value will throw an OFE unless {@code validType} is {@link ModelType#UNDEFINED}.
@@ -105,9 +105,9 @@ public class ModelTypeValidator implements ParameterValidator {
      * @param value         the value being validated. Cannot be {@code null}
      * @param validType     the legal type for the value. Cannot be {@code null}
      * @param strictType    {@code true} if the {@link ModelNode#getType() type of the value} must exactly match {@code validType}; {@code false} if various type conversions can be attempted
-     * @throws OperationFailedException if the value is not valid
+     * @throws OperationClientException if the value is not valid
      */
-    public static void validateType(String parameterName, ModelNode value, ModelType validType, boolean strictType) throws OperationFailedException {
+    public static void validateType(String parameterName, ModelNode value, ModelType validType, boolean strictType) throws OperationClientException {
         ModelType valueType = value.getType();
         if (validType != valueType) {
             try {
@@ -118,7 +118,7 @@ public class ModelTypeValidator implements ParameterValidator {
                 String message = String.format("%s. %s",
                         ControllerLoggerDuplicate.ROOT_LOGGER.incorrectType(parameterName, validType, valueType).getLocalizedMessage(),
                         ControllerLoggerDuplicate.ROOT_LOGGER.typeConversionError(value, validType));
-                throw new OperationFailedException(message, e);
+                throw new OperationClientException(message, e);
             }
         }
     }

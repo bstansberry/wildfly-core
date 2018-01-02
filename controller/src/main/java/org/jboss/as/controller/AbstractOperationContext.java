@@ -994,12 +994,17 @@ abstract class AbstractOperationContext implements OperationContext {
                 }
 
             } catch (Throwable t) {
-                // If t doesn't implement OperationClientException marker interface, throw it on to outer catch block
-                if (!(t instanceof OperationClientException)) {
+                // If the handler threw an OCE, that's equivalent to a request that we set the failure description
+                final ModelNode failDesc;
+                if (t instanceof OperationClientException) {
+                    failDesc = OperationClientException.class.cast(t).getFailureDescription();
+                } else if (t instanceof org.wildfly.management.api.OperationClientException) {
+                    failDesc = org.wildfly.management.api.OperationClientException.class.cast(t).getFailureDescription();
+                } else {
+                    // It doesn't implement OperationClientException marker interface; throw it on to outer catch block
                     throw t;
                 }
-                // Handler threw OCE; that's equivalent to a request that we set the failure description
-                final ModelNode failDesc = OperationClientException.class.cast(t).getFailureDescription();
+
                 step.response.get(FAILURE_DESCRIPTION).set(failDesc);
                 if (isErrorLoggingNecessary()) {
                     MGMT_OP_LOGGER.operationFailed(step.operation.get(OP), step.operation.get(OP_ADDR),

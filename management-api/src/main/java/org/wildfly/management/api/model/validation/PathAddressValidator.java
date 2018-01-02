@@ -18,7 +18,7 @@ package org.wildfly.management.api.model.validation;
 
 import org.jboss.dmr.ModelNode;
 import org.wildfly.management.api.ResourceAddress;
-import org.wildfly.management.api.OperationFailedException;
+import org.wildfly.management.api.OperationClientException;
 import org.wildfly.management.api._private.ControllerLoggerDuplicate;
 
 /**
@@ -32,7 +32,7 @@ public class PathAddressValidator implements ParameterValidator {
     public static final PathAddressValidator INSTANCE = new PathAddressValidator();
 
     @Override
-    public void validateParameter(String parameterName, ModelNode value) throws OperationFailedException {
+    public void validateParameter(String parameterName, ModelNode value) throws OperationClientException {
         try {
             ResourceAddress.pathAddress(value);
         } catch (IllegalArgumentException iae) {

@@ -36,6 +36,7 @@ import org.jboss.as.controller.descriptions.common.ControllerResolver;
 import org.jboss.as.controller.parsing.ParseUtils;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
+import org.wildfly.management.api.OperationClientException;
 
 /**
  * Operation that resolves an expression (but not against the vault) and returns the resolved value.
@@ -88,6 +89,8 @@ public class ResolveExpressionHandler implements OperationStepHandler {
                     final ModelNode failureDescription = ControllerLogger.ROOT_LOGGER.cannotResolveExpression(toResolve.asString()).getFailureDescription();
                     deferFailureReporting(context, failureDescription);
                 } catch (OperationFailedException e) {
+                    deferFailureReporting(context, e.getFailureDescription());
+                } catch (OperationClientException e) {
                     deferFailureReporting(context, e.getFailureDescription());
                 }
             }

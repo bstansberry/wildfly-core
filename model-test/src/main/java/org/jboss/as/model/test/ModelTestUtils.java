@@ -76,6 +76,7 @@ import org.w3c.dom.ls.DOMImplementationLS;
 import org.w3c.dom.ls.LSInput;
 import org.w3c.dom.ls.LSParser;
 import org.w3c.dom.ls.LSSerializer;
+import org.wildfly.management.api.OperationClientException;
 
 /**
  *
@@ -508,6 +509,8 @@ public class ModelTestUtils {
                         ad.getValidator().validateParameter(name, value);
                     }
                 } catch (OperationFailedException e) {
+                    Assert.fail(getComparePathAsString(stack) + " validation for attribute '" + name + "' failed, " + e.getFailureDescription().asString());
+                } catch (OperationClientException e) {
                     Assert.fail(getComparePathAsString(stack) + " validation for attribute '" + name + "' failed, " + e.getFailureDescription().asString());
                 }
 

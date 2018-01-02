@@ -34,6 +34,7 @@ import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.core.security.AccessMechanism;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
+import org.wildfly.management.api.OperationClientException;
 
 /**
  * Encapsulates the handling of the common elements in the {@code operation-headers} field of a request.
@@ -115,9 +116,17 @@ final class OperationHeaders {
     }
 
     static OperationResponse fromFailure(OperationFailedException ofe) {
+        return fromFailure(ofe.getFailureDescription());
+    }
+
+    static OperationResponse fromFailure(OperationClientException ofe) {
+        return fromFailure(ofe.getFailureDescription());
+    }
+
+    private static OperationResponse fromFailure(ModelNode failureDescription) {
         ModelNode responseNode = new ModelNode();
         responseNode.get(OUTCOME).set(FAILED);
-        responseNode.get(FAILURE_DESCRIPTION).set(ofe.getFailureDescription());
+        responseNode.get(FAILURE_DESCRIPTION).set(failureDescription);
         return OperationResponse.Factory.createSimple(responseNode);
     }
 
