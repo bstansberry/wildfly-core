@@ -27,6 +27,7 @@ import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.dmr.ModelNode;
+import org.wildfly.management.api.OperationClientException;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -102,7 +103,7 @@ public class DeploymentOverlayIndex {
             ModelNode sha;
             try {
                 sha = DeploymentOverlayContentDefinition.CONTENT_ATTRIBUTE.resolveModelAttribute(context, cr.getModel());
-            } catch (OperationFailedException e) {
+            } catch (OperationFailedException | OperationClientException e) {
                 throw new RuntimeException(e);
             }
             String key = contentItem.startsWith("/") ? contentItem.substring(1) : contentItem;

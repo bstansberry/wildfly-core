@@ -23,6 +23,7 @@ import org.jboss.dmr.ModelType;
 import org.jboss.dmr.ValueExpression;
 import org.junit.Assert;
 import org.junit.Test;
+import org.wildfly.management.api.OperationClientException;
 
 /**
  * Unit tests of {@link ObjectMapAttributeDefinitionTestCase}.
@@ -75,14 +76,14 @@ public class ObjectMapAttributeDefinitionTestCase {
         try {
             this.map.validateOperation(op);
             Assert.fail("Did not reject " + op);
-        } catch (OperationFailedException good) {
+        } catch (OperationFailedException | OperationClientException good) {
             //
         }
 
         try {
             this.map.validateAndSet(op, new ModelNode());
             Assert.fail("Did not reject " + op);
-        } catch (OperationFailedException good) {
+        } catch (OperationFailedException | OperationClientException good) {
             //
         }
     }

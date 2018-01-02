@@ -31,7 +31,7 @@ import static org.junit.Assert.fail;
 import org.jboss.dmr.ModelNode;
 import org.junit.Assert;
 import org.junit.Test;
-import org.wildfly.management.api._private.OperationFailedRuntimeException;
+import org.wildfly.management.api.OperationClientException;
 
 /**
  *
@@ -109,55 +109,55 @@ public class PathAddressTestCase {
         Assert.assertEquals("3", pathAddress.getElement(2).getValue());
     }
 
-    @Test(expected=OperationFailedRuntimeException.class)
+    @Test(expected=OperationClientException.class)
     public void testDuplicateFailsElement() {
         PathAddress.pathAddress(PathElement.pathElement("one", "1"), PathElement.pathElement("one", "2"));
     }
 
-    @Test(expected=OperationFailedRuntimeException.class)
+    @Test(expected=OperationClientException.class)
     public void testDuplicateFailsModelNode() {
         PathAddress.pathAddress(new ModelNode().add("one", "1").add("one", "2"));
     }
 
 
-    @Test(expected=OperationFailedRuntimeException.class)
+    @Test(expected=OperationClientException.class)
     public void testDuplicateHostOnlyFailsElement() {
         PathAddress.pathAddress(PathElement.pathElement(HOST, "1"), PathElement.pathElement(HOST, "2"));
     }
 
-    @Test(expected=OperationFailedRuntimeException.class)
+    @Test(expected=OperationClientException.class)
     public void testDuplicateHostOnlyFailsModelNode() {
         PathAddress.pathAddress(new ModelNode().add(HOST, "1").add(HOST, "2"));
     }
 
-    @Test(expected=OperationFailedRuntimeException.class)
+    @Test(expected=OperationClientException.class)
     public void testDuplicateServerOnlyFailsElement() {
         PathAddress.pathAddress(PathElement.pathElement(SERVER, "1"), PathElement.pathElement(SERVER, "2"));
     }
 
-    @Test(expected=OperationFailedRuntimeException.class)
+    @Test(expected=OperationClientException.class)
     public void testDuplicateServerOnlyFailsModelNode() {
         PathAddress.pathAddress(new ModelNode().add(SERVER, "1").add(SERVER, "2"));
     }
 
 
-    @Test(expected=OperationFailedRuntimeException.class)
+    @Test(expected=OperationClientException.class)
     public void testDuplicateWrongOrderServerFailsElement() {
         PathAddress.pathAddress(PathElement.pathElement(SERVER, "1"), PathElement.pathElement(HOST, "2"), PathElement.pathElement(SERVER));
     }
 
-    @Test(expected=OperationFailedRuntimeException.class)
+    @Test(expected=OperationClientException.class)
     public void testDuplicateWrongOrderServerFailsModelNode() {
         PathAddress.pathAddress(new ModelNode().add(SERVER, "1").add(HOST, "2").add(SERVER, "*"));
     }
 
 
-    @Test(expected=OperationFailedRuntimeException.class)
+    @Test(expected=OperationClientException.class)
     public void testDuplicateWrongOrderHostFailsElement() {
         PathAddress.pathAddress(PathElement.pathElement(SERVER, "1"), PathElement.pathElement(HOST, "2"), PathElement.pathElement(HOST));
     }
 
-    @Test(expected=OperationFailedRuntimeException.class)
+    @Test(expected=OperationClientException.class)
     public void testDuplicateWrongOrderHostFailsModelNode() {
         PathAddress.pathAddress(new ModelNode().add(SERVER, "1").add(HOST, "2").add(HOST, "*"));
     }

@@ -26,7 +26,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 import org.jboss.dmr.ModelNode;
-import org.wildfly.management.api.OperationFailedException;
+import org.wildfly.management.api.OperationClientException;
 import org.wildfly.management.api._private.ControllerLoggerDuplicate;
 
 /**
@@ -40,7 +40,7 @@ public final class MulticastAddressValidator implements ParameterValidator, MinM
     public static final MulticastAddressValidator INSTANCE = new MulticastAddressValidator();
 
     @Override
-    public void validateParameter(String parameterName, ModelNode value) throws OperationFailedException {
+    public void validateParameter(String parameterName, ModelNode value) throws OperationClientException {
 
         String inetAddr = value.asString();
         try {

@@ -20,7 +20,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.jboss.dmr.ModelNode;
-import org.wildfly.management.api.OperationFailedException;
+import org.wildfly.management.api.OperationClientException;
 import org.wildfly.management.api._private.ControllerLoggerDuplicate;
 
 /**
@@ -41,7 +41,7 @@ public final class SubnetValidator implements ParameterValidator, MinMaxValidato
     public static final SubnetValidator INSTANCE = new SubnetValidator();
 
     @Override
-    public void validateParameter(String parameterName, ModelNode value) throws OperationFailedException {
+    public void validateParameter(String parameterName, ModelNode value) throws OperationClientException {
         String subnet = value.asString();
         try {
             calculate(subnet);

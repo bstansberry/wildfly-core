@@ -49,8 +49,9 @@
         <module name="org.jboss.msc" />
         <module name="org.jboss.staxmapper"/>
         <module name="org.picketbox" optional="true"/>
+        <module name="org.wildfly.management-api"/>
         <module name="org.wildfly.transaction.client" optional="true" />
         <module name="javax.api"/>
-        <module name="sun.jdk" export="true" />        
+        <module name="sun.jdk" export="true" />
     </dependencies>
 </module>

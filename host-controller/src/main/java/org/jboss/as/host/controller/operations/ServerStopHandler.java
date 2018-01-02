@@ -39,6 +39,7 @@ import org.jboss.as.controller.registry.Resource;
 import org.jboss.as.host.controller.ServerInventory;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
+import org.wildfly.management.api.model.NoSuchResourceException;
 
 /**
  * Stops a server.
@@ -92,7 +93,7 @@ public class ServerStopHandler implements OperationStepHandler {
                 final ServerStatus status = serverInventory.stopServer(serverName, timeout, blocking);
                 try {
                     context.readResource(PathAddress.EMPTY_ADDRESS, false); //reading the resource to persist the autostart state.
-                } catch (Resource.NoSuchResourceException ex) {
+                } catch (Resource.NoSuchResourceException | NoSuchResourceException ex) {
                     //in case the resource no longer exists.
                 }
                 context.getResult().set(status.toString());

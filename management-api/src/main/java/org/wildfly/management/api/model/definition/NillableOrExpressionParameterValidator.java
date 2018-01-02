@@ -26,7 +26,7 @@ import java.util.List;
 
 import org.jboss.dmr.ModelNode;
 import org.wildfly.common.Assert;
-import org.wildfly.management.api.OperationFailedException;
+import org.wildfly.management.api.OperationClientException;
 import org.wildfly.management.api._private.ControllerLoggerDuplicate;
 import org.wildfly.management.api.model.validation.AllowedValuesValidator;
 import org.wildfly.management.api.model.validation.MinMaxValidator;
@@ -63,7 +63,7 @@ class NillableOrExpressionParameterValidator implements ParameterValidator, MinM
 
 
     @Override
-    public void validateParameter(String parameterName, ModelNode value) throws OperationFailedException {
+    public void validateParameter(String parameterName, ModelNode value) throws OperationClientException {
         switch (value.getType()) {
             case EXPRESSION:
                 if (!allowExpression) {

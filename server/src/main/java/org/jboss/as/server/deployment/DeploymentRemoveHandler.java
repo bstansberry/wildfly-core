@@ -42,6 +42,7 @@ import org.jboss.as.server.logging.ServerLogger;
 import org.jboss.as.server.services.security.AbstractVaultReader;
 import org.jboss.dmr.ModelNode;
 import org.jboss.msc.service.ServiceName;
+import org.wildfly.management.api.model.NoSuchResourceException;
 
 /**
  * Handles removal of a deployment from the model.
@@ -138,7 +139,7 @@ public class DeploymentRemoveHandler implements OperationStepHandler {
         Set<String> newHash;
         try {
             newHash = DeploymentUtils.getDeploymentHexHash(context.readResource(PathAddress.EMPTY_ADDRESS, false).getModel());
-        } catch (Resource.NoSuchResourceException ex) {
+        } catch (Resource.NoSuchResourceException | NoSuchResourceException ex) {
             newHash = Collections.emptySet();
         }
         for (byte[] hash : removedHashes) {

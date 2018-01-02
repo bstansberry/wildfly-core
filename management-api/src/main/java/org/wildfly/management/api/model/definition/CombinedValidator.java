@@ -20,7 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.jboss.dmr.ModelNode;
-import org.wildfly.management.api.OperationFailedException;
+import org.wildfly.management.api.OperationClientException;
 import org.wildfly.management.api.model.validation.ParameterValidator;
 
 /**
@@ -38,7 +38,7 @@ final class CombinedValidator implements ParameterValidator {
     }
 
     @Override
-    public void validateParameter(String parameterName, ModelNode value) throws OperationFailedException {
+    public void validateParameter(String parameterName, ModelNode value) throws OperationClientException {
         for (ParameterValidator pv : validators) {
             pv.validateParameter(parameterName, value);
         }

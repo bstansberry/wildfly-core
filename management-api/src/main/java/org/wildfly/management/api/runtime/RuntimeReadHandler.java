@@ -16,7 +16,7 @@ limitations under the License.
 
 package org.wildfly.management.api.runtime;
 
-import org.wildfly.management.api.OperationFailedException;
+import org.wildfly.management.api.OperationClientException;
 
 /**
  * Performs a read of the runtime state of a managed process. Executed as an individual step
@@ -28,7 +28,7 @@ public interface RuntimeReadHandler {
 
     /**
      * Execute this step.  If the operation fails, {@link RuntimeUpdateContext#getFailureDescription() context.getFailureDescription()}
-     * must be called, or an {@link OperationFailedException} must be thrown.
+     * must be called, or an {@link OperationClientException} must be thrown.
      * If the operation succeeded and the operation provides a return value, {@link RuntimeUpdateContext#getResult() context.getResult()} should
      * be called and the result populated with the outcome. If the handler wishes to take further action once the result
      * of the overall operation execution is known, {@link RuntimeReadContext#setResultHandler(RuntimeReadContext.ResultHandler)}
@@ -37,7 +37,7 @@ public interface RuntimeReadHandler {
      * be set to be the defining class loader of the class that implements this interface.</p>
      *
      * @param context the operation context
-     * @throws OperationFailedException if the operation failed <b>before</b> calling {@code context.completeStep()}
+     * @throws OperationClientException if the operation failed <b>before</b> calling {@code context.completeStep()}
      */
-    void execute(RuntimeReadContext context) throws OperationFailedException;
+    void execute(RuntimeReadContext context) throws OperationClientException;
 }

@@ -95,6 +95,7 @@ import org.jboss.as.core.security.AccessMechanism;
 import org.jboss.dmr.ModelNode;
 import org.jboss.msc.service.ServiceRegistry;
 import org.jboss.msc.service.ServiceTarget;
+import org.wildfly.management.api.OperationClientException;
 import org.wildfly.security.auth.server.SecurityIdentity;
 
 /**
@@ -357,6 +358,8 @@ class ModelControllerImpl implements ModelController {
         try {
             headers = OperationHeaders.fromOperation(operation);
         } catch (OperationFailedException ofe) {
+            return OperationHeaders.fromFailure(ofe);
+        }  catch (OperationClientException ofe) {
             return OperationHeaders.fromFailure(ofe);
         }
 

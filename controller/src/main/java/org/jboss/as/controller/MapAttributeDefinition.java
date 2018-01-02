@@ -41,6 +41,7 @@ import org.jboss.dmr.ModelType;
 import org.jboss.dmr.Property;
 import org.jboss.staxmapper.XMLExtendedStreamReader;
 import org.wildfly.common.Assert;
+import org.wildfly.management.api.OperationClientException;
 
 /**
  * Defining characteristics of an {@link ModelType#OBJECT} attribute in a {@link org.jboss.as.controller.registry.Resource},
@@ -79,6 +80,8 @@ public abstract class MapAttributeDefinition extends AttributeDefinition {
         try {
             elementValidator.validateParameter(getXmlName(), node);
         } catch (OperationFailedException e) {
+            throw new XMLStreamException(e.getFailureDescription().toString(), location);
+        } catch (OperationClientException e) {
             throw new XMLStreamException(e.getFailureDescription().toString(), location);
         }
 

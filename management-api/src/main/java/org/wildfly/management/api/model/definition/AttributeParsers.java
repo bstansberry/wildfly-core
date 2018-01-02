@@ -31,7 +31,7 @@ import javax.xml.stream.XMLStreamException;
 
 import org.jboss.dmr.ModelNode;
 import org.jboss.staxmapper.XMLExtendedStreamReader;
-import org.wildfly.management.api.OperationFailedException;
+import org.wildfly.management.api.OperationClientException;
 
 /**
  * @author Tomaz Cerar (c) 2015 Red Hat Inc.
@@ -146,7 +146,7 @@ public interface AttributeParsers {
             ModelNode paramVal = ParseUtils.parseAttributeValue(array[1], attribute.isAllowExpression(), attribute.getType());
             try {
                 ItemDefinitionValidator.validateItem(attribute.getElementDefinition(), paramVal);
-            } catch (OperationFailedException e) {
+            } catch (OperationClientException e) {
                 throw new XMLStreamException(e.getFailureDescription().toString(), reader.getLocation());
             }
             operation.get(attribute.getName()).get(array[0]).set(paramVal);

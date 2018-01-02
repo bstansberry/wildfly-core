@@ -76,6 +76,7 @@ import org.jboss.logmanager.handlers.AsyncHandler;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleLoader;
+import org.wildfly.management.api.OperationClientException;
 
 /**
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
@@ -228,7 +229,7 @@ final class HandlerOperations {
                 LoggingLogger.ROOT_LOGGER.tracef("Adding handler '%s' at '%s'", name, LoggingOperations.getAddress(operation));
                 try {
                     configuration = createHandlerConfiguration(className, moduleName, name, logContextConfiguration);
-                } catch (IllegalArgumentException | OperationFailedException e) {
+                } catch (IllegalArgumentException | OperationFailedException | OperationClientException e) {
                     context.setRollbackOnly();
                     throw e;
                 }
@@ -253,7 +254,7 @@ final class HandlerOperations {
                 }
                 try {
                     configuration = createHandlerConfiguration(className, moduleName, name, logContextConfiguration);
-                } catch (IllegalArgumentException | OperationFailedException e) {
+                } catch (IllegalArgumentException | OperationFailedException | OperationClientException e) {
                     context.setRollbackOnly();
                     throw e;
                 }

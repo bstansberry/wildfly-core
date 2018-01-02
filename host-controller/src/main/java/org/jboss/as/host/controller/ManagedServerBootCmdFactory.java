@@ -67,6 +67,7 @@ import org.jboss.as.server.controller.resources.SystemPropertyResourceDefinition
 import org.jboss.as.server.mgmt.domain.HostControllerConnectionService.SSLContextSupplier;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.Property;
+import org.wildfly.management.api.OperationClientException;
 
 /**
  * Combines the relevant parts of the domain-level and host-level models to
@@ -215,7 +216,7 @@ public class ManagedServerBootCmdFactory implements ManagedServerBootConfigurati
                 result.get(SYSTEM_PROPERTY).set(resolvedSysProps);
             }
             return result;
-        } catch (OperationFailedException e) {
+        } catch (OperationFailedException | OperationClientException e) {
             // Fail
             throw new IllegalStateException(e.getMessage(), e);
         }
@@ -235,7 +236,7 @@ public class ManagedServerBootCmdFactory implements ManagedServerBootConfigurati
     private static DirectoryGrouping resolveDirectoryGrouping(final ModelNode model, final ExpressionResolver expressionResolver) {
         try {
             return DirectoryGrouping.forName(HostResourceDefinition.DIRECTORY_GROUPING.resolveModelAttribute(expressionResolver, model).asString());
-        } catch (OperationFailedException e) {
+        } catch (OperationFailedException | OperationClientException e) {
             throw new IllegalStateException(e);
         }
     }
@@ -386,7 +387,7 @@ public class ManagedServerBootCmdFactory implements ManagedServerBootConfigurati
             char[] trustStorePassword = trustStorePasswordModel.isDefined() ? trustStorePasswordModel.asString().toCharArray() : null;
 
             return new SSLContextSupplier(sslProtocol, trustManagerAlgorithm, trustStoreType, trustStorePath, trustStorePassword);
-        } catch (OperationFailedException e) {
+        } catch (OperationFailedException | OperationClientException e) {
             throw new IllegalStateException(e);
         }
     }
@@ -470,7 +471,7 @@ public class ManagedServerBootCmdFactory implements ManagedServerBootConfigurati
                     if (boottimeOnly && !SystemPropertyResourceDefinition.BOOT_TIME.resolveModelAttribute(expressionResolver, propResource).asBoolean()) {
                         continue;
                     }
-                } catch (OperationFailedException e) {
+                } catch (OperationFailedException | OperationClientException e) {
                     throw new IllegalStateException(e);
                 }
                 String val = propResource.hasDefined(VALUE) ? propResource.get(VALUE).asString() : null;

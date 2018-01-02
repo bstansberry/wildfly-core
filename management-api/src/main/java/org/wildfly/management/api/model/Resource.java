@@ -23,14 +23,11 @@
 package org.wildfly.management.api.model;
 
 import java.util.HashSet;
-import java.util.NoSuchElementException;
 import java.util.Set;
 
 import org.jboss.dmr.ModelNode;
 import org.wildfly.management.api.AddressElement;
-import org.wildfly.management.api.OperationClientException;
 import org.wildfly.management.api.ResourceAddress;
-import org.wildfly.management.api._private.ControllerLoggerDuplicate;
 
 /**
  * An addressable resource in the management model, representing a configuration model and child resources.
@@ -304,34 +301,6 @@ public interface Resource extends Cloneable {
                 }
             }
             return result;
-        }
-    }
-
-    /**
-     * A {@link NoSuchElementException} variant that can be thrown by {@link Resource#requireChild(AddressElement)} and
-     * {@link Resource#navigate(ResourceAddress)} implementations to indicate a client error when invoking a
-     * management operation.
-     */
-    class NoSuchResourceException extends NoSuchElementException implements OperationClientException {
-
-        private static final long serialVersionUID = -2409240663987141424L;
-
-        public NoSuchResourceException(AddressElement childPath) {
-            this(ControllerLoggerDuplicate.ROOT_LOGGER.childResourceNotFound(childPath));
-        }
-
-        public NoSuchResourceException(String message) {
-            super(message);
-        }
-
-        @Override
-        public ModelNode getFailureDescription() {
-            return new ModelNode(getLocalizedMessage());
-        }
-
-        @Override
-        public String toString() {
-            return super.toString() + " [ " + getFailureDescription() + " ]";
         }
     }
 

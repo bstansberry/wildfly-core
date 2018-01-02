@@ -46,6 +46,7 @@ import org.jboss.as.server.deployment.ModelContentReference;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 import org.wildfly.common.Assert;
+import org.wildfly.management.api.model.NoSuchResourceException;
 
 /**
  * Handles replacement in the runtime of one deployment by another.
@@ -84,7 +85,7 @@ public class ServerGroupDeploymentReplaceHandler implements OperationStepHandler
         try {
             // check if the domain deployment exists
             domainDeployment = context.readResourceFromRoot(PathAddress.EMPTY_ADDRESS.append(deploymentPath));
-        } catch (Resource.NoSuchResourceException e) {
+        } catch (Resource.NoSuchResourceException | NoSuchResourceException e) {
             throw operationFailed(DomainControllerLogger.ROOT_LOGGER.noDeploymentContentWithName(name));
         }
 

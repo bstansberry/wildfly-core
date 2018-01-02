@@ -46,6 +46,7 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceRegistryException;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.remoting3.Endpoint;
+import org.wildfly.management.api.OperationClientException;
 import org.wildfly.security.manager.WildFlySecurityManager;
 import org.xnio.OptionMap;
 
@@ -106,7 +107,7 @@ public class DomainServerCommunicationServices  implements ServiceActivator, Ser
                     .addDependency(ControlledProcessStateService.SERVICE_NAME, ControlledProcessStateService.class, service.getProcessStateServiceInjectedValue())
                     .setInitialMode(ServiceController.Mode.ACTIVE).install();
 
-        } catch (OperationFailedException e) {
+        } catch (OperationFailedException | OperationClientException e) {
             throw new ServiceRegistryException(e);
         }
     }

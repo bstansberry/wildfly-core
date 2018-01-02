@@ -91,6 +91,7 @@ import org.jboss.as.controller.registry.Resource;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 import org.jboss.dmr.Property;
+import org.wildfly.management.api.model.NoSuchResourceException;
 
 /**
  * {@link org.jboss.as.controller.OperationStepHandler} querying the complete type description of a given model node.
@@ -161,7 +162,7 @@ public class ReadResourceDescriptionHandler extends GlobalOperationHandlers.Abst
         } else {
             try {
                 doExecuteInternal(context, operation, accessControlContext);
-            } catch (Resource.NoSuchResourceException | UnauthorizedException nsre) {
+            } catch (Resource.NoSuchResourceException | NoSuchResourceException | UnauthorizedException nsre) {
                 context.getResult().set(new ModelNode());
             }
         }
@@ -742,7 +743,7 @@ public class ReadResourceDescriptionHandler extends GlobalOperationHandlers.Abst
         private boolean addParentResource(OperationContext context, List<PathAddress> addresses, PathAddress address) {
             try {
                 context.readResourceFromRoot(address);
-            } catch (Resource.NoSuchResourceException nsre) {
+            } catch (Resource.NoSuchResourceException | NoSuchResourceException nsre) {
                 // Don't include the result
                 return false;
             } catch (UnauthorizedException ue) {
@@ -789,7 +790,7 @@ public class ReadResourceDescriptionHandler extends GlobalOperationHandlers.Abst
             } else {
                 try {
                     overrideStepHandler.execute(context, operation);
-                } catch (Resource.NoSuchResourceException e){
+                } catch (Resource.NoSuchResourceException | NoSuchResourceException e){
                     //Mark it as not accessible so that the assembly handler can remove it
                     context.getResult().set(PROXY_NO_SUCH_RESOURCE);
                 } catch (UnauthorizedException e) {

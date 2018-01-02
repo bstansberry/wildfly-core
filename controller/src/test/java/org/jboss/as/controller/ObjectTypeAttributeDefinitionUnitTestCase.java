@@ -27,6 +27,7 @@ import org.jboss.dmr.ModelType;
 import org.jboss.dmr.ValueExpression;
 import org.junit.Assert;
 import org.junit.Test;
+import org.wildfly.management.api.OperationClientException;
 
 /**
  * Unit tests of {@link ObjectTypeAttributeDefinition}.
@@ -65,14 +66,14 @@ public class ObjectTypeAttributeDefinitionUnitTestCase {
         try {
             ld.validateOperation(op);
             org.junit.Assert.fail("Did not reject " + op);
-        } catch (OperationFailedException good) {
+        } catch (OperationFailedException | OperationClientException good) {
             //
         }
 
         try {
             ld.validateAndSet(op, new ModelNode());
             org.junit.Assert.fail("Did not reject " + op);
-        } catch (OperationFailedException good) {
+        } catch (OperationFailedException | OperationClientException good) {
             //
         }
     }
@@ -93,7 +94,7 @@ public class ObjectTypeAttributeDefinitionUnitTestCase {
         try {
             ld.validateOperation(op);
             org.junit.Assert.fail("Did not reject " + op);
-        } catch (OperationFailedException good) {
+        } catch (OperationFailedException | OperationClientException good) {
             //
         }
 

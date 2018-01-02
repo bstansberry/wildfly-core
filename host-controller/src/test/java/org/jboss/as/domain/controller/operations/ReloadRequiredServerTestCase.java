@@ -57,6 +57,7 @@ import org.jboss.as.server.operations.ServerProcessStateHandler;
 import org.jboss.dmr.ModelNode;
 import org.junit.Assert;
 import org.junit.Test;
+import org.wildfly.management.api.OperationClientException;
 
 /**
  *
@@ -427,7 +428,7 @@ public class ReloadRequiredServerTestCase extends AbstractOperationTestCase {
         checkServerOperationResolver(operationContext, operation, pa, true);
     }
 
-    @Test(expected=OperationFailedException.class)
+    @Test(expected=OperationClientException.class)
     public void testChangeServerConfigSocketBindingPortOffsetBadPort() throws Exception {
         PathAddress pa = PathAddress.pathAddress(PathElement.pathElement(HOST, "localhost"), PathElement.pathElement(SERVER_CONFIG, "server-one"));
         final MockOperationContext operationContext = getOperationContext(false, pa);

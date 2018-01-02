@@ -75,6 +75,7 @@ import org.jboss.as.controller.registry.Resource;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 import org.jboss.dmr.Property;
+import org.wildfly.management.api.model.NoSuchResourceException;
 
 /**
  * {@link org.jboss.as.controller.OperationStepHandler} reading a part of the model. The result will only contain the current attributes of a node by default,
@@ -176,7 +177,7 @@ public class ReadResourceHandler extends GlobalOperationHandlers.AbstractMultiTa
                 // Just report the failure to the filter and complete normally
                 reportInaccesible(context, operation, filteredData);
                 ControllerLogger.MGMT_OP_LOGGER.tracef("Caught ResourceNotAddressableException in %s", this);
-            } catch (Resource.NoSuchResourceException nsre) {
+            } catch (Resource.NoSuchResourceException | NoSuchResourceException nsre) {
                 // It's possible this is a remote failure, in which case we
                 // don't get ResourceNotAddressableException. So see if
                 // it was due to any authorization denial
@@ -565,7 +566,7 @@ public class ReadResourceHandler extends GlobalOperationHandlers.AbstractMultiTa
                                 // Wasn't filtered. Confirm our resource still exists
                                 try {
                                     context.readResourceFromRoot(address, false);
-                                } catch (Resource.NoSuchResourceException e) {
+                                } catch (Resource.NoSuchResourceException | NoSuchResourceException e) {
                                     handleMissingResource(context);
                                     return;
                                 }

@@ -56,6 +56,7 @@ import org.jboss.as.logging.logging.LoggingLogger;
 import org.jboss.as.server.ServerEnvironment;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.Property;
+import org.wildfly.management.api.OperationClientException;
 
 /**
  * @author <a href="mailto:jperkins@redhat.com">James R. Perkins</a>
@@ -386,7 +387,7 @@ public class LoggingResource implements Resource {
                                 // Possible expressions need to be resolved for the path name. If not resolved the expression
                                 // may contain invalid path characters.
                                 path = ExpressionResolver.SIMPLE.resolveExpressions(fileModel.get(PathResourceDefinition.PATH.getName()));
-                            } catch (OperationFailedException e) {
+                            } catch (OperationFailedException | OperationClientException e) {
                                 // The expression could not be resolved for some reason. Collect all the unresolvable paths
                                 // and we'll log them once at the end
                                 unresolvableExpressions.add(fileModel.get(PathResourceDefinition.PATH.getName()).asString());

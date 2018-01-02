@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.List;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.dmr.ModelNode;
+import org.wildfly.management.api.OperationClientException;
 
 /**
  * Handle domain controller discovery via static (i.e., hard-wired) configuration.
@@ -66,6 +67,8 @@ public class StaticDiscovery implements DiscoveryOption {
             StaticDiscoveryResourceDefinition.PROTOCOL.getValidator()
                 .validateParameter(StaticDiscoveryResourceDefinition.PROTOCOL.getName(), new ModelNode(parameters.getProtocol()));
         } catch (OperationFailedException e) {
+            throw new IllegalStateException(e.getFailureDescription().asString());
+        } catch (OperationClientException e) {
             throw new IllegalStateException(e.getFailureDescription().asString());
         }
         return Collections.singletonList(this.parameters);

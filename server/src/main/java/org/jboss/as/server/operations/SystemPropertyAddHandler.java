@@ -35,6 +35,7 @@ import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.operations.common.ProcessEnvironmentSystemPropertyUpdater;
 import org.jboss.as.controller.operations.common.Util;
 import org.jboss.dmr.ModelNode;
+import org.wildfly.management.api.OperationClientException;
 import org.wildfly.security.manager.WildFlySecurityManager;
 
 /**
@@ -179,7 +180,7 @@ public class SystemPropertyAddHandler implements OperationStepHandler{
                     final String setValue = VALUE.resolveModelAttribute(context, entry.getValue()).asString();
                     setProperty(entry.getKey(), setValue);
                     it.remove();
-                } catch (OperationFailedException resolutionFailure) {
+                } catch (OperationFailedException | OperationClientException resolutionFailure) {
                     context.setRollbackOnly();
                     throw resolutionFailure;
                 }  catch (RuntimeException resolutionFailure) {

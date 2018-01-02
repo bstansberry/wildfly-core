@@ -27,6 +27,7 @@ import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.dmr.ModelNode;
 import org.wildfly.common.Assert;
+import org.wildfly.management.api.OperationClientException;
 
 /**
  * Repurposes {@link ParametersValidator} from validating an operation model node to
@@ -49,9 +50,15 @@ public class ParametersOfValidator implements ParameterValidator, MinMaxValidato
     public void validateParameter(String parameterName, ModelNode value) throws OperationFailedException {
         try {
             delegate.validate(value);
-        } catch (OperationFailedException e) {
+        } catch (OperationFailedException | OperationClientException e) {
+            ModelNode caughtFD;
+            if (e instanceof OperationFailedException) {
+                caughtFD = ((OperationFailedException) e).getFailureDescription();
+            } else {
+                caughtFD = ((OperationClientException) e).getFailureDescription();
+            }
             final ModelNode failureDescription = new ModelNode().add(ControllerLogger.ROOT_LOGGER.validationFailed(parameterName));
-            failureDescription.add(e.getFailureDescription());
+            failureDescription.add(caughtFD);
             throw new OperationFailedException(e.getMessage(), e.getCause(), failureDescription);
         }
     }

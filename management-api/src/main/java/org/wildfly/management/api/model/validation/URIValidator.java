@@ -25,7 +25,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 import org.jboss.dmr.ModelNode;
-import org.wildfly.management.api.OperationFailedException;
+import org.wildfly.management.api.OperationClientException;
 import org.wildfly.management.api._private.ControllerLoggerDuplicate;
 
 /**
@@ -38,7 +38,7 @@ public final class URIValidator implements ParameterValidator, MinMaxValidator {
     public static final URIValidator INSTANCE = new URIValidator();
 
     @Override
-    public void validateParameter(String parameterName, ModelNode value) throws OperationFailedException {
+    public void validateParameter(String parameterName, ModelNode value) throws OperationClientException {
 
         String str = value.asString();
 

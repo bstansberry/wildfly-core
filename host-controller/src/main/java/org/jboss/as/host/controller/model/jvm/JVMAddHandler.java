@@ -38,6 +38,7 @@ import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.controller.registry.ImmutableManagementResourceRegistration;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.dmr.ModelNode;
+import org.wildfly.management.api.model.NoSuchResourceException;
 
 /**
  * {@code OperationHandler} for the jvm resource add operation.
@@ -66,7 +67,7 @@ final class JVMAddHandler extends AbstractAddStepHandler {
                 // may have been added, it is not visible to RRFR, which it should be.
                 try {
                     root = context.readResourceFromRoot(context.getCurrentAddress().getParent(), false);
-                } catch (Resource.NoSuchResourceException e) {
+                } catch (Resource.NoSuchResourceException | NoSuchResourceException e) {
                     // this occurs in the case of an ignored server-group being added to a slave.
                     // for all other cases, the parent element is always present.
                     return;

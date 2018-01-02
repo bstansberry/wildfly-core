@@ -25,6 +25,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import org.junit.Test;
+import org.wildfly.management.api.OperationClientException;
 
 /**
  *
@@ -70,7 +71,7 @@ public class PathElementTestCase {
                 try {
                     PathElement.pathElement(key);
                     fail("key " + key + " should be invalid");
-                } catch (IllegalArgumentException e) {
+                } catch (OperationClientException e) {
                     // should reach here
                 }
 
@@ -87,7 +88,7 @@ public class PathElementTestCase {
             try {
                 PathElement.pathElement("key", value);
                 fail("value " + value + " should be invalid");
-            } catch (IllegalArgumentException e) {
+            } catch (OperationClientException e) {
                 // should reach here
             }
         }

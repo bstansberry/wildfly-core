@@ -46,6 +46,7 @@ import org.jboss.as.controller.parsing.Element;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.as.controller.resource.AbstractSocketBindingResourceDefinition;
 import org.jboss.dmr.ModelNode;
+import org.wildfly.management.api.model.NoSuchResourceException;
 
 /**
  * Handler for the socket-binding resource's add operation.
@@ -112,7 +113,7 @@ public class SocketBindingAddHandler extends AbstractAddStepHandler {
                     try {
                         resource = context.readResourceFromRoot(context.getCurrentAddress().getParent(), false);
                         validation(socketBindingGroupName, socketBindingName, resource, true, new ArrayList<String>());
-                    } catch (Resource.NoSuchResourceException e) {
+                    } catch (Resource.NoSuchResourceException | NoSuchResourceException e) {
                         // this occurs in the case of an ignored server-group being added to a slave.
                         // for all other cases, the parent element is always present.
                         return;

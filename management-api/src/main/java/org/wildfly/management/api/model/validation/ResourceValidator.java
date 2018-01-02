@@ -16,12 +16,12 @@ limitations under the License.
 
 package org.wildfly.management.api.model.validation;
 
-import org.wildfly.management.api.OperationFailedException;
+import org.wildfly.management.api.OperationClientException;
 import org.wildfly.management.api.model.Resource;
 
 /**
  * Performs custom validation of a resource or of its use with an overall configuration model, throwing an
- * {@link OperationFailedException} if issues are found. Should not be used for validation of individual attributes,
+ * {@link OperationClientException} if issues are found. Should not be used for validation of individual attributes,
  * or of relationships between attributes that can be described via an
  * {@link org.wildfly.management.api.model.definition.ItemDefinition} (e.g.
  * {@link org.wildfly.management.api.model.definition.ItemDefinition.Builder#setAlternatives(String...) alternatives}
@@ -44,12 +44,12 @@ import org.wildfly.management.api.model.Resource;
 public interface ResourceValidator {
 
     /**
-     * Validate the resource, throwing an {@link OperationFailedException} if issues are found.
+     * Validate the resource, throwing an {@link OperationClientException} if issues are found.
      * @param resource the resource to validate. Will not be {@code null}
      * @param context contextual object to use when performing the validation. Will not be {@code null}
-     * @throws OperationFailedException if a validation issue is discovered.
+     * @throws OperationClientException if a validation issue is discovered.
      */
-    void validateResource(Resource resource, ResourceValidationContext context) throws OperationFailedException;
+    void validateResource(Resource resource, ResourceValidationContext context) throws OperationClientException;
 
     /**
      * Contextual object that provides a {@link ResourceValidator} with access to information and

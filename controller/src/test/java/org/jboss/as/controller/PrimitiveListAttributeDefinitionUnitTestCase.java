@@ -42,6 +42,7 @@ import org.jboss.dmr.ModelType;
 import org.jboss.dmr.ValueExpression;
 import org.junit.Assert;
 import org.junit.Test;
+import org.wildfly.management.api.OperationClientException;
 
 /**
  * Unit tests of {@link PrimitiveListAttributeDefinition}.
@@ -198,7 +199,8 @@ public class PrimitiveListAttributeDefinitionUnitTestCase {
             try {
                 attributeDefinition.validateOperation(operation);
                 fail("operation must fail with invalid value " + value);
-            } catch (OperationFailedException e) {
+            } catch (OperationFailedException | OperationClientException e) {
+                // ignore
             }
         }
     }

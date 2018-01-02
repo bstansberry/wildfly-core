@@ -26,6 +26,7 @@ import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.Property;
+import org.wildfly.management.api.OperationClientException;
 
 /**
  * @author Tomaz Cerar (c) 2015 Red Hat Inc.
@@ -213,7 +214,7 @@ public interface AttributeMarshallers {
                     }
                 }
 
-            } catch (OperationFailedException e) {
+            } catch (OperationFailedException | OperationClientException e) {
                 throw new XMLStreamException(e);
             }
         }

@@ -34,13 +34,14 @@ import org.jboss.dmr.ModelNode;
 import org.jboss.vfs.VirtualFile;
 import org.junit.Test;
 import org.mockito.Mockito;
+import org.wildfly.management.api.OperationClientException;
 
 /**
  * @author <a href="mailto:cdewolf@redhat.com">Carlo de Wolf</a>
  */
 public class DeploymentAddHandlerTestCase {
 
-    @Test (expected = OperationFailedException.class)
+    @Test (expected = OperationClientException.class)
     public void testTooMuchContent() throws OperationFailedException {
         final DeploymentAddHandler handler = DeploymentAddHandler.create(contentRepository, null);
         final ModelNode operation = new ModelNode();
@@ -68,7 +69,7 @@ public class DeploymentAddHandlerTestCase {
         Mockito.when(context.resolveExpressions(Mockito.<ModelNode>anyObject())).thenReturn(model);
         try {
             handler.execute(context, operation);
-        } catch (OperationFailedException e) {
+        } catch (OperationFailedException | OperationClientException e) {
             // TODO: check exception
         }
     }
