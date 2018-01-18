@@ -25,6 +25,7 @@ import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.OperationStepHandler;
 import org.jboss.as.controller.PathAddress;
+import org.jboss.as.controller.ProcessType;
 import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.dmr.ModelNode;
@@ -80,7 +81,7 @@ public class ExtensionAddHandler implements OperationStepHandler {
         final ManagementResourceRegistration rootRegistration;
         if (install) {
             rootRegistration = rootResourceRegistrationProvider.getRootResourceRegistrationForUpdate(context);
-            initializeExtension(extensionRegistry, moduleName, rootRegistration, extensionRegistryType);
+            initializeExtension(extensionRegistry, moduleName, rootRegistration, extensionRegistryType, context.getProcessType());
             if (extensionRegistryType == ExtensionRegistryType.SLAVE && !context.isBooting()) {
                 ModelNode subsystems = new ModelNode();
                 extensionRegistry.recordSubsystemVersions(moduleName, subsystems);
@@ -101,7 +102,7 @@ public class ExtensionAddHandler implements OperationStepHandler {
     }
 
     void initializeExtension(String module, ManagementResourceRegistration rootRegistration) {
-        initializeExtension(extensionRegistry, module, rootRegistration, extensionRegistryType);
+        initializeExtension(extensionRegistry, module, rootRegistration, extensionRegistryType, rootRegistration.getProcessType());
     }
 
     /**
@@ -114,13 +115,15 @@ public class ExtensionAddHandler implements OperationStepHandler {
      */
     static void initializeExtension(ExtensionRegistry extensionRegistry, String module,
                                     ManagementResourceRegistration rootRegistration,
-                                    ExtensionRegistryType extensionRegistryType) {
+                                    ExtensionRegistryType extensionRegistryType,
+                                    ProcessType processType) {
         try {
             boolean unknownModule = false;
             for (Extension extension : Module.loadServiceFromCallerModuleLoader(ModuleIdentifier.fromString(module), Extension.class)) {
                 ClassLoader oldTccl = WildFlySecurityManager.setCurrentContextClassLoaderPrivileged(extension.getClass());
                 try {
-                    if (unknownModule || !extensionRegistry.getExtensionModuleNames().contains(module)) {
+                    if (processType != ProcessType.DOMAIN_SERVER
+                            && (unknownModule || !extensionRegistry.getExtensionModuleNames().contains(module))) {
                         // This extension wasn't handled by the standalone.xml or domain.xml parsing logic, so we
                         // need to initialize its parsers so we can display what XML namespaces it supports
                         extension.initializeParsers(extensionRegistry.getExtensionParsingContext(module, null));

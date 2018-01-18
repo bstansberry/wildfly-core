@@ -78,7 +78,8 @@ public class ExtensionRemoveHandler implements OperationStepHandler {
             @Override
             public void handleRollback(OperationContext context, ModelNode operation) {
                 // Restore the extension to the ExtensionRegistry and the ManagementResourceRegistration tree
-                ExtensionAddHandler.initializeExtension(extensionRegistry, module, rootRegistration, extensionRegistryType);
+                ExtensionAddHandler.initializeExtension(extensionRegistry, module, rootRegistration, extensionRegistryType,
+                        context.getProcessType());
             }
         });
     }
