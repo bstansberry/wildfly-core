@@ -84,24 +84,27 @@ class ActiveOperationImpl<T, A> extends AsyncFutureTask<T> implements ActiveOper
         this.resultHandler = new ResultHandler<T>() {
             @Override
             public boolean done(T result) {
+                boolean toReturn;
                 try {
-                    return ActiveOperationImpl.this.setResult(result);
-                } finally {
                     handler.removeActiveOperation(operationId);
+                } finally {
+                    toReturn = ActiveOperationImpl.this.setResult(result);
                 }
+                return toReturn;
             }
 
             @Override
             public boolean failed(Throwable t) {
+                boolean failed;
                 try {
-                    boolean failed = ActiveOperationImpl.this.setFailed(t);
+                    handler.removeActiveOperation(operationId);
+                } finally {
+                    failed = ActiveOperationImpl.this.setFailed(t);
                     if(failed) {
                         ProtocolLogger.ROOT_LOGGER.debugf(t, "active-op (%d) failed %s", operationId, attachment);
                     }
-                    return failed;
-                } finally {
-                    handler.removeActiveOperation(operationId);
                 }
+                return failed;
             }
 
             @Override
