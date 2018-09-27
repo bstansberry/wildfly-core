@@ -40,6 +40,7 @@ import java.util.concurrent.CountDownLatch;
 
 import org.jboss.as.controller.AccessAuditContext;
 import org.jboss.as.controller.ModelController;
+import org.jboss.as.controller.access.InVmAccess;
 import org.jboss.as.controller.client.Operation;
 import org.jboss.as.controller.client.OperationMessageHandler;
 import org.jboss.as.controller.client.OperationResponse;
@@ -135,6 +136,7 @@ public class TransactionalProtocolOperationHandler implements ManagementRequestH
             PropagatedIdentity propagatedIdentity = executableRequest.propagatedIdentity;
             final SecurityIdentity securityIdentity = propagatedIdentity != null ? propagatedIdentity.securityIdentity : null;
             final InetAddress remoteAddress = propagatedIdentity != null ? propagatedIdentity.inetAddress : null;
+            final boolean inVmCall = executableRequest.inVm;
 
             final PrivilegedAction<Void> action = new PrivilegedAction<Void>() {
 
@@ -159,8 +161,23 @@ public class TransactionalProtocolOperationHandler implements ManagementRequestH
 
                         @Override
                         public Void run() {
-                            AccessAuditContext.doAs(securityIdentity != null , securityIdentity, remoteAddress, action);
+                            if (inVmCall && securityIdentity == null) {
+                                PrivilegedAction<Void> accessAuditAction = new PrivilegedAction<Void>() {
+                                    @Override
+                                    public Void run() {
+                                        runInAccessAuditContext();
+                                        return null;
+                                    }
+                                };
+                                InVmAccess.runInVm(accessAuditAction);
+                            } else {
+                                runInAccessAuditContext();
+                            }
                             return null;
+                        }
+
+                        private void runInAccessAuditContext() {
+                            AccessAuditContext.doAs(securityIdentity != null, securityIdentity, remoteAddress, action);
                         }
                     });
 
@@ -214,11 +231,14 @@ public class TransactionalProtocolOperationHandler implements ManagementRequestH
         private final ModelNode operation;
         private final int attachmentsLength;
         private final PropagatedIdentity propagatedIdentity;
+        private final boolean inVm;
 
-        private ExecutableRequest(ModelNode operation, int attachmentsLength, PropagatedIdentity propagatedIdentity) {
+        private ExecutableRequest(ModelNode operation, int attachmentsLength, PropagatedIdentity propagatedIdentity,
+                                  boolean inVm) {
             this.operation = operation;
             this.attachmentsLength = attachmentsLength;
             this.propagatedIdentity = propagatedIdentity;
+            this.inVm = inVm;
         }
 
         static ExecutableRequest parse(DataInput input, ManagementChannelAssociation channelAssociation) throws IOException {
@@ -232,7 +252,10 @@ public class TransactionalProtocolOperationHandler implements ManagementRequestH
             final Boolean readIdentity = channelAssociation.getAttachments().getAttachment(TransactionalProtocolClient.SEND_IDENTITY);
             propagatedIdentity = (readIdentity != null && readIdentity) ? read(input) : null;
 
-            return new ExecutableRequest(operation, attachmentsLength, propagatedIdentity);
+            final Boolean readInVM = channelAssociation.getAttachments().getAttachment(TransactionalProtocolClient.SEND_IDENTITY);
+            final boolean inVm = (readInVM != null && readInVM) && input.readBoolean();
+
+            return new ExecutableRequest(operation, attachmentsLength, propagatedIdentity, inVm);
         }
     }
 

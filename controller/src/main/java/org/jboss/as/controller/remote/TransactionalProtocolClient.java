@@ -25,6 +25,7 @@ package org.jboss.as.controller.remote;
 import java.io.IOException;
 
 import org.jboss.as.controller.ModelController;
+import org.jboss.as.controller.access.InVmAccess;
 import org.jboss.as.controller.client.OperationAttachments;
 import org.jboss.as.controller.client.OperationMessageHandler;
 import org.jboss.as.controller.client.OperationResponse;
@@ -46,6 +47,14 @@ public interface TransactionalProtocolClient {
      * HC > server: HostControllerConnection > ManagedServer
      */
     Attachments.Key<Boolean> SEND_IDENTITY = new Attachments.Key<>(Boolean.class);
+
+    /**
+     * Attachment whether the client should send the {@link InVmAccess#isInVmCall() in-vm access status}
+     * of the operation as part of the request.
+     *
+     * HC > server: ManagedServer > HostControllerConnection
+     */
+    Attachments.Key<Boolean> SEND_IN_VM = new Attachments.Key<>(Boolean.class);
 
     /**
      * Execute an operation. This returns a future for the final result, which will only available after the prepared

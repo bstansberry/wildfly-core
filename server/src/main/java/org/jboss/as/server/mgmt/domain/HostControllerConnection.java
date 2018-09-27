@@ -128,8 +128,9 @@ class HostControllerConnection extends FutureManagementChannel {
         final Connection connection = connectionManager.connect();
         try {
             channelHandler.executeRequest(new ServerRegisterRequest(), null, callback);
-            // HC is the same version, so it will support sending the subject
+            // HC is the same version, so it will support sending the subject and InVmAccess status
             channelHandler.getAttachments().attach(TransactionalProtocolClient.SEND_IDENTITY, Boolean.TRUE);
+            channelHandler.getAttachments().attach(TransactionalProtocolClient.SEND_IN_VM, Boolean.TRUE);
             channelHandler.addHandlerFactory(new TransactionalProtocolOperationHandler(controller, channelHandler, responseAttachmentSupport));
             ok = true;
         } finally {

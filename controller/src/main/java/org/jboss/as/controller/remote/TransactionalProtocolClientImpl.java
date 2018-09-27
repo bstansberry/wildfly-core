@@ -46,6 +46,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jboss.as.controller.AccessAuditContext;
 import org.jboss.as.controller.ModelController;
+import org.jboss.as.controller.access.InVmAccess;
 import org.jboss.as.controller.client.MessageSeverity;
 import org.jboss.as.controller.client.OperationAttachments;
 import org.jboss.as.controller.client.OperationMessageHandler;
@@ -197,6 +198,11 @@ class TransactionalProtocolClientImpl implements ManagementRequestHandlerFactory
                 ExecuteRequestContext attachment = context.getAttachment();
                 write(output, attachment.getSecurityIdentity(), attachment.getRemoteAddress());
             }
+            final Boolean sendInVM = channelAssociation.getAttachments().getAttachment(SEND_IN_VM);
+            if (sendInVM != null && sendInVM) {
+                output.writeBoolean(InVmAccess.isInVmCall());
+            }
+
         }
 
         @Override
