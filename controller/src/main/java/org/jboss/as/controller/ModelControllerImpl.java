@@ -26,6 +26,7 @@ import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.ACT
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.ATTACHED_STREAMS;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.CALLER_TYPE;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.CORE_SERVICE;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.DEPLOYMENT;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.FAILED;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.FAILURE_DESCRIPTION;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.HOST;
@@ -104,6 +105,7 @@ class ModelControllerImpl implements ModelController {
 
     private static final String INITIAL_BOOT_OPERATION = "initial-boot-operation";
     private static final String POST_EXTENSION_BOOT_OPERATION = "post-extension-boot-operation";
+    private static final String DEPLOYMENT_BOOT_OPERATION = "deployment-boot-operation";
     static final ModelNode EMPTY_ADDRESS = new ModelNode().setEmptyList();
 
     static {
@@ -520,7 +522,30 @@ class ModelControllerImpl implements ModelController {
 
             resultAction = postExtContext.executeOperation();
 
-            if (!skipModelValidation && resultAction == OperationContext.ResultAction.KEEP && bootOperations.postExtensionOps != null) {
+            if (resultAction == OperationContext.ResultAction.KEEP && bootOperations.deploymentOps != null) {
+                // Success. Now any deployments
+                final AbstractOperationContext deploymentContext = new OperationContextImpl(operationID, DEPLOYMENT_BOOT_OPERATION,
+                        EMPTY_ADDRESS, this, processType, runningModeControl.getRunningMode(),
+                        headers, handler, null, managementModel.get(), control, processState, auditLogger,
+                        bootingFlag.get(), hostServerGroupTracker, null, notificationSupport, true,
+                        extraValidationStepHandler, partialModel, securityIdentitySupplier);
+
+                for (ParsedBootOp parsedOp : bootOperations.postExtensionOps) {
+                    if (parsedOp.handler == null) {
+                        logNoHandler(parsedOp);
+                        deploymentContext.setRollbackOnly();
+                        // stop
+                        break;
+                    } else {
+                        deploymentContext.addBootStep(parsedOp);
+                    }
+                }
+
+                resultAction = deploymentContext.executeOperation();
+
+            }
+
+            if (!skipModelValidation && resultAction == OperationContext.ResultAction.KEEP) {
                 //Get the modified resources from the initial operations and add to the resources to be validated by the post operations
                 Set<PathAddress> validateAddresses = new HashSet<PathAddress>();
                 Resource root = managementModel.get().getRootResource();
@@ -595,6 +620,7 @@ class ModelControllerImpl implements ModelController {
 
         final List<ParsedBootOp> initialOps = new ArrayList<ParsedBootOp>();
         List<ParsedBootOp> postExtensionOps = null;
+        List<ParsedBootOp> deploymentOps = null;
         boolean invalid = false;
         boolean sawExtensionAdd = false;
         final ManagementResourceRegistration rootRegistration = managementModel.get().getRootResourceRegistration();
@@ -653,21 +679,28 @@ class ModelControllerImpl implements ModelController {
                     // An operation prior to the first Extension Add
                     initialOps.add(new ParsedBootOp(parsedOp, stepHandler));
                 } else {
-                    // Start the postExtension list
-                    postExtensionOps = new ArrayList<ParsedBootOp>(32);
-                    if (parallelSubsystemHandler == null || !parallelSubsystemHandler.addSubsystemOperation(parsedOp)) {
-                        postExtensionOps.add(parsedOp);
+                    if (processType.isServer() && parsedOp.address.size() > 0 && DEPLOYMENT.equals(parsedOp.address.getElement(0).getKey())) {
+                        if (deploymentOps == null) {
+                            deploymentOps = new ArrayList<>(4);
+                        }
+                        deploymentOps.add(parsedOp);
                     } else {
-                        // First subsystem op; register the parallel handler and add the op to it
-                        postExtensionOps.add(parallelSubsystemHandler.getParsedBootOp());
-                        registeredParallelSubsystemHandler = true;
+                        // Start the postExtension list
+                        postExtensionOps = new ArrayList<ParsedBootOp>(32);
+                        if (parallelSubsystemHandler == null || !parallelSubsystemHandler.addSubsystemOperation(parsedOp)) {
+                            postExtensionOps.add(parsedOp);
+                        } else {
+                            // First subsystem op; register the parallel handler and add the op to it
+                            postExtensionOps.add(parallelSubsystemHandler.getParsedBootOp());
+                            registeredParallelSubsystemHandler = true;
+                        }
                     }
                 }
             }
         }
 
 
-        return new BootOperations(initialOps, postExtensionOps, invalid);
+        return new BootOperations(initialOps, postExtensionOps, deploymentOps, invalid);
     }
 
     void finishBoot() {
@@ -985,11 +1018,14 @@ class ModelControllerImpl implements ModelController {
     private static final class BootOperations {
         private final List<ParsedBootOp> initialOps;
         private final List<ParsedBootOp> postExtensionOps;
+        private final List<ParsedBootOp> deploymentOps;
         private final boolean invalid;
 
-        private BootOperations(List<ParsedBootOp> initialOps, List<ParsedBootOp> postExtensionOps, boolean invalid) {
+        private BootOperations(List<ParsedBootOp> initialOps, List<ParsedBootOp> postExtensionOps,
+                               List<ParsedBootOp> deploymentOps, boolean invalid) {
             this.initialOps = initialOps;
             this.postExtensionOps = postExtensionOps;
+            this.deploymentOps = deploymentOps;
             this.invalid = invalid;
         }
     }
