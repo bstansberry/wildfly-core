@@ -56,7 +56,7 @@
             <artifactId>shrinkwrap-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.wildfly.core</groupId>
+            <groupId>${core-feature-pack-groupId}</groupId>
             <artifactId>wildfly-core-galleon-pack</artifactId>
             <type>pom</type>
         </dependency>
@@ -85,7 +85,7 @@
                             </plugin-options>
                             <feature-packs>
                                 <feature-pack>
-                                    <groupId>org.wildfly.core</groupId>
+                                    <groupId>${core-feature-pack-groupId}</groupId>
                                     <artifactId>wildfly-core-galleon-pack</artifactId>
                                     <version>${project.version}</version>
                                     <excluded-packages>

@@ -70,6 +70,8 @@
         <!-- Galleon -->
         <galleon.fork.embedded>true</galleon.fork.embedded>
         <galleon.log.time>true</galleon.log.time>
+        <!-- Maven groupId of the core-feature-pack artifact -->
+		<core-feature-pack-groupId>${project.groupId}</core-feature-pack-groupId>
 
         <!-- Checkstyle configuration -->
         <linkXRef>false</linkXRef>
@@ -1195,7 +1197,7 @@
                 <type>zip</type>
             </dependency>
             <dependency>
-                <groupId>org.wildfly.core</groupId>
+                <groupId>${core-feature-pack-groupId}</groupId>
                 <artifactId>wildfly-core-galleon-pack</artifactId>
                 <version>${project.version}</version>
                 <type>pom</type>
@@ -1206,7 +1208,7 @@
                 <version>${version.org.jboss.spec.javax.security.auth.message.jboss-jaspi-api_1.1_spec}</version>
             </dependency>
             <dependency>
-                <groupId>org.wildfly.core</groupId>
+                <groupId>${core-feature-pack-groupId}</groupId>
                 <artifactId>wildfly-core-galleon-pack</artifactId>
                 <version>${project.version}</version>
                 <type>zip</type>

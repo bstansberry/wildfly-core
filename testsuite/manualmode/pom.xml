@@ -159,7 +159,7 @@
                                     </plugin-options>
                                     <resolve-locals>
                                         <resolve-local>
-                                            <groupId>${project.groupId}</groupId>
+                                            <groupId>${core-feature-pack-groupId}</groupId>
                                             <artifactId>wildfly-core-galleon-pack</artifactId>
                                             <version>${project.version}</version>
                                         </resolve-local>

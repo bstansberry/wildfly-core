@@ -107,7 +107,7 @@
                             </plugin-options>
                             <feature-packs>
                                 <feature-pack>
-                                    <groupId>org.wildfly.core</groupId>
+                                    <groupId>${core-feature-pack-groupId}</groupId>
                                     <artifactId>wildfly-core-galleon-pack</artifactId>
                                     <version>${project.version}</version>
                                     <excluded-configs>
