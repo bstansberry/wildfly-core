@@ -34,6 +34,7 @@ public class RunningModeControl {
     private volatile boolean useCurrentConfig;
     private volatile String newBootFileName;
     private volatile Boolean suspend;
+    private volatile Boolean graceless;
 
     public RunningModeControl(final RunningMode initialMode) {
         this.runningMode = initialMode;
@@ -73,6 +74,24 @@ public class RunningModeControl {
 
     public void setSuspend(Boolean suspend) {
         this.suspend = suspend;
+        if (suspend != null && suspend) {
+            this.graceless = false;
+        }
+    }
+
+    /**
+     *
+     * @return The graceless startup mode, or null if if has not been expliticly set
+     */
+    public Boolean getGraceless() {
+        return graceless;
+    }
+
+    public void setGraceless(Boolean graceless) {
+        this.graceless = graceless;
+        if (graceless != null && graceless) {
+            this.suspend = false;
+        }
     }
 
     /**

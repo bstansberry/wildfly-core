@@ -151,6 +151,7 @@ public final class Main {
         ProductConfig productConfig;
         ConfigurationFile.InteractionPolicy configInteractionPolicy = ConfigurationFile.InteractionPolicy.STANDARD;
         boolean startSuspended = false;
+        boolean startGraceless = false;
         boolean removeConfig = false;
         boolean startModeSet = false;
         for (int i = 0; i < argsLength; i++) {
@@ -304,6 +305,9 @@ public final class Main {
                         case CommandLineConstants.SUSPEND_MODE:
                             startSuspended = true;
                         break;
+                        case CommandLineConstants.GRACELESS_MODE:
+                            startGraceless = true;
+                            break;
                         case CommandLineConstants.NORMAL_MODE:
                             break;
                         default:
@@ -387,7 +391,7 @@ public final class Main {
         productConfig = ProductConfig.fromFilesystemSlot(Module.getBootModuleLoader(), WildFlySecurityManager.getPropertyPrivileged(ServerEnvironment.HOME_DIR, null), systemProperties);
         return new ServerEnvironmentWrapper(new ServerEnvironment(hostControllerName, systemProperties, systemEnvironment,
                 serverConfig, configInteractionPolicy, launchType, runningMode, productConfig, startTime, startSuspended,
-                gitRepository, gitBranch, gitAuthConfiguration));
+                startGraceless, gitRepository, gitBranch, gitAuthConfiguration));
     }
 
     private static void assertSingleConfig(String serverConfig) {

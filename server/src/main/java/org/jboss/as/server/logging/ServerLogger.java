@@ -1356,6 +1356,10 @@ public interface ServerLogger extends BasicLogger {
     @Message(id = 280, value = "Unable to initialise the git repository.")
     IllegalArgumentException unableToInitialiseGitRepository(@Cause Throwable cause);
 
+    @LogMessage(level = INFO)
+    @Message(id = 281, value = "Server is starting with graceless startup disabled; external requests may receive failure responses until startup completes.")
+    void startingGraceless();
+
     ////////////////////////////////////////////////
     //Messages without IDs
 

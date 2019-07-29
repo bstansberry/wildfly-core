@@ -124,9 +124,12 @@ public class ManagedServerBootCmdFactory implements ManagedServerBootConfigurati
     private final DirectoryGrouping directoryGrouping;
     private final Supplier<SSLContext> sslContextSupplier;
     private final boolean suspend;
+    private final boolean graceless;
     private JvmType jvmType;
 
-    public ManagedServerBootCmdFactory(final String serverName, final ModelNode domainModel, final ModelNode hostModel, final HostControllerEnvironment environment, final ExpressionResolver expressionResolver, boolean suspend) {
+    public ManagedServerBootCmdFactory(final String serverName, final ModelNode domainModel, final ModelNode hostModel,
+                                       final HostControllerEnvironment environment, final ExpressionResolver expressionResolver,
+                                       final boolean suspend) {
         this.serverName = serverName;
         this.domainModel = domainModel;
         this.hostModel = hostModel;
@@ -177,6 +180,9 @@ public class ManagedServerBootCmdFactory implements ManagedServerBootConfigurati
                 resolveNilableExpressions(serverVM, expressionResolver, false));
 
         this.sslContextSupplier = createSSLContextSupplier(serverModel, expressionResolver);
+
+        // TODO Configuration of domain mode graceless start
+        this.graceless = false;
     }
 
     private static ModelNode resolveNilableExpressions(final ModelNode unresolved, final ExpressionResolver expressionResolver, boolean excludePostBootSystemProps) {
@@ -446,6 +452,11 @@ public class ManagedServerBootCmdFactory implements ManagedServerBootConfigurati
     @Override
     public boolean isSuspended() {
         return suspend;
+    }
+
+    @Override
+    public boolean isGraceless() {
+        return graceless;
     }
 
     @Override

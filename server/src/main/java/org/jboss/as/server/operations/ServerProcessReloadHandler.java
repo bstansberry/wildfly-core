@@ -94,6 +94,7 @@ public class ServerProcessReloadHandler extends ProcessReloadHandler<RunningMode
         }
 
         boolean suspend = false;
+        boolean graceless = false;
         if(!adminOnly) {
             switch (startMode.toLowerCase(Locale.ENGLISH)) {
                 case ModelDescriptionConstants.ADMIN_ONLY:
@@ -104,10 +105,14 @@ public class ServerProcessReloadHandler extends ProcessReloadHandler<RunningMode
                 case ModelDescriptionConstants.SUSPEND:
                     suspend = true;
                     break;
+                case ModelDescriptionConstants.GRACELESS:
+                    graceless = true;
+                    break;
             }
         }
         final boolean finalSuspend = suspend;
         final boolean finalAdminOnly = adminOnly;
+        final boolean finalGraceless = graceless;
 
         final String serverConfig = unmanaged && operation.hasDefined(SERVER_CONFIG.getName()) ? SERVER_CONFIG.resolveModelAttribute(context, operation).asString() : null;
 
@@ -130,6 +135,7 @@ public class ServerProcessReloadHandler extends ProcessReloadHandler<RunningMode
                 runningModeControl.setUseCurrentConfig(useCurrentConfig);
                 runningModeControl.setNewBootFileName(serverConfig);
                 runningModeControl.setSuspend(finalSuspend);
+                runningModeControl.setGraceless(finalGraceless);
             }
         };
     }
@@ -137,7 +143,8 @@ public class ServerProcessReloadHandler extends ProcessReloadHandler<RunningMode
     private enum StartMode {
         NORMAL("normal"),
         ADMIN_ONLY("admin-only"),
-        SUSPEND("suspend");
+        SUSPEND("suspend"),
+        GRACELESS("graceless");
 
         private final String localName;
 
