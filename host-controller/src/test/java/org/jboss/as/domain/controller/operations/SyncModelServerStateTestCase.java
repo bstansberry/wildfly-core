@@ -9,17 +9,13 @@ import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.ENA
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.GROUP;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.HASH;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.HOST;
-import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.INCLUDE_RUNTIME;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.IN_SERIES;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.MANAGEMENT_CLIENT_CONTENT;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.NAME;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP_ADDR;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.PORT;
-import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.PRODUCT_NAME;
-import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.PRODUCT_VERSION;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.PROFILE;
-import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.READ_RESOURCE_OPERATION;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.RELOAD_REQUIRED;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.RESTART_REQUIRED;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.ROLLOUT_PLAN;
@@ -69,6 +65,8 @@ import org.jboss.as.controller.access.management.ManagementSecurityIdentitySuppl
 import org.jboss.as.controller.audit.ManagedAuditLogger;
 import org.jboss.as.controller.client.OperationAttachments;
 import org.jboss.as.controller.client.OperationMessageHandler;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.PRODUCT_NAME;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.PRODUCT_VERSION;
 import org.jboss.as.controller.descriptions.NonResolvingResourceDescriptionResolver;
 import org.jboss.as.controller.extension.ExtensionRegistry;
 import org.jboss.as.controller.extension.MutableRootResourceRegistrationProvider;
@@ -395,8 +393,9 @@ public class SyncModelServerStateTestCase extends AbstractControllerTestBase  {
                 Assert.assertEquals("running", proxy.state);
             }
 
-            ModelNode rolloutPlan = readRolloutPlan("test", originalHash);
-            List<ModelNode> list = rolloutPlan.get(CONTENT, ROLLOUT_PLAN, IN_SERIES).asList();
+            ModelNode rolloutPlans = readResourceRecursive().get(MANAGEMENT_CLIENT_CONTENT, ROLLOUT_PLANS);
+            Assert.assertArrayEquals(originalHash, rolloutPlans.get(HASH).asBytes());
+            List<ModelNode> list = rolloutPlans.get(ROLLOUT_PLAN, "test", CONTENT, ROLLOUT_PLAN, IN_SERIES).asList();
             Assert.assertEquals(1, list.size());
             ModelNode entry = list.get(0);
             Assert.assertTrue(entry.has(SERVER_GROUP, "group-one"));
@@ -421,13 +420,13 @@ public class SyncModelServerStateTestCase extends AbstractControllerTestBase  {
                 Assert.assertEquals("running", proxy.state);
             }
 
-            ModelNode rolloutPlan = readRolloutPlan("test", newHash);
-            List<ModelNode> list = rolloutPlan.get(CONTENT, ROLLOUT_PLAN, IN_SERIES).asList();
+            ModelNode rolloutPlans = readResourceRecursive().get(MANAGEMENT_CLIENT_CONTENT, ROLLOUT_PLANS);
+            Assert.assertArrayEquals(newHash, rolloutPlans.get(HASH).asBytes());
+            List<ModelNode> list = rolloutPlans.get(ROLLOUT_PLAN, "test", CONTENT, ROLLOUT_PLAN, IN_SERIES).asList();
             Assert.assertEquals(1, list.size());
             ModelNode entry = list.get(0);
             Assert.assertTrue(entry.has(SERVER_GROUP, "group-one"));
-            rolloutPlan = readRolloutPlan("test2", newHash);
-            list = rolloutPlan.get(CONTENT, ROLLOUT_PLAN, IN_SERIES).asList();
+            list = rolloutPlans.get(ROLLOUT_PLAN, "test2", CONTENT, ROLLOUT_PLAN, IN_SERIES).asList();
             Assert.assertEquals(1, list.size());
             entry = list.get(0);
             Assert.assertTrue(entry.has(SERVER_GROUP, "group-two"));
@@ -684,17 +683,6 @@ public class SyncModelServerStateTestCase extends AbstractControllerTestBase  {
         for (MockServerProxy proxy : serverProxies.values()) {
             proxy.state = "running";
         }
-    }
-
-    private ModelNode readRolloutPlan(String planName, byte[] expectedRootHash) throws OperationFailedException {
-        PathAddress plansAddr = PathAddress.pathAddress(MANAGEMENT_CLIENT_CONTENT, ROLLOUT_PLANS);
-        ModelNode hashRead = Util.getReadAttributeOperation(plansAddr, HASH);
-        ModelNode result = executeForResult(hashRead);
-        Assert.assertArrayEquals(expectedRootHash, result.asBytes());
-
-        ModelNode readPlanOp = Util.createOperation(READ_RESOURCE_OPERATION, plansAddr.append(ROLLOUT_PLAN, planName));
-        readPlanOp.get(INCLUDE_RUNTIME).set(true);
-        return executeForResult(readPlanOp);
     }
 
     private class TestInitializer implements DelegatingResourceDefinitionInitializer {

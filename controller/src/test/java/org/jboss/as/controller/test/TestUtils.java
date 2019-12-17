@@ -45,13 +45,8 @@ public class TestUtils {
     public static AttributeDefinition createAttribute(String name, ModelType type) {
         return createAttribute(name, type, null, false);
     }
-
     public static AttributeDefinition createNillableAttribute(String name, ModelType type) {
-        return createNillableAttribute(name, type, false);
-    }
-
-    public static AttributeDefinition createNillableAttribute(String name, ModelType type, boolean runtimeOnly) {
-        return createAttribute(name, type, null, runtimeOnly, false, true);
+        return createAttribute(name, type, null, true);
     }
 
     public static AttributeDefinition createAttribute(String name, ModelType type, String groupName) {
