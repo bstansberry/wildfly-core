@@ -120,6 +120,7 @@ public abstract class AbstractGlobalOperationsTestCase extends AbstractControlle
                     @Override
                     public void execute(OperationContext context, ModelNode operation) throws OperationFailedException {
                         final ModelNode model = new ModelNode();
+                        System.setProperty("{expression}", "test-resolve-true");
                         //Atttributes
                         model.get("profile", "profileA", "name").set("profileA");
                         model.get("profile", "profileA", "subsystem", "subsystem1", "attr1").add(1);
@@ -154,6 +155,35 @@ public abstract class AbstractGlobalOperationsTestCase extends AbstractControlle
                         model.get("profile", "profileC", "name").set("profileC");
                         model.get("profile", "profileC", "subsystem", "subsystem4");
                         model.get("profile", "profileC", "subsystem", "subsystem5", "name").set("Test");
+
+                        model.get("profile", "profileD", "name").set("Profile D");
+                        model.get("profile", "profileD", "subsystem", "subsystem1");
+                        //model.get("profile", "profileD", "subsystem", "subsystem1", "expression").set("test-resolve-true");
+                        model.get("profile", "profileD", "subsystem", "subsystem1", "attr1").add(1);
+                        model.get("profile", "profileD", "subsystem", "subsystem1", "attr1").add(2);
+                        model.get("profile", "profileD", "subsystem", "subsystem1", "type1", "thing1", "name").set("Name11");
+                        model.get("profile", "profileD", "subsystem", "subsystem1", "type1", "thing1", "value").set("201");
+                        model.get("profile", "profileD", "subsystem", "subsystem1", "type1", "thing2", "name").set("Name12");
+                        model.get("profile", "profileD", "subsystem", "subsystem1", "type1", "thing2", "value").set("202");
+                        model.get("profile", "profileD", "subsystem", "subsystem1", "type2", "other", "name").set("Name2");
+
+
+                        model.get("profile", "profileD", "subsystem", "subsystem2");
+                        model.get("profile", "profileD", "subsystem", "subsystem2", "bigdecimal").set(new BigDecimal(100));
+                        model.get("profile", "profileD", "subsystem", "subsystem2", "biginteger").set(new BigInteger("101"));
+                        model.get("profile", "profileD", "subsystem", "subsystem2", "boolean").set(true);
+                        model.get("profile", "profileD", "subsystem", "subsystem2", "bytes").set(new byte[]{1, 2, 3});
+                        model.get("profile", "profileD", "subsystem", "subsystem2", "double").set(Double.MAX_VALUE);
+                        model.get("profile", "profileD", "subsystem", "subsystem2", "expression").set(System.getProperty("{expression}"));
+                        model.get("profile", "profileD", "subsystem", "subsystem2", "int").set(102);
+                        model.get("profile", "profileD", "subsystem", "subsystem2", "list").add("l1A");
+                        model.get("profile", "profileD", "subsystem", "subsystem2", "list").add("l1B");
+                        model.get("profile", "profileD", "subsystem", "subsystem2", "long").set(Long.MAX_VALUE);
+                        model.get("profile", "profileD", "subsystem", "subsystem2", "object", "value").set("objVal");
+                        model.get("profile", "profileD", "subsystem", "subsystem2", "property").set(new Property("prop1", new ModelNode().set("value1")));
+                        model.get("profile", "profileD", "subsystem", "subsystem2", "string1").set("s1");
+                        model.get("profile", "profileD", "subsystem", "subsystem2", "string2").set("s2");
+                        model.get("profile", "profileD", "subsystem", "subsystem2", "type").set(ModelType.TYPE);
 
                         createModel(context, model);
                     }

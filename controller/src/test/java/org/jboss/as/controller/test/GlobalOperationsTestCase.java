@@ -50,6 +50,7 @@ import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.REA
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.RECURSIVE;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.REQUEST_PROPERTIES;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.REQUIRED;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.RESOLVE_EXPRESSIONS;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.RESOURCE_ADDED_NOTIFICATION;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.RESOURCE_REMOVED_NOTIFICATION;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.RUNTIME_ONLY;
@@ -953,6 +954,17 @@ public class GlobalOperationsTestCase extends AbstractGlobalOperationsTestCase {
         operation.get(RECURSIVE).set(true);
         executeForFailure(operation);
     }
+
+    @Test
+    public void testRecursiveReadSubModeWithResolveExpression() throws Exception {
+        ModelNode operation = createOperation(READ_RESOURCE_OPERATION,"profile", "profileD", "subsystem", "subsystem2");
+        operation.get("profile", "profileD", "subsystem", "subsystem2", "expression").set(System.getProperty("{expression}"));
+        operation.get(RECURSIVE).set(true);
+        operation.get(RESOLVE_EXPRESSIONS).set(true);
+        ModelNode result = executeForResult(operation);
+        assertNotNull(result);
+        assertEquals(System.getProperty("{expression}"), result.get("expression").asString());
+     }
 
     private void checkNonRecursiveSubsystem1(ModelNode result, boolean includeRuntime) {
         assertEquals(includeRuntime ? 7 : 5, result.keys().size());
