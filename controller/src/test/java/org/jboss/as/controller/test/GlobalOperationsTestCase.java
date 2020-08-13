@@ -957,13 +957,19 @@ public class GlobalOperationsTestCase extends AbstractGlobalOperationsTestCase {
 
     @Test
     public void testRecursiveReadSubModeWithResolveExpression() throws Exception {
-        ModelNode operation = createOperation(READ_RESOURCE_OPERATION,"profile", "profileD", "subsystem", "subsystem2");
-        operation.get("profile", "profileD", "subsystem", "subsystem2", "expression").set(System.getProperty("{expression}"));
-        operation.get(RECURSIVE).set(true);
-        operation.get(RESOLVE_EXPRESSIONS).set(true);
-        ModelNode result = executeForResult(operation);
-        assertNotNull(result);
-        assertEquals(System.getProperty("{expression}"), result.get("expression").asString());
+        System.setProperty("expr", "test-resolve-true");
+        try {
+            ModelNode operation = createOperation(READ_RESOURCE_OPERATION, "profile", "profileA");
+            operation.get(RECURSIVE).set(true);
+            operation.get(RESOLVE_EXPRESSIONS).set(true);
+
+            ModelNode result = executeForResult(operation);
+            assertNotNull(result);
+            assertTrue(result.toString(), result.hasDefined("subsystem", "subsystem2"));
+            checkRecursiveSubsystem2(result.get("subsystem", "subsystem2"), "test-resolve-true");
+        } finally {
+            System.clearProperty("expr");
+        }
      }
 
     private void checkNonRecursiveSubsystem1(ModelNode result, boolean includeRuntime) {
@@ -1009,6 +1015,10 @@ public class GlobalOperationsTestCase extends AbstractGlobalOperationsTestCase {
     }
 
     private void checkRecursiveSubsystem2(ModelNode result) {
+        checkRecursiveSubsystem2(result, "${expr}");
+    }
+
+    private void checkRecursiveSubsystem2(ModelNode result, String expressionValue) {
         assertEquals(14, result.keys().size());
 
         assertEquals(new BigDecimal(100), result.require("bigdecimal").asBigDecimal());
@@ -1019,7 +1029,7 @@ public class GlobalOperationsTestCase extends AbstractGlobalOperationsTestCase {
         assertEquals(2, result.require("bytes").asBytes()[1]);
         assertEquals(3, result.require("bytes").asBytes()[2]);
         assertEquals(Double.MAX_VALUE, result.require("double").asDouble(), 0.0d);
-        assertEquals("{expr}", result.require("expression").asString());
+        assertEquals(expressionValue, result.require("expression").asString());
         assertEquals(102, result.require("int").asInt());
         List<ModelNode> list = result.require("list").asList();
         assertEquals(2, list.size());
