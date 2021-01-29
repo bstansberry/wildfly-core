@@ -54,6 +54,7 @@ import org.jboss.as.controller.UnauthorizedException;
 import org.jboss.as.controller._private.OperationCancellationException;
 import org.jboss.as.controller._private.OperationFailedRuntimeException;
 import org.jboss.as.controller.access.rbac.UnknowRoleException;
+import org.jboss.as.controller.capability.registry.CapabilityScope;
 import org.jboss.as.controller.capability.registry.RegistrationPoint;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.as.controller.interfaces.InterfaceCriteria;
@@ -3222,6 +3223,9 @@ public interface ControllerLogger extends BasicLogger {
 
     @Message(id = NONE, value = "    %s in context '%s'")
     String formattedCapabilityId(String capability, String context);
+
+    @Message(id = NONE, value = "    %s in context '%s' (which includes contexts '%s'")
+    String formattedCapabilityIdWithIncludes(String capability, String context, Set<CapabilityScope> includedScopes);
 
     @Message(id = NONE, value = "; Possible registration points for this capability: %s")
     String possibleCapabilityProviderPoints(String providerPoints);

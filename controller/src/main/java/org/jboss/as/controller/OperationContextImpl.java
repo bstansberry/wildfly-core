@@ -355,9 +355,18 @@ final class OperationContextImpl extends AbstractOperationContext {
                         ? new StringBuilder(ControllerLogger.ROOT_LOGGER.requiredCapabilityMissing(step.address.toCLIStyleString()))
                         : null;
                 for (CapabilityId id : entry.getValue()) {
-                    String formattedCapability = ignoreContext
-                            ? ControllerLogger.ROOT_LOGGER.formattedCapabilityName(id.getName())
-                            : ControllerLogger.ROOT_LOGGER.formattedCapabilityId(id.getName(), id.getScope().getName());
+                    String formattedCapability;
+                    if (ignoreContext) {
+                        formattedCapability = ControllerLogger.ROOT_LOGGER.formattedCapabilityName(id.getName());
+                    } else {
+                        CapabilityScope idScope = id.getScope();
+                        Set<CapabilityScope> includedScopes = idScope.getIncludingScopes(resolutionContext);
+                        if (includedScopes.size() == 0) {
+                            formattedCapability = ControllerLogger.ROOT_LOGGER.formattedCapabilityId(id.getName(), idScope.getName());
+                        } else {
+                            formattedCapability = ControllerLogger.ROOT_LOGGER.formattedCapabilityIdWithIncludes(id.getName(), idScope.getName(), includedScopes);
+                        }
+                    }
                     Set<PathAddress> possiblePoints = managementModel.getCapabilityRegistry().getPossibleProviderPoints(id);
                     if (msg != null) {
                         msg = appendPossibleProviderPoints(msg, formattedCapability, possiblePoints);
