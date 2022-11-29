@@ -158,6 +158,7 @@ import org.jboss.as.host.controller.discovery.DiscoveryOption;
 import org.jboss.as.host.controller.discovery.DomainControllerManagementInterface;
 import org.jboss.as.host.controller.ignored.IgnoredDomainResourceRegistry;
 import org.jboss.as.host.controller.logging.HostControllerLogger;
+import org.jboss.as.host.controller.maven.MavenProxySupport;
 import org.jboss.as.host.controller.mgmt.DomainHostExcludeRegistry;
 import org.jboss.as.host.controller.mgmt.HostControllerRegistrationHandler;
 import org.jboss.as.host.controller.mgmt.MasterDomainControllerOperationHandlerService;
@@ -867,6 +868,10 @@ public class DomainModelControllerService extends AbstractControllerService impl
                     final ServiceBuilder httpSB = serviceTarget.addService(ServiceName.JBOSS.append("http-mgmt-startup"), Service.NULL);
                     httpSB.requires(UndertowHttpManagementService.SERVICE_NAME);
                     httpSB.install();
+
+                    if (hostControllerInfo.isMasterDomainController()) {
+                        MavenProxySupport.install(serviceTarget);
+                    }
                 }
 
                 reachedServers = true;
