@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  ~ Copyright The WildFly Authors
+  ~ SPDX-License-Identifier: Apache-2.0
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.wildfly.core</groupId>
+        <artifactId>wildfly-criu-parent</artifactId>
+        <version>24.0.0.Beta1-SNAPSHOT</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>wildfly-criu-testsuite-dist</artifactId>
+    <name>WildFly Core: CRIU Integration Testsuite Dist</name>
+    <packaging>pom</packaging>
+    <dependencies>
+        <dependency>
+            <groupId>org.wildfly.core</groupId>
+            <artifactId>wildfly-criu-feature-pack</artifactId>
+            <type>pom</type>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+    </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.wildfly.plugins</groupId>
+                <artifactId>wildfly-maven-plugin</artifactId>
+                <configuration>
+                    <record-provisioning-state>false</record-provisioning-state>
+                    <log-provisioning-time>${galleon.log.time}</log-provisioning-time>
+                    <offline>true</offline>
+                    <galleon-options>
+                        <jboss-fork-embedded>${galleon.fork.embedded}</jboss-fork-embedded>
+                        <ignore-not-excluded-layers>true</ignore-not-excluded-layers>
+                    </galleon-options>
+                    <feature-packs>
+                        <feature-pack>
+                            <groupId>org.wildfly</groupId>
+                            <artifactId>wildfly-galleon-pack</artifactId>
+                            <version>${version.org.wildfly}</version>
+                        </feature-pack>
+                        <feature-pack>
+                            <groupId>org.wildfly.core</groupId>
+                            <artifactId>wildfly-criu-feature-pack</artifactId>
+                            <version>${project.version}</version>
+                        </feature-pack>
+                    </feature-packs>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>complete-provisioning</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>provision</goal>
+                        </goals>
+                        <configuration>
+                            <provisioning-dir>${basedir}/target/wildfly-complete</provisioning-dir>
+                        </configuration>
+                    </execution>
+                    <!-- Add the criu subsystem to the wildfly-complete dist's standalone.xml -->
+                    <execution>
+                        <id>configure-criu-subsystem</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>execute-commands</goal>
+                        </goals>
+                        <configuration>
+                            <jboss-home>${project.build.directory}/wildfly-complete</jboss-home>
+                            <offline>true</offline>
+                            <commands>
+                                <command>embed-server</command>
+                                <command>/extension=org.wildfly.extension.criu:add</command>
+                                <command>/subsystem=criu:add</command>
+                                <command>stop-embedded-server</command>
+                            </commands>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>kitchensink-provisioning</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>provision</goal>
+                        </goals>
+                        <configuration>
+                            <provisioning-dir>${basedir}/target/wildfly-layers</provisioning-dir>
+                            <layers>
+                                <layer>ee-core-profile-server</layer>
+                                <layer>core-tools</layer>
+                                <layer>jpa</layer>
+                                <layer>h2-driver</layer>
+                                <layer>ejb-lite</layer>
+                                <layer>jsf</layer>
+                                <layer>metrics</layer>
+                                <layer>health</layer>
+                                <layer>criu</layer>
+                            </layers>
+                            <excluded-layers>
+                                <excluded-layer>core-management</excluded-layer>
+                                <excluded-layer>microprofile-rest-client</excluded-layer>
+                                <excluded-layer>security-manager</excluded-layer>
+                            </excluded-layers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

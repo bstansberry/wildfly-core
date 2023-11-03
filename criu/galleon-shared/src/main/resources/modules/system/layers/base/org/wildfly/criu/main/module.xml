@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  ~ Copyright The WildFly Authors
+  ~ SPDX-License-Identifier: Apache-2.0
+  -->
+
+<module xmlns="urn:jboss:module:1.9" name="org.wildfly.criu">
+    <properties>
+        <property name="jboss.api" value="private"/>
+    </properties>
+
+    <resources>
+        <artifact name="${org.wildfly.core:wildfly-criu}"/>
+    </resources>
+
+    <exports>
+        <include path="org/wildfly/extension/criu/CRIUExtension.class"/>
+        <include path="org/wildfly/extension/criu/CRIUIntegration.class"/>
+    </exports>
+
+    <dependencies>
+        <!-- for java.beans.ProcessChangeListener -->
+        <module name="java.desktop"/>
+        <module name="java.logging"/>
+        <module name="java.management"/>
+        <!-- Allows checkpoint/restore on an OpenJ9 JVM using the OpenJ9 openj9.criu JPMS module -->
+        <module name="openj9.criu" optional="true"/>
+        <!-- Allows checkpoint/restore using a JVM that supports OpenJDK CRaC -->
+        <module name="org.crac" optional="true"/>
+        <module name="org.jboss.as.controller"/>
+        <module name="org.jboss.as.server"/>
+        <module name="org.jboss.as.version"/>
+        <module name="org.jboss.logging"/>
+        <module name="org.jboss.logmanager"/>
+        <module name="org.jboss.staxmapper"/>
+        <module name="org.jboss.threads"/>
+        <module name="org.wildfly.common"/>
+        <module name="org.wildfly.subsystem"/>
+    </dependencies>
+</module>

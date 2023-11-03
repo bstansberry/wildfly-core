@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!--
+  ~ Copyright The WildFly Authors
+  ~ SPDX-License-Identifier: Apache-2.0
+  -->
+
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="urn:wildfly:criu:experimental:1.0"
+           xmlns="urn:wildfly:criu:experimental:1.0"
+           elementFormDefault="qualified"
+           attributeFormDefault="unqualified"
+           version="1.0">
+
+    <xs:element name="subsystem" type="subsystemType">
+        <xs:annotation>
+            <xs:documentation>
+                The criu subsystem root element.
+            </xs:documentation>
+        </xs:annotation>
+    </xs:element>
+
+    <xs:complexType name="subsystemType">
+        <xs:annotation>
+            <xs:documentation>
+                The discovery subsystem root type.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:attribute name="default-checkpoint-strategy" use="optional">
+            <xs:simpleType>
+                <xs:annotation>
+                    <xs:documentation>
+                        Default strategy to use when taking a checkpoint and no strategy was explicitly provided.
+                        Values are:
+                        'reload-to-model' -- reload the server and checkpoint when the server boot has
+                                             established the server configuration, continuing with the rest of
+                                             boot when the JVM is restored.
+                        'suspend-resume'  -- suspend the server and then checkpoint. Resume the server when the
+                                             JVM is restored.
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="reload-to-model" />
+                    <xs:enumeration value="suspend-resume" />
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+    </xs:complexType>
+</xs:schema>

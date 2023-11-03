@@ -1,0 +1,43 @@
+<!--
+  ~ Copyright The WildFly Authors
+  ~ SPDX-License-Identifier: Apache-2.0
+  -->
+
+<build xmlns="urn:wildfly:feature-pack-build:3.3" producer="${project.groupId}:${project.artifactId}:${project.version}">
+    <dependencies>
+        <dependency group-id="org.wildfly" artifact-id="wildfly-ee-galleon-pack">
+            <name>org.wildfly:wildfly-ee-galleon-pack</name>
+            <packages inherit="false">
+                <exclude name="docs.licenses.merge"/>
+                <include name="docs"/>
+                <include name="bin"/>
+                <include name="product.conf"/>
+                <exclude name="org.jboss.as.product"/>
+            </packages>
+            <default-configs inherit="true"/>
+        </dependency>
+    </dependencies>
+    <default-packages>
+        <package name="modules.all"/>
+        <package name="docs.licenses.merge"/>
+    </default-packages>
+    <package-schemas>
+        <group name="org.wildfly.core"/>
+    </package-schemas>
+
+    <plugins>
+        <plugin artifact="org.wildfly.galleon-plugins:wildfly-galleon-plugins"/>
+    </plugins>
+
+    <system-paths>
+        <system-path path="modules/system/layers/base/"/>
+    </system-paths>
+
+    <generate-feature-specs>
+        <extensions>
+            <standalone>
+                <extension>org.wildfly.extension.criu</extension>
+            </standalone>
+        </extensions>
+    </generate-feature-specs>
+</build>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  ~ Copyright The WildFly Authors
+  ~ SPDX-License-Identifier: Apache-2.0
+  -->
+
+<module xmlns="urn:jboss:module:1.9" name="org.wildfly.extension.criu">
+    <properties>
+        <property name="jboss.api" value="private"/>
+    </properties>
+
+    <!-- This module just exposes the CRIUExtension class and associated META-INF/services
+         from the kernel org.wildfly.criu module. This module is what is loaded
+         by ExtensionAdd when the criu extension is configured.
+
+         This indirection is needed to ensure that the resources from the module
+         loaded by ExtensionAdd are the same as those from the module loaded by the
+         kernel. Otherwise, we end up with duplicate classes.
+    -->
+    <dependencies>
+        <module name="org.wildfly.criu" services="export">
+            <exports>
+                <include path="org/wildfly/extension/criu/CRIUExtension.class"/>
+            </exports>
+        </module>
+    </dependencies>
+</module>

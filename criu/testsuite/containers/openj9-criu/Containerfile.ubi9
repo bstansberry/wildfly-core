@@ -1,0 +1,39 @@
+FROM icr.io/appcafe/ibm-semeru-runtimes:open-21-jdk-ubi
+
+USER 0
+
+##########################################
+# Install dumb-init                      #
+##########################################
+
+COPY --chown=root:root dumb-init_1.2.5_x86_64 /usr/bin/dumb-init
+RUN chmod +x /usr/bin/dumb-init
+
+##########################################
+# Install scripts                        #
+##########################################
+
+RUN mkdir -p /opt/jboss
+
+COPY --chown=1001:0 entry-point-rhel9.sh /opt/jboss/scripts/entry-point-rhel9.sh
+COPY --chown=1001:0 checkpoint-rhel9.sh /opt/jboss/scripts/checkpoint-rhel9.sh
+COPY --chown=1001:0 pidplus.sh /opt/jboss/scripts/pidplus.sh
+COPY --chown=1001:0 restore-rhel9.sh /opt/jboss/scripts/restore-rhel9.sh
+RUN chmod a+rx /opt/jboss/scripts/*
+
+##########################################
+# Install and configure WildFly          #
+##########################################
+
+COPY --chown=1001:0 wildfly /opt/jboss/wildfly
+
+COPY --chown=1001:0 kitchensink.war /opt/jboss/wildfly/standalone/deployments
+
+RUN echo 'JAVA_OPTS="$JAVA_OPTS -XX:+EnableCRIUSupport -XX:-CRIUSecProvider"' >> /opt/jboss/wildfly/bin/standalone.conf
+
+ENV LAUNCH_JBOSS_IN_BACKGROUND=true
+ENV WILDFLY_OVERRIDE_ENV_VARS=true
+
+USER 1001
+CMD [ "/bin/bash" ]
+ENTRYPOINT ["/opt/jboss/scripts/entry-point-rhel9.sh"]
