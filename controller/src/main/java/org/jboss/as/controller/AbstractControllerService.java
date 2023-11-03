@@ -309,6 +309,7 @@ public abstract class AbstractControllerService implements Service<ModelControll
         final ServiceContainer container = serviceController.getServiceContainer();
         final ServiceTarget target = context.getChildTarget();
         final ExecutorService executorService = this.executorService != null ? this.executorService.get() : null;
+        final ModelController.CheckpointIntegration checkpointIntegration = getCheckpointIntegration();
 
         final NotificationSupport notificationSupport = NotificationSupport.Factory.create(executorService);
         WritableAuthorizerConfiguration authorizerConfig = authorizer.getWritableAuthorizerConfiguration();
@@ -320,12 +321,13 @@ public abstract class AbstractControllerService implements Service<ModelControll
                 configurationPersister, processType, runningModeControl, prepareStep,
                 processState, executorService, expressionResolver, authorizer, securityIdentitySupplier, auditLogger, notificationSupport,
                 bootErrorCollector, createExtraValidationStepHandler(), capabilityRegistry, getPartialModelIndicator(),
-                instabilityListener != null ? instabilityListener.get() : null);
+                instabilityListener != null ? instabilityListener.get() : null, checkpointIntegration);
+
 
         // Initialize the model
         initModel(controller.getManagementModel(), controller.getModelControllerResource());
 
-        // We create the client factory even if we don't it expose via MSC, so test classes can access it
+        // We create the client factory even if we don't expose it via MSC, so test classes can access it
         this.clientFactory = new ModelControllerClientFactoryImpl(controller, securityIdentitySupplier);
 
         // Expose the client factory
@@ -349,6 +351,8 @@ public abstract class AbstractControllerService implements Service<ModelControll
         }
         capabilityRegistry.publish();  // These are visible immediately; no waiting for finishBoot
                                        // We publish even if we didn't register anything in case parent services did
+
+        checkpointIntegration.register(clientFactory, executorService);
 
         this.controller = controller;
 
@@ -382,6 +386,16 @@ public abstract class AbstractControllerService implements Service<ModelControll
             }
         }, "Controller Boot Thread", bootStackSize);
         bootThread.start();
+    }
+
+    /**
+     * Gets an object that provides integration with JVM checkpointing, if enabled.
+     * By default returns a {@link org.jboss.as.controller.ModelController.CheckpointIntegration#NOOP_INTEGRATION no-op instance}.
+     *
+     * @return the integration object. Will not return {@code null}.
+     */
+    protected ModelController.CheckpointIntegration getCheckpointIntegration() {
+        return ModelController.CheckpointIntegration.NOOP_INTEGRATION;
     }
 
     /**

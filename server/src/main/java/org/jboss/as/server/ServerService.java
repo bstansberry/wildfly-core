@@ -34,6 +34,7 @@ import org.jboss.as.controller.CapabilityRegistry;
 import org.jboss.as.controller.ControlledProcessState;
 import org.jboss.as.controller.DelegatingResourceDefinition;
 import org.jboss.as.controller.ManagementModel;
+import org.jboss.as.controller.ModelController;
 import org.jboss.as.controller.ModelControllerServiceInitialization;
 import org.jboss.as.controller.OperationStepHandler;
 import org.jboss.as.controller.PathAddress;
@@ -154,6 +155,7 @@ public final class ServerService extends AbstractControllerService {
     private final BootstrapListener bootstrapListener;
     private final ControlledProcessState processState;
     private final RunningModeControl runningModeControl;
+    private final ModelController.CheckpointIntegration checkpointIntegration;
     private volatile ExtensibleConfigurationPersister extensibleConfigurationPersister;
     private final ServerDelegatingResourceDefinition rootResourceDefinition;
     private final SuspendController suspendController;
@@ -183,7 +185,8 @@ public final class ServerService extends AbstractControllerService {
                           final OperationStepHandler prepareStep, final BootstrapListener bootstrapListener, final ServerDelegatingResourceDefinition rootResourceDefinition,
                           final RunningModeControl runningModeControl, final ManagedAuditLogger auditLogger,
                           final DelegatingConfigurableAuthorizer authorizer, final ManagementSecurityIdentitySupplier securityIdentitySupplier,
-                          final CapabilityRegistry capabilityRegistry, final SuspendController suspendController, final RuntimeExpressionResolver expressionResolver) {
+                          final CapabilityRegistry capabilityRegistry, final SuspendController suspendController,
+                          final RuntimeExpressionResolver expressionResolver, final ModelController.CheckpointIntegration checkpointIntegration) {
         super(executorService, instabilityListener, getProcessType(configuration.getServerEnvironment()), getStability(configuration.getServerEnvironment()), runningModeControl, null, processState,
                 rootResourceDefinition, prepareStep, expressionResolver, auditLogger, authorizer, securityIdentitySupplier, capabilityRegistry,
                 configuration.getServerEnvironment().getConfigurationExtension());
@@ -193,6 +196,7 @@ public final class ServerService extends AbstractControllerService {
         this.runningModeControl = runningModeControl;
         this.rootResourceDefinition = rootResourceDefinition;
         this.suspendController = suspendController;
+        this.checkpointIntegration = checkpointIntegration;
     }
 
     static ProcessType getProcessType(ServerEnvironment serverEnvironment) {
@@ -214,7 +218,8 @@ public final class ServerService extends AbstractControllerService {
                                   final ControlledProcessState processState, final BootstrapListener bootstrapListener,
                                   final RunningModeControl runningModeControl, final ManagedAuditLogger auditLogger,
                                   final DelegatingConfigurableAuthorizer authorizer, final ManagementSecurityIdentitySupplier securityIdentitySupplier,
-                                  final SuspendController suspendController) {
+                                  final SuspendController suspendController,
+                                  final ModelController.CheckpointIntegration checkpointIntegration) {
 
         // Install Executor services
         final String namePattern = "ServerService Thread Pool -- %t";
@@ -248,7 +253,8 @@ public final class ServerService extends AbstractControllerService {
         final boolean isDomainEnv = configuration.getServerEnvironment().getLaunchType() == ServerEnvironment.LaunchType.DOMAIN;
         final Supplier<ControllerInstabilityListener> cilSupplier = isDomainEnv ? serviceBuilder.requires(HostControllerConnectionService.SERVICE_NAME) : null;
         ServerService service = new ServerService(esSupplier, cilSupplier, configuration, processState, null, bootstrapListener, new ServerDelegatingResourceDefinition(),
-                runningModeControl, auditLogger, authorizer, securityIdentitySupplier, capabilityRegistry, suspendController, expressionResolver);
+                runningModeControl, auditLogger, authorizer, securityIdentitySupplier, capabilityRegistry, suspendController,
+                expressionResolver, checkpointIntegration);
         serviceBuilder.setInstance(service);
         serviceBuilder.addDependency(DeploymentMountProvider.SERVICE_NAME,DeploymentMountProvider.class, service.injectedDeploymentRepository);
         serviceBuilder.addDependency(ContentRepository.SERVICE_NAME, ContentRepository.class, service.injectedContentRepository);
@@ -515,6 +521,11 @@ public final class ServerService extends AbstractControllerService {
                 return null;
             }
         };
+    }
+
+    @Override
+    protected ModelController.CheckpointIntegration getCheckpointIntegration() {
+        return checkpointIntegration;
     }
 
     /** Temporary replacement for QueuelessThreadPoolService */

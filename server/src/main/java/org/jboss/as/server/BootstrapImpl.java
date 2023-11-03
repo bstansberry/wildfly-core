@@ -5,22 +5,29 @@
 
 package org.jboss.as.server;
 
+
+import static org.jboss.as.controller.ModelController.CheckpointIntegration.CheckpointStrategy.RELOAD_TO_DEPLOYMENT_INIT;
 import static org.jboss.as.server.Services.JBOSS_SUSPEND_CONTROLLER;
 
 import java.lang.management.ManagementFactory;
+import java.util.EnumSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.ServiceLoader;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import javax.management.ObjectName;
 
 import org.jboss.as.controller.ControlledProcessState;
+import org.jboss.as.controller.ModelController.CheckpointIntegration;
 import org.jboss.as.controller.ProcessStateNotifier;
 import org.jboss.as.controller.ControlledProcessStateService;
 import org.jboss.as.server.jmx.RunningStateJmx;
 import org.jboss.as.server.logging.ServerLogger;
 import org.jboss.as.server.suspend.OperationListener;
 import org.jboss.as.server.suspend.SuspendController;
+import org.jboss.as.version.Stability;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
@@ -99,15 +106,22 @@ final class BootstrapImpl implements Bootstrap {
         final ControlledProcessState processState = new ControlledProcessState(true);
         shutdownHook.setControlledProcessState(processState);
         ProcessStateNotifier processStateNotifier = ControlledProcessStateService.addService(tracker, processState);
+        // Instantiate the SuspendController here to be able to pass a reference to it to RunningStateJmx
+        // and any CheckpointIntegration.
+        // Note that the SuspendController service will be started in the ServerService during the boot of the server.
         final SuspendController suspendController = new SuspendController();
-        //Instantiating the suspendcontroller here to be able to get a reference to it in RunningStateJmx
-        //Note that the SuspendController service will be started in the ServerService during the boot of the server.
         RunningStateJmx.registerMBean(
                 processStateNotifier, suspendController,
                 configuration.getRunningModeControl(),
                 configuration.getServerEnvironment().getLaunchType() != ServerEnvironment.LaunchType.APPCLIENT);
-        final Service<?> applicationServerService = new ApplicationServerService(extraServices, configuration, processState,
-                suspendController, configuration.getServerEnvironment().getElapsedTime());
+
+        ElapsedTime elapsedTime = configuration.getServerEnvironment().getElapsedTime();
+        Stability stability = configuration.getServerEnvironment().getStability();
+        CheckpointIntegration checkpointIntegration = installCheckpointIntegration(stability, processStateNotifier,
+                suspendController, elapsedTime);
+
+        final Service<?> applicationServerService = new ApplicationServerService(extraServices, configuration,
+                processState, suspendController, elapsedTime, checkpointIntegration);
         tracker.addService(Services.JBOSS_AS, applicationServerService)
             .install();
         final ServiceController<?> rootService = container.getRequiredService(Services.JBOSS_AS);
@@ -175,6 +189,18 @@ final class BootstrapImpl implements Bootstrap {
     public void failed() {
         shutdownHook.shutdown(true);
     }
+
+    private CheckpointIntegration installCheckpointIntegration(Stability stability, ProcessStateNotifier processStateNotifier,
+                                                               SuspendController suspendController, ElapsedTime elapsedTime) {
+        Iterator<CheckpointIntegrationFactory> iter = ServiceLoader.load(CheckpointIntegrationFactory.class, BootstrapImpl.class.getClassLoader()).iterator();
+        if (iter.hasNext()) {
+            return iter.next().create(stability, EnumSet.complementOf(EnumSet.of(RELOAD_TO_DEPLOYMENT_INIT)),
+                    processStateNotifier, suspendController, elapsedTime);
+        } else {
+            return CheckpointIntegration.NOOP_INTEGRATION;
+        }
+    }
+
 
     static class FutureServiceContainer extends AsyncFutureTask<ServiceContainer> {
         private final ServiceContainer container;

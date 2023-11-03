@@ -91,7 +91,7 @@ import org.wildfly.security.auth.server.SecurityIdentity;
 class ModelControllerImpl implements ModelController {
 
     private static final String INITIAL_BOOT_OPERATION = "initial-boot-operation";
-    private static final String POST_EXTENSION_BOOT_OPERATION = "post-extension-boot-operation";
+    static final String POST_EXTENSION_BOOT_OPERATION = "post-extension-boot-operation";
     static final ModelNode EMPTY_ADDRESS = new ModelNode().setEmptyList();
 
     static {
@@ -137,6 +137,8 @@ class ModelControllerImpl implements ModelController {
 
     private PathAddress modelControllerResourceAddress;
 
+    private final CheckpointIntegration checkpointIntegration;
+
     ModelControllerImpl(final ServiceRegistry serviceRegistry, final ServiceTarget serviceTarget,
                         final ManagementResourceRegistration rootRegistration,
                         final ContainerStateMonitor stateMonitor, final ConfigurationPersister persister,
@@ -147,7 +149,8 @@ class ModelControllerImpl implements ModelController {
                         final BootErrorCollector bootErrorCollector, final OperationStepHandler extraValidationStepHandler,
                         final CapabilityRegistry capabilityRegistry,
                         final AbstractControllerService.PartialModelIndicator partialModelIndicator,
-                        final AbstractControllerService.ControllerInstabilityListener instabilityListener) {
+                        final AbstractControllerService.ControllerInstabilityListener instabilityListener,
+                        final CheckpointIntegration checkpointIntegration) {
         this.partialModelIndicator = partialModelIndicator;
         this.instabilityListener = instabilityListener;
         assert serviceRegistry != null;
@@ -190,6 +193,7 @@ class ModelControllerImpl implements ModelController {
         if (processType.isServer()) {
             this.modelControllerResourceAddress = MODEL_CONTROLLER_ADDRESS;
         }
+        this.checkpointIntegration = checkpointIntegration;
         auditLogger.startBoot();
     }
 
@@ -411,7 +415,7 @@ class ModelControllerImpl implements ModelController {
                     operation.get(OP_ADDR), this, processType, runningModeControl.getRunningMode(),
                     headers, handler, attachments, managementModel.get(), originalResultTxControl, processState, auditLogger,
                     bootingFlag.get(), forBoot, hostServerGroupTracker, accessContext, notificationSupport,
-                    false, extraValidationStepHandler, partialModel, securityIdentitySupplier);
+                    false, extraValidationStepHandler, partialModel, securityIdentitySupplier, null);
             // Try again if the operation-id is already taken
             if(activeOperations.putIfAbsent(operationID, context) == null) {
                 //noinspection deprecation
@@ -490,7 +494,7 @@ class ModelControllerImpl implements ModelController {
         final AbstractOperationContext context = new OperationContextImpl(operationID, INITIAL_BOOT_OPERATION, EMPTY_ADDRESS,
                 this, processType, runningModeControl.getRunningMode(),
                 headers, handler, null, managementModel.get(), control, processState, auditLogger, bootingFlag.get(), true,
-                hostServerGroupTracker, null, notificationSupport, true, extraValidationStepHandler, true, securityIdentitySupplier);
+                hostServerGroupTracker, null, notificationSupport, true, extraValidationStepHandler, true, securityIdentitySupplier, null);
 
         // Add to the context all ops prior to the first ExtensionAddHandler as well as all ExtensionAddHandlers; save the rest.
         // This gets extensions registered before proceeding to other ops that count on these registrations
@@ -513,7 +517,7 @@ class ModelControllerImpl implements ModelController {
                     EMPTY_ADDRESS, this, processType, runningModeControl.getRunningMode(),
                     headers, handler, null, managementModel.get(), control, processState, auditLogger,
                             bootingFlag.get(), true, hostServerGroupTracker, null, notificationSupport, true,
-                            extraValidationStepHandler, partialModel, securityIdentitySupplier);
+                            extraValidationStepHandler, partialModel, securityIdentitySupplier, checkpointIntegration);
             if (configExtension != null && configExtension.shouldProcessOperations(runningModeControl.getRunningMode())) {
                 configExtension.processOperations(managementModel.get().getRootResourceRegistration(), bootOperations.postExtensionOps);
             }
@@ -555,7 +559,7 @@ class ModelControllerImpl implements ModelController {
                         EMPTY_ADDRESS, this, processType, runningModeControl.getRunningMode(),
                         headers, handler, null, managementModel.get(), control, processState, auditLogger,
                                 bootingFlag.get(), true, hostServerGroupTracker, null, notificationSupport, false,
-                                extraValidationStepHandler, partialModel, securityIdentitySupplier)) {
+                                extraValidationStepHandler, partialModel, securityIdentitySupplier, null)) {
                     validateContext.addModifiedResourcesForModelValidation(validateAddresses);
                     resultAction = validateContext.executeOperation();
                 }

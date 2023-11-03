@@ -19,6 +19,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.jboss.as.controller.ControlledProcessState;
+import org.jboss.as.controller.ModelController.CheckpointIntegration;
 import org.jboss.as.controller.RunningModeControl;
 import org.jboss.as.domain.http.server.ConsoleAvailabilityService;
 import org.jboss.as.repository.ContentRepository;
@@ -56,6 +57,7 @@ final class ApplicationServerService implements Service<AsyncFuture<ServiceConta
     private final RunningModeControl runningModeControl;
     private final ControlledProcessState processState;
     private final SuspendController suspendController;
+    private final CheckpointIntegration checkpointIntegration;
     private final boolean standalone;
     private final boolean selfContained;
     private final ElapsedTime elapsedTime;
@@ -64,7 +66,7 @@ final class ApplicationServerService implements Service<AsyncFuture<ServiceConta
 
     ApplicationServerService(final List<ServiceActivator> extraServices, final Bootstrap.Configuration configuration,
                              final ControlledProcessState processState, final SuspendController suspendController,
-                             final ElapsedTime elapsedTime) {
+                             final ElapsedTime elapsedTime, final CheckpointIntegration checkpointIntegration) {
         this.extraServices = extraServices;
         this.configuration = configuration;
         runningModeControl = configuration.getRunningModeControl();
@@ -73,6 +75,7 @@ final class ApplicationServerService implements Service<AsyncFuture<ServiceConta
         this.processState = processState;
         this.suspendController = suspendController;
         this.elapsedTime = elapsedTime;
+        this.checkpointIntegration = checkpointIntegration;
     }
 
     @Override
@@ -156,7 +159,9 @@ final class ApplicationServerService implements Service<AsyncFuture<ServiceConta
         //Add server path manager service
         ServerPathManagerService.addService(serviceTarget, new ServerPathManagerService(configuration.getCapabilityRegistry()), serverEnvironment);
         ServerService.addService(serviceTarget, configuration, processState, bootstrapListener, runningModeControl, configuration.getAuditLogger(),
-                configuration.getAuthorizer(), configuration.getSecurityIdentitySupplier(), suspendController);
+                configuration.getAuthorizer(), configuration.getSecurityIdentitySupplier(), suspendController, checkpointIntegration);
+
+        // Add extra services provided to the constructor
         final ServiceActivatorContext serviceActivatorContext = new ServiceActivatorContext() {
             @Override
             public ServiceTarget getServiceTarget() {

@@ -36,6 +36,7 @@ import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.WAR
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.WARNINGS;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.WRITE_ATTRIBUTE_OPERATION;
 import static org.jboss.as.controller.logging.ControllerLogger.MGMT_OP_LOGGER;
+import static org.jboss.as.controller.ModelController.CheckpointIntegration.CheckpointStrategy.RELOAD_TO_MODEL;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -454,7 +455,7 @@ abstract class AbstractOperationContext implements OperationContext, AutoCloseab
 
         assert isControllingThread();
         try {
-            /** Execution has begun */
+            /* Execution has begun */
             executing = true;
 
             processStages();
@@ -719,8 +720,12 @@ abstract class AbstractOperationContext implements OperationContext, AutoCloseab
             Step step = steps.get(currentStage).pollFirst();
             if (step == null) {
 
-                if (currentStage == Stage.MODEL && addModelValidationSteps()) {
-                    continue;
+                if (currentStage == Stage.MODEL) {
+                    if (addModelValidationSteps()) {
+                        continue;
+                    } else {
+                        signalReadyForCheckpoint(RELOAD_TO_MODEL);
+                    }
                 }
                 // No steps remain in this stage; give subclasses a chance to check status
                 // and approve moving to the next stage
@@ -793,6 +798,10 @@ abstract class AbstractOperationContext implements OperationContext, AutoCloseab
 
         // All steps ran and canContinueProcessing returned true for the last one, so...
         executeDoneStage(primaryResponse);
+    }
+
+    void signalReadyForCheckpoint(ModelController.CheckpointIntegration.CheckpointStrategy strategy) {
+        // no-op by default
     }
 
     private CapabilityRegistry.RuntimeStatus getStepExecutionStatus(Step step) {

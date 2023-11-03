@@ -182,6 +182,7 @@ final class OperationContextImpl extends AbstractOperationContext {
     private final boolean capabilitiesAlreadyBroken;
     private final boolean partialModel;
     private final boolean forBoot;
+    final ModelController.CheckpointIntegration checkpointIntegration;
 
     private volatile ExecutionStatus executionStatus = ExecutionStatus.EXECUTING;
 
@@ -203,7 +204,8 @@ final class OperationContextImpl extends AbstractOperationContext {
                          final boolean skipModelValidation,
                          final OperationStepHandler extraValidationStepHandler,
                          final boolean partialModel,
-                         final Supplier<SecurityIdentity> securityIdentitySupplier) {
+                         final Supplier<SecurityIdentity> securityIdentitySupplier,
+                         final ModelController.CheckpointIntegration checkpointIntegration) {
         super(processType, runningMode, transactionControl, processState, booting, auditLogger, notificationSupport,
                 modelController, skipModelValidation, extraValidationStepHandler, operationHeaders, securityIdentitySupplier);
         this.operationId = operationId;
@@ -228,6 +230,7 @@ final class OperationContextImpl extends AbstractOperationContext {
         } else {
             this.capabilitiesAlreadyBroken = false;
         }
+        this.checkpointIntegration = checkpointIntegration;
     }
 
     @Override
@@ -275,6 +278,12 @@ final class OperationContextImpl extends AbstractOperationContext {
     @Override
     boolean isBootOperation() {
         return forBoot;
+    }
+
+    void signalReadyForCheckpoint(ModelController.CheckpointIntegration.CheckpointStrategy strategy) {
+        if (checkpointIntegration != null && strategy.equals(checkpointIntegration.getCurrentCheckpointStrategy())) {
+            checkpointIntegration.readyForCheckpoint();
+        }
     }
 
     private boolean validateCapabilities() {

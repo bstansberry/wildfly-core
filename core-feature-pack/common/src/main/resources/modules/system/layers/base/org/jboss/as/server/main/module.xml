@@ -65,6 +65,8 @@
         <module name="org.jboss.threads"/>
         <module name="org.jboss.vfs" services="import"/>
         <module name="org.wildfly.common"/>
+        <!-- Allows CRIU integration if this module is provided -->
+        <module name="org.wildfly.criu" optional="true" services="import"/>
         <!-- Allow javax->jakarta deployment transformation if this module is provided -->
         <module name="org.wildfly.deployment.transformation" optional="true" services="import"/>
         <module name="org.wildfly.extension.core-management-client" />
