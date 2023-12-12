@@ -13,9 +13,25 @@
         <property name="jboss.api" value="deprecated"/>
     </properties>
     <dependencies>
-        <module name="java.se" export="true"/>
-        <module name="java.xml" export="true"/>
-        <module name="java.xml.crypto" export="true"/>
-        <module name="jdk.xml.dom" export="true"/>
+        <module name="java.se" export="true">
+            <properties>
+                <property name="galleon.passive" value="true"/>
+            </properties>
+        </module>
+        <module name="java.xml" export="true">
+            <properties>
+                <property name="galleon.passive" value="true"/>
+            </properties>
+        </module>
+        <module name="java.xml.crypto" export="true">
+            <properties>
+                <property name="galleon.passive" value="true"/>
+            </properties>
+        </module>
+        <module name="jdk.xml.dom" export="true">
+            <properties>
+                <property name="galleon.passive" value="true"/>
+            </properties>
+        </module>
     </dependencies>
 </module>
