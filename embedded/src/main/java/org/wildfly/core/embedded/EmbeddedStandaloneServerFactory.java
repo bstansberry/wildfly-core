@@ -5,6 +5,8 @@
 
 package org.wildfly.core.embedded;
 
+import static org.wildfly.core.embedded.CaptureFuture.captureServiceValue;
+
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
@@ -12,15 +14,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
 
 import org.jboss.as.controller.ControlledProcessState;
 import org.jboss.as.controller.ProcessStateNotifier;
@@ -34,14 +34,8 @@ import org.jboss.as.server.ServerEnvironment;
 import org.jboss.as.server.ServerService;
 import org.jboss.as.server.SystemExiter;
 import org.jboss.modules.ModuleLoader;
-import org.jboss.msc.Service;
 import org.jboss.msc.service.ServiceActivator;
-import org.jboss.msc.service.ServiceActivatorContext;
-import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceContainer;
-import org.jboss.msc.service.ServiceController;
-import org.jboss.msc.service.StartContext;
-import org.jboss.msc.service.StopContext;
 import org.wildfly.core.embedded.logging.EmbeddedLogger;
 
 /**
@@ -205,6 +199,8 @@ public class EmbeddedStandaloneServerFactory {
         private final ClassLoader embeddedModuleCL;
         private ServiceContainer serviceContainer;
         private ControlledProcessState.State currentProcessState;
+
+        private ModelControllerClientFactory modelControllerClientFactory;
         private ModelControllerClient modelControllerClient;
         private ExecutorService executorService;
         private ProcessStateNotifier processStateNotifier;
@@ -266,17 +262,21 @@ public class EmbeddedStandaloneServerFactory {
 
                     configuration.setModuleLoader(moduleLoader);
 
-                    // As part of bootstrap install a service to capture the ProcessStateNotifier
-                    AtomicReference<ProcessStateNotifier> notifierRef = new AtomicReference<>();
-                    ServiceActivator notifierCapture = ctx -> captureNotifier(ctx, notifierRef);
+                    // As part of bootstrap, install services to capture the ProcessStateNotifier and ModelControllerClientFactory
+                    CaptureFuture<ProcessStateNotifier> notifierFuture = new CaptureFuture<>();
+                    ServiceActivator notifierCapture = ctx -> captureServiceValue(ctx, ControlledProcessStateService.INTERNAL_SERVICE_NAME, notifierFuture);
+                    CaptureFuture<ModelControllerClientFactory> clientFactoryFuture = new CaptureFuture<>();
+                    ServiceActivator clientFactoryCapture = ctx -> captureServiceValue(ctx, ServerService.JBOSS_SERVER_CLIENT_FACTORY, clientFactoryFuture);
 
-                    Future<ServiceContainer> future = bootstrap.startup(configuration, Collections.singletonList(notifierCapture));
+                    Future<ServiceContainer> future = bootstrap.startup(configuration, Arrays.asList(notifierCapture, clientFactoryCapture));
 
                     serviceContainer = future.get();
 
                     executorService = Executors.newCachedThreadPool();
 
-                    processStateNotifier = notifierRef.get();
+                    modelControllerClientFactory = clientFactoryFuture.get();
+
+                    processStateNotifier = notifierFuture.get();
                     processStateNotifier.addPropertyChangeListener(processStateListener);
                     establishModelControllerClient(processStateNotifier.getCurrentState(), true);
 
@@ -294,23 +294,6 @@ public class EmbeddedStandaloneServerFactory {
             } finally {
                 SecurityActions.setTccl(tccl);
             }
-        }
-
-        private static void captureNotifier(ServiceActivatorContext ctx, AtomicReference<ProcessStateNotifier> notifierRef) {
-            ServiceBuilder<?> sb = ctx.getServiceTarget().addService();
-            final Supplier<ProcessStateNotifier> result = sb.requires(ControlledProcessStateService.INTERNAL_SERVICE_NAME);
-            sb.setInstance(new Service() {
-                @Override
-                public void start(StartContext context) {
-                    notifierRef.set(result.get());
-                    context.getController().setMode(ServiceController.Mode.REMOVE);
-                }
-
-                @Override
-                public void stop(StopContext context) {
-                }
-            });
-            sb.install();
         }
 
         @Override
@@ -380,19 +363,8 @@ public class EmbeddedStandaloneServerFactory {
         private synchronized void establishModelControllerClient(ControlledProcessState.State state, boolean storeState) {
             ModelControllerClient newClient = null;
             if (state != ControlledProcessState.State.STOPPING && state != ControlledProcessState.State.STOPPED && serviceContainer != null) {
-                ModelControllerClientFactory clientFactory;
-                try {
-                    // TODO replace this in start() with the ServiceActivator approach we used to capture the ProcessStateNotifier
-                    @SuppressWarnings("unchecked")
-                    final ServiceController clientFactorySvc =
-                            serviceContainer.getService(ServerService.JBOSS_SERVER_CLIENT_FACTORY);
-                    clientFactory = (ModelControllerClientFactory) clientFactorySvc.getValue();
-                } catch (RuntimeException e) {
-                    // Either NPE because clientFactorySvc was not installed, or ISE from getValue because not UP
-                    clientFactory = null;
-                }
-                if (clientFactory != null) {
-                    newClient = clientFactory.createSuperUserClient(executorService, true);
+                if (modelControllerClientFactory != null) {
+                    newClient = modelControllerClientFactory.createSuperUserClient(executorService, true);
                 }
             }
             modelControllerClient = newClient;
@@ -427,4 +399,5 @@ public class EmbeddedStandaloneServerFactory {
             }
         }
     }
+
 }

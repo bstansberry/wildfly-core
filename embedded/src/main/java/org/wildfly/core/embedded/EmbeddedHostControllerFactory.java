@@ -5,6 +5,8 @@
 
 package org.wildfly.core.embedded;
 
+import static org.wildfly.core.embedded.CaptureFuture.captureServiceValue;
+
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
@@ -24,23 +26,23 @@ import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.jboss.as.controller.ControlledProcessState;
+import org.jboss.as.controller.ControlledProcessStateService;
 import org.jboss.as.controller.ProcessStateNotifier;
 import org.jboss.as.controller.ModelControllerClientFactory;
 import org.jboss.as.controller.ProcessType;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.controller.client.helpers.DelegatingModelControllerClient;
-import org.jboss.as.host.controller.DomainModelControllerService;
 import org.jboss.as.host.controller.HostControllerEnvironment;
 import org.jboss.as.host.controller.Main;
 import org.jboss.as.server.FutureServiceContainer;
+import org.jboss.as.server.ServerService;
 import org.jboss.as.server.SystemExiter;
 import org.jboss.as.server.logging.ServerLogger;
 import org.jboss.modules.ModuleLoader;
+import org.jboss.msc.service.ServiceActivator;
 import org.jboss.msc.service.ServiceContainer;
-import org.jboss.msc.service.ServiceController;
 import org.wildfly.core.embedded.logging.EmbeddedLogger;
 
 /**
@@ -209,6 +211,7 @@ public class EmbeddedHostControllerFactory {
         private final ClassLoader embeddedModuleCL;
         private ServiceContainer serviceContainer;
         private volatile ControlledProcessState.State currentProcessState;
+        private ModelControllerClientFactory modelControllerClientFactory;
         private ModelControllerClient modelControllerClient;
         private ExecutorService executorService;
         private ProcessStateNotifier processStateNotifier;
@@ -255,12 +258,20 @@ public class EmbeddedHostControllerFactory {
                     final byte[] authBytes = new byte[16];
                     new Random(new SecureRandom().nextLong()).nextBytes(authBytes);
                     final String pcAuthCode = Base64.getEncoder().encodeToString(authBytes);
-                    final AtomicReference<ProcessStateNotifier> notifierReference = new AtomicReference<>();
+
+                    // As part of bootstrap, install services to capture the ProcessStateNotifier and ModelControllerClientFactory
+                    CaptureFuture<ProcessStateNotifier> notifierFuture = new CaptureFuture<>();
+                    ServiceActivator notifierCapture = ctx -> captureServiceValue(ctx, ControlledProcessStateService.INTERNAL_SERVICE_NAME, notifierFuture);
+                    CaptureFuture<ModelControllerClientFactory> clientFactoryFuture = new CaptureFuture<>();
+                    ServiceActivator clientFactoryCapture = ctx -> captureServiceValue(ctx, ServerService.JBOSS_SERVER_CLIENT_FACTORY, clientFactoryFuture);
+
                     hostControllerBootstrap = new EmbeddedHostControllerBootstrap(futureContainer, environment, pcAuthCode);
-                    hostControllerBootstrap.bootstrap(processStateListener, notifierReference);
+                    hostControllerBootstrap.bootstrap(processStateListener, notifierCapture, clientFactoryCapture);
                     serviceContainer = futureContainer.get();
                     executorService = Executors.newCachedThreadPool();
-                    processStateNotifier = notifierReference.get();
+                    processStateNotifier = notifierFuture.get();
+                    modelControllerClientFactory = clientFactoryFuture.get();
+
                     establishModelControllerClient(currentProcessState, false);
                 } catch (RuntimeException rte) {
                     if (hostControllerBootstrap != null) {
@@ -291,18 +302,8 @@ public class EmbeddedHostControllerFactory {
         private synchronized void establishModelControllerClient(ControlledProcessState.State state, boolean storeState) {
             ModelControllerClient newClient = null;
             if (state != ControlledProcessState.State.STOPPING && state != ControlledProcessState.State.STOPPED && serviceContainer != null) {
-                ModelControllerClientFactory  clientFactory;
-                try {
-                    @SuppressWarnings("unchecked")
-                    final ServiceController clientFactorySvc =
-                            serviceContainer.getService(DomainModelControllerService.CLIENT_FACTORY_SERVICE_NAME);
-                    clientFactory = (ModelControllerClientFactory) clientFactorySvc.getValue();
-                } catch (RuntimeException e) {
-                    // Either NPE because clientFactorySvc was not installed, or ISE from getValue because not UP
-                    clientFactory = null;
-                }
-                if (clientFactory != null) {
-                    newClient = clientFactory.createSuperUserClient(executorService, true);
+                if (modelControllerClientFactory != null) {
+                    newClient = modelControllerClientFactory.createSuperUserClient(executorService, true);
                 }
             }
             modelControllerClient = newClient;

@@ -7,7 +7,6 @@ package org.wildfly.core.embedded;
 
 import java.beans.PropertyChangeListener;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.jboss.as.controller.ControlledProcessState;
 import org.jboss.as.controller.ProcessStateNotifier;
@@ -17,7 +16,10 @@ import org.jboss.as.host.controller.HostControllerService;
 import org.jboss.as.host.controller.HostRunningModeControl;
 import org.jboss.as.server.FutureServiceContainer;
 import org.jboss.as.server.jmx.RunningStateJmx;
+import org.jboss.msc.service.ServiceActivator;
+import org.jboss.msc.service.ServiceActivatorContext;
 import org.jboss.msc.service.ServiceContainer;
+import org.jboss.msc.service.ServiceRegistry;
 import org.jboss.msc.service.ServiceTarget;
 
 /**
@@ -41,7 +43,7 @@ public class EmbeddedHostControllerBootstrap {
         this.futureContainer = futureContainer;
     }
 
-    public FutureServiceContainer bootstrap(PropertyChangeListener processStateListener, AtomicReference<ProcessStateNotifier> notifierRef) throws Exception {
+    public FutureServiceContainer bootstrap(PropertyChangeListener processStateListener, ServiceActivator... extraServices) throws Exception {
         try {
             final HostRunningModeControl runningModeControl = environment.getRunningModeControl();
             final ControlledProcessState processState = new ControlledProcessState(true);
@@ -50,10 +52,10 @@ public class EmbeddedHostControllerBootstrap {
 
             final ProcessStateNotifier processStateNotifier = ControlledProcessStateService.addService(target, processState);
             processStateNotifier.addPropertyChangeListener(processStateListener);
-            notifierRef.set(processStateNotifier);
             RunningStateJmx.registerMBean(processStateNotifier, null, runningModeControl, false);
             final HostControllerService hcs = new HostControllerService(environment, runningModeControl, authCode, processState, futureContainer);
             target.addService(HostControllerService.HC_SERVICE_NAME, hcs).install();
+            installExtraServices(target, extraServices);
             return futureContainer;
         } catch (RuntimeException | Error e) {
             shutdownHook.run();
@@ -63,6 +65,25 @@ public class EmbeddedHostControllerBootstrap {
 
     public void failed() {
         shutdownHook.run();
+    }
+
+    private void installExtraServices(ServiceTarget target, ServiceActivator... extraServices) {
+        if (extraServices != null && extraServices.length > 0) {
+            final ServiceActivatorContext ctx = new ServiceActivatorContext() {
+                @Override
+                public ServiceTarget getServiceTarget() {
+                    return target;
+                }
+
+                @Override
+                public ServiceRegistry getServiceRegistry() {
+                    return serviceContainer;
+                }
+            };
+            for (ServiceActivator activator : extraServices) {
+                activator.activate(ctx);
+            }
+        }
     }
 
     private static class ShutdownHook extends Thread {

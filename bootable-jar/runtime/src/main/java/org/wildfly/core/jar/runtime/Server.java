@@ -10,14 +10,13 @@ import static java.lang.System.getProperties;
 import static java.lang.System.getenv;
 import static java.security.AccessController.doPrivileged;
 import java.security.PrivilegedAction;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import org.jboss.as.controller.ControlledProcessState;
@@ -40,8 +39,11 @@ import org.jboss.msc.service.ServiceActivatorContext;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
+import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StopContext;
+import org.jboss.threads.AsyncFutureTask;
+import org.jboss.threads.JBossExecutors;
 import org.wildfly.core.jar.runtime._private.BootableJarLogger;
 
 /**
@@ -64,6 +66,7 @@ final class Server {
     private final ModuleLoader moduleLoader;
     private ServiceContainer serviceContainer;
     private ControlledProcessState.State currentProcessState;
+    private  ModelControllerClientFactory modelControllerClientFactory;
     private ModelControllerClient modelControllerClient;
     private ExecutorService executorService;
     private ProcessStateNotifier processStateNotifier;
@@ -158,17 +161,22 @@ final class Server {
 
             configuration.setModuleLoader(moduleLoader);
 
-            // As part of bootstrap install a service to capture the ProcessStateNotifier
-            AtomicReference<ProcessStateNotifier> notifierRef = new AtomicReference<>();
-            ServiceActivator notifierCapture = ctx -> captureNotifier(ctx, notifierRef);
+            // As part of bootstrap, install a service to capture the ProcessStateNotifier and ModelControllerClientFactory
+            CaptureFuture<ProcessStateNotifier> notifierFuture = new CaptureFuture<>();
+            ServiceActivator notifierCapture = ctx -> captureServiceValue(ctx, ControlledProcessStateService.INTERNAL_SERVICE_NAME, notifierFuture);
+            CaptureFuture<ModelControllerClientFactory> clientFactoryFuture = new CaptureFuture<>();
+            ServiceActivator clientFactoryCapture = ctx -> captureServiceValue(ctx, ServerService.JBOSS_SERVER_CLIENT_FACTORY, clientFactoryFuture);
 
-            Future<ServiceContainer> future = bootstrap.startup(configuration, Collections.singletonList(notifierCapture));
+
+            Future<ServiceContainer> future = bootstrap.startup(configuration, Arrays.asList(notifierCapture, clientFactoryCapture));
 
             serviceContainer = future.get();
 
             executorService = Executors.newCachedThreadPool();
 
-            processStateNotifier = notifierRef.get();
+            modelControllerClientFactory = clientFactoryFuture.get();
+
+            processStateNotifier = notifierFuture.get();
             processStateNotifier.addPropertyChangeListener(processStateListener);
             establishModelControllerClient(processStateNotifier.getCurrentState(), true);
 
@@ -228,19 +236,8 @@ final class Server {
     private synchronized void establishModelControllerClient(ControlledProcessState.State state, boolean storeState) {
         ModelControllerClient newClient = null;
         if (state != ControlledProcessState.State.STOPPING && state != ControlledProcessState.State.STOPPED && serviceContainer != null) {
-            ModelControllerClientFactory clientFactory;
-            try {
-                // TODO replace this in start() with the ServiceActivator approach we used to capture the ProcessStateNotifier
-                @SuppressWarnings("unchecked")
-                final ServiceController clientFactorySvc
-                        = serviceContainer.getService(ServerService.JBOSS_SERVER_CLIENT_FACTORY);
-                clientFactory = (ModelControllerClientFactory) clientFactorySvc.getValue();
-            } catch (RuntimeException e) {
-                // Either NPE because clientFactorySvc was not installed, or ISE from getValue because not UP
-                clientFactory = null;
-            }
-            if (clientFactory != null) {
-                newClient = clientFactory.createSuperUserClient(executorService, true);
+            if (modelControllerClientFactory != null) {
+                newClient = modelControllerClientFactory.createSuperUserClient(executorService, true);
             }
         }
         modelControllerClient = newClient;
@@ -275,13 +272,23 @@ final class Server {
         }
     }
 
-    private static void captureNotifier(ServiceActivatorContext ctx, AtomicReference<ProcessStateNotifier> notifierRef) {
+    /**
+     * Install a service that captures the value provided by a given target and stores it in the given AsyncFuture.
+     * <p>
+     * TODO investigate using ServiceValueExecutorRegistry for this. An issue would be the added dependency.
+     *
+     * @param ctx {$link ServiceActivatorContext} to use to install the service. Cannot be {@code null}.
+     * @param target the name of the service whose value should be captured. Cannot be {@code null}.
+     * @param future  store for the captured value. Cannot be {@code null}.
+     * @param <T> type of the value to capture
+     */
+    private static <T> void captureServiceValue(ServiceActivatorContext ctx, ServiceName target, CaptureFuture<T> future) {
         ServiceBuilder<?> sb = ctx.getServiceTarget().addService();
-        final Supplier<ProcessStateNotifier> result = sb.requires(ControlledProcessStateService.INTERNAL_SERVICE_NAME);
+        final Supplier<T> result = sb.requires(target);
         sb.setInstance(new Service() {
             @Override
             public void start(StartContext context) {
-                notifierRef.set(result.get());
+                future.set(result.get());
                 context.getController().setMode(ServiceController.Mode.REMOVE);
             }
 
@@ -290,5 +297,16 @@ final class Server {
             }
         });
         sb.install();
+    }
+
+    private static class CaptureFuture<T> extends AsyncFutureTask<T> {
+
+        CaptureFuture() {
+            super(JBossExecutors.directExecutor());
+        }
+
+        void set(T result) {
+            setResult(result);
+        }
     }
 }

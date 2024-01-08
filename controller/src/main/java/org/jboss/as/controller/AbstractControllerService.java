@@ -356,8 +356,8 @@ public abstract class AbstractControllerService implements Service<ModelControll
             rootResourceRegistration.registerCapability(CLIENT_FACTORY_CAPABILITY);
             rootResourceRegistration.registerCapability(NOTIFICATION_REGISTRY_CAPABILITY);
             final ServiceName clientFactorySN = CLIENT_FACTORY_CAPABILITY.getCapabilityServiceName();
-            final ServiceBuilder<?> clientFactorySB = target.addService(clientFactorySN);
-            clientFactorySB.setInstance(new SimpleService(clientFactorySB.provides(clientFactorySN), clientFactory));
+            final ServiceBuilder<?> clientFactorySB = target.addService();
+            clientFactorySB.setInstance(org.jboss.msc.Service.newInstance(clientFactorySB.provides(clientFactorySN), clientFactory));
             clientFactorySB.install();
             final ServiceName notifyRegistrySN = NOTIFICATION_REGISTRY_CAPABILITY.getCapabilityServiceName();
             final ServiceBuilder<?> notifyRegistrySB = target.addService(notifyRegistrySN);
