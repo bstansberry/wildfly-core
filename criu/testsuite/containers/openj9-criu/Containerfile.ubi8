@@ -1,0 +1,57 @@
+FROM registry.access.redhat.com/ubi9/ubi:latest
+
+RUN groupadd -r jboss -g 1000 && useradd -u 1000 -r -g jboss -m -d /home/jboss -s /sbin/nologin -c "JBoss user" jboss && \
+    chmod 755 /home/jboss
+
+USER root
+
+##########################################
+# Install and configure shared libraries #
+##########################################
+
+RUN set -eu; \
+    dnf install -y \
+# CRIU dependencies
+       criu criu-libs iptables-libs jansson libibverbs libmnl libnet libnftnl libpcap nftables protobuf-c \
+# Semeru dependencies
+       tzdata openssl wget ca-certificates fontconfig glibc-langpack-en tar vim; \
+    dnf clean all;
+
+RUN setcap cap_checkpoint_restore+eip /usr/sbin/criu
+#RUN setcap cap_chown,cap_dac_override,cap_dac_read_search,cap_fowner,cap_fsetid,cap_kill,cap_setgid,cap_setuid,cap_setpcap,cap_net_admin,cap_sys_chroot,cap_sys_ptrace,cap_sys_admin,cap_sys_resource,cap_sys_time,cap_audit_control=eip /usr/sbin/criu
+
+COPY --chown=root:root dumb-init_1.2.5_x86_64 /usr/local/bin/dumb-init
+RUN chmod +x /usr/local/bin/dumb-init
+
+# Run ldconfig to discover newly installed shared libraries.
+RUN for dir in lib lib64 lib/x86_64-linux-gnu ; do echo /usr/local/$dir ; done > /etc/ld.so.conf.d/usr-local.conf \
+ && ldconfig
+ 
+##########################################
+# Install IBM Semeru                     #
+##########################################
+COPY --chown=root:root jdk-21.0.1+12 /home/jboss/jdk
+
+##########################################
+# Install scripts           #
+##########################################
+
+COPY --chown=jboss entry-point.sh /home/jboss/scripts/entry-point.sh
+COPY --chown=jboss checkpoint.sh /home/jboss/scripts/checkpoint.sh
+COPY --chown=jboss pidplus.sh /home/jboss/scripts/pidplus.sh
+COPY --chown=jboss restore.sh /home/jboss/scripts/restore.sh
+RUN chmod a+rx /home/jboss/scripts/*
+
+##########################################
+# Install and configure WildFly          #
+##########################################
+COPY --chown=jboss wildfly /home/jboss/wildfly
+
+RUN echo 'JAVA_OPTS="$JAVA_OPTS -XX:+EnableCRIUSupport -XX:-CRIUSecProvider"' >> /home/jboss/wildfly/bin/standalone.conf
+
+ENV JAVA_HOME=/home/jboss/jdk
+# Ensure signals are forwarded to the JVM process correctly for graceful shutdown
+ENV LAUNCH_JBOSS_IN_BACKGROUND true
+
+USER root
+ENTRYPOINT ["/home/jboss/scripts/entry-point.sh"]

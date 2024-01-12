@@ -1,13 +1,32 @@
-FROM icr.io/appcafe/ibm-semeru-runtimes:open-21-jdk-ubi9
+FROM registry.fedoraproject.org/fedora
 
 USER 0
 
-#################################################
-# Ensure the 1001 user will be able to run criu #
-#################################################
+#ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
 
-#RUN chmod ug+s /opt/criu/criu
-#RUN chmod ug+s /usr/local/sbin/criu
+RUN dnf install -y \
+       criu-devel \
+       && dnf update -y && dnf clean all
+
+RUN set -eux; \
+#        chmod u+s /usr/sbin/criu; \
+        setcap cap_checkpoint_restore,cap_sys_ptrace,cap_setpcap=eip /usr/sbin/criu; \
+        mkdir -p /opt/criu; \
+        cp /usr/sbin/criu /opt/criu/criu; \
+        setcap cap_checkpoint_restore,cap_setpcap=eip /opt/criu/criu;
+
+#RUN dnf install -y \
+#    # CRIU dependencies
+#        iptables-libs iptables jansson libibverbs libmnl libnet libnftnl libpcap nftables protobuf-c \
+#    # Semeru dependencies
+#        tzdata openssl ca-certificates fontconfig glibc-langpack-en gzip tar \
+#    && dnf update -y && dnf clean all;
+
+##########################################
+# Install IBM Semeru                     #
+##########################################
+COPY --chown=root:root jdk-21.0.1+12 /opt/jboss/jdk
+ENV JAVA_HOME=/opt/jboss/jdk
 
 ##########################################
 # Install dumb-init                      #
@@ -41,6 +60,6 @@ RUN echo 'JAVA_OPTS="$JAVA_OPTS -XX:+EnableCRIUSupport -XX:-CRIUSecProvider"' >>
 ENV LAUNCH_JBOSS_IN_BACKGROUND=true
 ENV WILDFLY_OVERRIDE_ENV_VARS=true
 
-USER 1001
+#USER 1001
 CMD [ "/bin/bash" ]
 ENTRYPOINT ["/opt/jboss/scripts/entry-point-rhel9.sh"]

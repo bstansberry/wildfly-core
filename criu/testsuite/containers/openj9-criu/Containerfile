@@ -2,12 +2,6 @@ FROM icr.io/appcafe/ibm-semeru-runtimes:open-21-jdk-ubi9
 
 USER 0
 
-#################################################
-# Ensure the 1001 user will be able to run criu #
-#################################################
-
-#RUN chmod ug+s /opt/criu/criu
-#RUN chmod ug+s /usr/local/sbin/criu
 
 ##########################################
 # Install dumb-init                      #
