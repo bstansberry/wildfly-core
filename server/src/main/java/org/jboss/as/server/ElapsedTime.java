@@ -6,7 +6,6 @@
 package org.jboss.as.server;
 
 import java.lang.management.ManagementFactory;
-import java.lang.management.RuntimeMXBean;
 import java.util.Map;
 import java.util.WeakHashMap;
 
@@ -57,20 +56,28 @@ public final class ElapsedTime {
      * @return the elapsed time
      */
     public long getElapsedTime() {
-        return startTime == null ? ManagementFactory.getRuntimeMXBean().getUptime() : System.currentTimeMillis() - startTime;
+        return System.currentTimeMillis() - getStartTime();
     }
 
     /**
-     * Reset this tracker to begin tracking from the {@link RuntimeMXBean#getStartTime() JVM start time}.
+     * Reset this tracker to begin tracking from the {@link System#currentTimeMillis()} current time}.
      * Any ElapsedTime objects that were returned from this object's {@link #checkpoint()} method will also be reset.
      * Meant for cases where the 'origin' moment may have changed and this tracker should be updated accordingly --
      * for example, in a 'restored' JVM that supports some form of checkpoint and restore behavior.
      */
     public synchronized void reset() {
-        startTime = null;
+        // following a CRIU restore, at least on OpenJ9, the VM start time and uptime
+        // from RuntimeMXBean don't seem to reflect when the restore happened.
+        // So all we can do is reset to the current time and ignore the primordial VM start/restore time before we are called
+        reset(System.currentTimeMillis());
+    }
+
+    private synchronized void reset(Long startTime) {
+        this.startTime = startTime;
         for (ElapsedTime checkpoint : checkpoints.keySet()) {
-            checkpoint.reset();
+            checkpoint.reset(startTime);
         }
+
     }
 
     /**
