@@ -106,21 +106,53 @@ public class LayersTestCase {
         }
     }
 
+    /**
+     * Checks that all modules in the @{code test-standalone-reference} installation are referenced from
+     * the installation root module or extension modules configured in standalone.xml, except those
+     * included in the {@link #NOT_USED} and {@link #NOT_USED_OR_REFERENCED} sets. The goal of this test
+     * is to prevent the accumulation of 'orphaned' modules that are not usable.
+     *
+     * @throws Exception on failure
+     */
     @Test
     public void testLayersModuleUse() throws Exception {
         LayersTest.testLayersModuleUse(LayersTest.concatArrays(NOT_USED_OR_REFERENCED, NOT_USED), scanContext);
     }
 
+    /**
+     * Checks that all modules that were provisioned in the @{code test-standalone-reference} installation are also
+     * provisioned in @{test-all-layers}, except those included in the {@link #NOT_REFERENCED} and
+     * {@link #NOT_USED_OR_REFERENCED} sets. The goals of this test are to check for new modules that should be provided
+     * by layers but currently are not and to encourage inclusion of existing modules not used in a layer to have an
+     * associated layer.
+     *
+     * @throws Exception on failure
+     */
     @Test
     public void testUnreferencedModules() throws Exception {
         LayersTest.testUnreferencedModules(LayersTest.concatArrays(NOT_USED_OR_REFERENCED, NOT_REFERENCED), scanContext);
     }
 
+    /**
+     * Checks that the installations found in the given {@code layers.install.root} directory can all be started
+     * without errors, i.e. with the {@code WFLYSRV0025} log message in the server's stdout stream.
+     * <p>
+     * The @{code test-standalone-reference} installation is not tested as that kind of installation is heavily
+     * tested elsewhere.
+     *
+     * @throws Exception on failure
+     */
     @Test
     public void testLayersBoot() throws Exception {
         LayersTest.testLayersBoot(root);
     }
 
+    /**
+     * Checks that none of the installations found in the given {@code layers.install.root} directory include modules
+     * marked as 'banned'.
+     *
+     * @throws Exception on failure
+     */
     @Test
     public void checkBannedModules() throws Exception {
         HashMap<String, String> results = LayersTest.checkBannedModules(root, BANNED_MODULES_CONF);

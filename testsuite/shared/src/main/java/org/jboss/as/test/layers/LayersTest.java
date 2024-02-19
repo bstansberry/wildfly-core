@@ -51,7 +51,7 @@ public class LayersTest {
     private static final boolean VALIDATE_INPUTS = Boolean.parseBoolean(System.getProperty("org.wildfly.layers.test.validate-inputs", "true"));
 
     private static final String MAVEN_REPO_LOCAL = "maven.repo.local";
-    /** The name of the directory that contains the installation that was provisioned to
+    /** The name of the directory that contains the installation that was provisioned
      *  to provide the feature pack's OOTB standalone.xml and its requirements.*/
     public static final String REFERENCE = "test-standalone-reference";
     /** The name of the directory that contains the installation that was provisioned to
@@ -59,35 +59,6 @@ public class LayersTest {
     public static final String ALL_LAYERS = "test-all-layers";
     private static final String END_LOG_SUCCESS = "WFLYSRV0025";
     private static final String END_LOG_FAILURE = "WFLYSRV0026";
-
-    /**
-     * Scan and check an installation.
-     * @param root Path to installation
-     * @param unreferenced The set of modules that are present in a default installation (with all modules
-     * installed) but are not referenced from the module graph. They are not referenced because they are not used,
-     * or they are only injected at runtime into deployment unit or are part of extension not present in the
-     * default configuration (eg: deployment-scanner in core standalone.xml configuration). We are checking that
-     * the default configuration (that contains all modules) doesn't have more unreferenced modules than this set. If
-     * there are more it means that some new modules have been introduced and we must understand why (eg: a subsystem inject
-     * a new module into a Deployment Unit, the subsystem must advertise it and the test must be updated with this new unreferenced module).
-     * @param unused The set of modules that are OK to not be provisioned when all layers are provisioned.
-     * If more modules than this set are not provisioned, it means that we are missing some modules and
-     * an error occurs.
-     * @throws Exception on failure
-     *
-     * @see #testLayersBoot(String)
-     * @see #testLayersModuleUse(Set, ScanContext)
-     * @see #testUnreferencedModules(Set, ScanContext)
-     *
-     * @deprecated the method aggregates the other public test methods, which should be used directly
-     */
-    @Deprecated(forRemoval = true)
-    public static void test(String root, Set<String> unreferenced, Set<String> unused) throws Exception {
-        testLayersBoot(root);
-        ScanContext context = new ScanContext(root);
-        testLayersModuleUse(unused, context);
-        testUnreferencedModules(unreferenced, context);
-    }
 
     /**
      * Checks that all modules that were provisioned in the @{code test-standalone-reference} installation
@@ -243,19 +214,11 @@ public class LayersTest {
 
     }
 
-    /**
-     * @deprecated use {@link #testLayersBoot(String)}; this method just calls that one.
-     */
-    @Deprecated(forRemoval = true)
-    public static void testExecution(String root) throws Exception {
-        testLayersBoot(root);
-    }
-
 
     /**
      * Checks that the installations found in the given {@code root} directory can all be started without errors, i.e.
      * with the {@code WFLYSRV0025} log message in the server's stdout stream.
-     *
+     * <p>
      * The @{code test-standalone-reference} installation is not tested as that kind of installation is heavily
      * tested elsewhere.
      *
