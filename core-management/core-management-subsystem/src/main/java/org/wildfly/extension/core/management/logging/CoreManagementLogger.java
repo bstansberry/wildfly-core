@@ -30,6 +30,7 @@ public interface CoreManagementLogger extends BasicLogger {
      * A logger with a category of the package name.
      */
     CoreManagementLogger ROOT_LOGGER = Logger.getMessageLogger(MethodHandles.lookup(), CoreManagementLogger.class, "org.wildfly.extension.core.management");
+    CoreManagementLogger VIRTUAL_THREAD_LOGGER = Logger.getMessageLogger(MethodHandles.lookup(), CoreManagementLogger.class, "org.wildfly.extension.core.management.virtual.thread");
 
     CoreManagementLogger UNSUPPORTED_ANNOTATION_LOGGER = Logger.getMessageLogger(MethodHandles.lookup(), CoreManagementLogger.class, "org.wildfly.annotation.unsupported");
 
