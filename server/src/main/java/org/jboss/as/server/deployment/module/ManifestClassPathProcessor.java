@@ -16,6 +16,8 @@ import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
+import org.jboss.as.server.deployment.AttachmentKey;
+import org.jboss.as.server.deployment.AttachmentList;
 import org.jboss.as.server.logging.ServerLogger;
 import org.jboss.as.server.deployment.Attachable;
 import org.jboss.as.server.deployment.Attachments;
@@ -55,6 +57,11 @@ import org.jboss.vfs.VirtualFile;
  * @author Ales Justin
  */
 public final class ManifestClassPathProcessor implements DeploymentUnitProcessor {
+
+    /**
+     * Module identifiers for Class-Path information.
+     */
+    static final AttachmentKey<AttachmentList<String>> CLASS_PATH_MODULES = AttachmentKey.createList(String.class);
 
     private static final String[] EMPTY_STRING_ARRAY = {};
 
@@ -147,7 +154,7 @@ public final class ManifestClassPathProcessor implements DeploymentUnitProcessor
                 if (item.startsWith("/")) {
                     if (externalModuleService.isValidFile(item)) {
                         final ModuleIdentifier moduleIdentifier = externalModuleService.addExternalModule(item, phaseContext.getServiceRegistry(), externalServiceTarget);
-                        target.addToAttachmentList(Attachments.CLASS_PATH_ENTRIES, moduleIdentifier);
+                        target.addToAttachmentList(CLASS_PATH_MODULES, moduleIdentifier.toString());
                         ServerLogger.DEPLOYMENT_LOGGER.debugf("Resource %s added as external jar %s", classPathFile, resourceRoot.getRoot());
                     } else {
                         ServerLogger.DEPLOYMENT_LOGGER.classPathEntryNotValid(item, resourceRoot.getRoot().getPathName());
@@ -196,16 +203,16 @@ public final class ManifestClassPathProcessor implements DeploymentUnitProcessor
         } else if (additionalModules.containsKey(classPathFile)) {
             final AdditionalModuleSpecification moduleSpecification = additionalModules.get(classPathFile);
             //as class path entries are exported, transitive dependencies will also be available
-            target.addToAttachmentList(Attachments.CLASS_PATH_ENTRIES, moduleSpecification.getModuleIdentifier());
+            target.addToAttachmentList(CLASS_PATH_MODULES, moduleSpecification.getModuleName());
         } else if (subDeployments.containsKey(classPathFile)) {
             //now we need to calculate the sub deployment module identifier
             //unfortunately the sub deployment has not been setup yet, so we cannot just
             //get it from the sub deployment directly
             final ResourceRoot otherRoot = subDeployments.get(classPathFile);
-            target.addToAttachmentList(Attachments.CLASS_PATH_ENTRIES, ModuleIdentifierProcessor.createModuleIdentifier(otherRoot.getRootName(), otherRoot, topLevelDeployment, topLevelRoot, false));
+            target.addToAttachmentList(CLASS_PATH_MODULES, ModuleIdentifierProcessor.createModuleIdentifier(otherRoot.getRootName(), otherRoot, topLevelDeployment, topLevelRoot, false).toString());
         } else {
             ModuleIdentifier identifier = createAdditionalModule(resourceRoot, topLevelDeployment, topLevelRoot, additionalModules, classPathFile, resourceRoots);
-            target.addToAttachmentList(Attachments.CLASS_PATH_ENTRIES, identifier);
+            target.addToAttachmentList(CLASS_PATH_MODULES, identifier.toString());
         }
     }
 
