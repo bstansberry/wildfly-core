@@ -14,6 +14,10 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
 
 import org.jboss.as.controller.client.MessageSeverity;
 import org.jboss.as.controller.client.ModelControllerClient;
@@ -82,29 +86,29 @@ public abstract class AbstractModelControllerClient implements ModelControllerCl
     }
 
     @Override
-    public AsyncFuture<ModelNode> executeAsync(final ModelNode operation, final OperationMessageHandler messageHandler) {
+    public CompletableFuture<ModelNode> executeAsync(final ModelNode operation, final OperationMessageHandler messageHandler) {
         try {
-            final AsyncFuture<OperationResponse> delegate = execute(OperationExecutionContext.create(operation, messageHandler));
-            return new ConvertingDelegatingAsyncFuture(delegate);
+            return execute(OperationExecutionContext.create(operation, messageHandler),
+                    AbstractModelControllerClient::responseNodeOnlyWitRuntimeException);
         } catch (IOException e)  {
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    public AsyncFuture<ModelNode> executeAsync(final Operation operation, final OperationMessageHandler messageHandler) {
+    public CompletableFuture<ModelNode> executeAsync(final Operation operation, final OperationMessageHandler messageHandler) {
         try {
-            final AsyncFuture<OperationResponse> delegate = execute(OperationExecutionContext.create(operation, messageHandler));
-            return new ConvertingDelegatingAsyncFuture(delegate);
+            return execute(OperationExecutionContext.create(operation, messageHandler),
+                    AbstractModelControllerClient::responseNodeOnlyWitRuntimeException);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    public AsyncFuture<OperationResponse> executeOperationAsync(Operation operation, OperationMessageHandler messageHandler) {
+    public CompletableFuture<OperationResponse> executeOperationAsync(Operation operation, OperationMessageHandler messageHandler) {
         try {
-            return execute(OperationExecutionContext.create(operation, messageHandler));
+            return execute(OperationExecutionContext.create(operation, messageHandler), AbstractModelControllerClient::identity);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -130,10 +134,14 @@ public abstract class AbstractModelControllerClient implements ModelControllerCl
      */
     private OperationResponse executeForResult(final OperationExecutionContext executionContext) throws IOException {
         try {
-            return execute(executionContext).get();
+            return execute(executionContext, AbstractModelControllerClient::identity).get();
         } catch(Exception e) {
             throw new IOException(e);
         }
+    }
+
+    private static OperationResponse identity(OperationResponse operationResponse) {
+        return operationResponse;
     }
 
     /** Extracts the response node from an OperationResponse and returns it after first closing the OperationResponse */
@@ -143,6 +151,14 @@ public abstract class AbstractModelControllerClient implements ModelControllerCl
         return result;
     }
 
+    private static ModelNode responseNodeOnlyWitRuntimeException(OperationResponse or) {
+        try {
+            return responseNodeOnly(or);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
      * Execute a request.
      *
@@ -150,7 +166,8 @@ public abstract class AbstractModelControllerClient implements ModelControllerCl
      * @return the future result
      * @throws IOException
      */
-    private AsyncFuture<OperationResponse> execute(final OperationExecutionContext executionContext) throws IOException {
+    private <T> CompletableFuture<T> execute(final OperationExecutionContext executionContext,
+                                             Function<OperationResponse, T> transformer) throws IOException {
         return executeRequest(new AbstractManagementRequest<OperationResponse, OperationExecutionContext>() {
 
             @Override
@@ -183,7 +200,7 @@ public abstract class AbstractModelControllerClient implements ModelControllerCl
                 resultHandler.done(getOperationResponse(node, context.getOperationId()));
                 expectHeader(input, ManagementProtocol.RESPONSE_END);
             }
-        }, executionContext);
+        }, executionContext, transformer);
     }
 
     private static class ReadAttachmentInputStreamRequestHandler implements ManagementRequestHandler<ModelNode, OperationExecutionContext> {
@@ -245,9 +262,47 @@ public abstract class AbstractModelControllerClient implements ModelControllerCl
 
     }
 
-    protected AsyncFuture<OperationResponse> executeRequest(final ManagementRequest<OperationResponse, OperationExecutionContext> request, final OperationExecutionContext attachment) throws IOException {
+    protected <T> CompletableFuture<T> executeRequest(final ManagementRequest<OperationResponse, OperationExecutionContext> request,
+                                                      final OperationExecutionContext attachment,
+                                                      final Function<OperationResponse, T> transformer) throws IOException {
         final ActiveOperation<OperationResponse, OperationExecutionContext> support = getChannelAssociation().executeRequest(request, attachment, attachment);
-        return new DelegatingCancellableAsyncFuture(support.getResult(), support.getOperationId());
+
+        // Use an AsyncFuture.Listener to complete a CompletableFuture
+        final CompletableFuture<OperationResponse> initial = new CompletableFuture<>();
+        support.getResult().addListener(new AsyncFuture.Listener<>() {
+            @Override
+            public void handleComplete(AsyncFuture<? extends OperationResponse> future, CompletableFuture<OperationResponse> attachment) {
+                try {
+                    attachment.complete(future.get());
+                } catch (InterruptedException | ExecutionException e) {
+                    attachment.completeExceptionally(e);
+                }
+            }
+
+            @Override
+            public void handleFailed(AsyncFuture<? extends OperationResponse> future, Throwable cause, CompletableFuture<OperationResponse> attachment) {
+                attachment.completeExceptionally(cause);
+            }
+
+            @Override
+            public void handleCancelled(AsyncFuture<? extends OperationResponse> future, CompletableFuture<OperationResponse> attachment) {
+                attachment.cancel(true);
+            }
+        }, initial);
+
+        // transform the OperationResponse from the initial CompletionStage, if necessary.
+        // In case of cancellation, send a cancellation request
+        return initial
+                .thenApply(transformer)
+                .whenComplete((result, failure) -> {
+            if (failure instanceof CancellationException) {
+                try {
+                    getChannelAssociation().executeRequest(support.getOperationId(), new CancelAsyncRequest());
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
     }
 
     static class OperationExecutionContext implements ActiveOperation.CompletedCallback<OperationResponse> {
