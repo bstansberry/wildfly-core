@@ -124,6 +124,8 @@
 
         <!-- Non-default maven plugin versions and configuration -->
         <version.buildhelper.plugin>3.4.0</version.buildhelper.plugin>
+        <!-- maven-gpg-plugin. TODO remove when jboss-parent uses 3.2.8 or later -->
+        <version.gpg.plugin>3.2.8</version.gpg.plugin>
         <version.jacoco.plugin>0.8.10</version.jacoco.plugin>
         <version.org.jboss.galleon>6.0.6.Final</version.org.jboss.galleon>
         <version.org.wildfly.checkstyle-config>1.0.8.Final</version.org.wildfly.checkstyle-config>
