@@ -362,8 +362,8 @@
 
                 <!-- Don't sign - nothing to do. -->
                 <plugin>
-                    <groupId>org.wildfly</groupId>
-                    <artifactId>wildfly-maven-gpg-plugin</artifactId>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-gpg-plugin</artifactId>
                     <executions><execution><id>default</id><phase>none</phase></execution></executions>
                 </plugin>
             </plugins>
