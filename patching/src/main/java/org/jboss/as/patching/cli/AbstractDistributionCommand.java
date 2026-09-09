@@ -176,10 +176,12 @@ public abstract class AbstractDistributionCommand implements Command<CLICommandI
 
     @Override
     public CommandResult execute(CLICommandInvocation commandInvocation) throws CommandException, InterruptedException {
-        if (host != null && !commandInvocation.getCommandContext().isDomainMode()) {
-            throw new CommandException("The --host option is not available in the current context. "
-                    + "Connection to the controller might be unavailable or not running in domain mode.");
-        } else if (host == null && commandInvocation.getCommandContext().isDomainMode()) {
+        // All impls of this class should use an activator that requires domain mode
+        assert commandInvocation.getCommandContext().isDomainMode() : "patch commands require connection to a domain mode Host Controller";
+        // Knowing the target is a domain mode process requires a connection, which means we have a client
+        assert commandInvocation.getCommandContext().getModelControllerClient() != null : "unexpected domain mode context with no client";
+
+        if (host == null && commandInvocation.getCommandContext().isDomainMode()) {
             throw new CommandException("The --host option must be used in domain mode.");
         }
 
@@ -235,34 +237,21 @@ public abstract class AbstractDistributionCommand implements Command<CLICommandI
     protected abstract PatchOperationBuilder createPatchOperationBuilder(CommandContext ctx) throws CommandException;
 
     PatchOperationTarget createPatchOperationTarget(CommandContext ctx) throws CommandException {
-        final PatchOperationTarget target;
-        final ParsedCommandLine args = ctx.getParsedCommandLine();
-        if (ctx.getModelControllerClient() != null) {
-            if (distribution != null) {
-                throw new CommandException("--distribution is not allowed when connected to the controller.");
-            }
-            if (modulePath != null) {
-                throw new CommandException("--module-path is not allowed when connected to the controller.");
-            }
-            if (bundlePath != null) {
-                throw new CommandException("--bundle-path is not allowed when connected to the controller.");
-            }
-            if (ctx.isDomainMode()) {
-                target = PatchOperationTarget.createHost(host, ctx.getModelControllerClient());
-            } else {
-                target = PatchOperationTarget.createStandalone(ctx.getModelControllerClient());
-            }
-        } else {
-            final File root = getJBossHome();
-            final List<File> modules = getFSArgument(modulePath, args, root, "modules");
-            final List<File> bundles = getFSArgument(bundlePath, args, root, "bundles");
-            try {
-                target = PatchOperationTarget.createLocal(root, modules, bundles);
-            } catch (Exception e) {
-                throw new CommandException("Unable to apply patch to local JBOSS_HOME=" + root, e);
-            }
+        // All impls of this class should use an activator that requires domain mode
+        assert ctx.isDomainMode() : "patch commands require connection to a domain mode Host Controller";
+        // Knowing the target is a domain mode process requires a connection, which means we have a client
+        assert ctx.getModelControllerClient() != null : "unexpected domain mode context with no client";
+
+        if (distribution != null) {
+            throw new CommandException("--distribution is not allowed when connected to the controller.");
         }
-        return target;
+        if (modulePath != null) {
+            throw new CommandException("--module-path is not allowed when connected to the controller.");
+        }
+        if (bundlePath != null) {
+            throw new CommandException("--bundle-path is not allowed when connected to the controller.");
+        }
+        return PatchOperationTarget.createHost(host, ctx.getModelControllerClient());
     }
 
     private static final String HOME = "JBOSS_HOME";
@@ -304,26 +293,27 @@ public abstract class AbstractDistributionCommand implements Command<CLICommandI
     }
 
     private void verifyManagementVersion(CLICommandInvocation commandInvocation) throws IOException, CommandException {
-        if (commandInvocation.getCommandContext().isDomainMode()) {
-            // Check the host version to know whether we are allowed to use the command.
-            // Notice the /host=*/core-service=pathing resource won't be available if we do not allow using patching
-            // here we decided to read the host version which is more accurate to do this check.
+        // All impls of this class should use an activator that requires domain mode
+        assert commandInvocation.getCommandContext().isDomainMode() : "patch commands require connection to a domain mode Host Controller";
 
-            ModelControllerClient client = commandInvocation.getCommandContext().getModelControllerClient();
-            commandInvocation.getCommandContext().getModelControllerClient();
-            ModelNode op = new ModelNode();
-            PathAddress address = PathAddress.pathAddress(PathElement.pathElement(HOST, host));
-            op.get(Util.ADDRESS).set(address.toModelNode());
-            op.get(Util.OPERATION).set(ModelDescriptionConstants.QUERY);
-            ModelNode select = new ModelNode().addEmptyList();
-            select.add(MANAGEMENT_MAJOR_VERSION);
-            op.get(SELECT).set(select);
-            ModelNode response = client.execute(op);
-            int major = response.get(RESULT, MANAGEMENT_MAJOR_VERSION).asInt();
-            if (major > 20) {
-                // patch tool unsupported
-                throw new CommandException("The 'patch' command is not supported on this host controller. For the '" + host + "' host you have to use the '" + InstMgrGroupCommand.COMMAND_NAME + "' tool instead.");
-            }
+        // Check the host version to know whether we are allowed to use the command.
+        // Notice the /host=*/core-service=pathing resource won't be available if we do not allow using patching
+        // here we decided to read the host version which is more accurate to do this check.
+
+        ModelControllerClient client = commandInvocation.getCommandContext().getModelControllerClient();
+        commandInvocation.getCommandContext().getModelControllerClient();
+        ModelNode op = new ModelNode();
+        PathAddress address = PathAddress.pathAddress(PathElement.pathElement(HOST, host));
+        op.get(Util.ADDRESS).set(address.toModelNode());
+        op.get(Util.OPERATION).set(ModelDescriptionConstants.QUERY);
+        ModelNode select = new ModelNode().addEmptyList();
+        select.add(MANAGEMENT_MAJOR_VERSION);
+        op.get(SELECT).set(select);
+        ModelNode response = client.execute(op);
+        int major = response.get(RESULT, MANAGEMENT_MAJOR_VERSION).asInt();
+        if (major > 20) {
+            // patch tool unsupported
+            throw new CommandException("The 'patch' command is not supported on this host controller. For the '" + host + "' host you have to use the '" + InstMgrGroupCommand.COMMAND_NAME + "' tool instead.");
         }
     }
 }
