@@ -13,7 +13,6 @@ import java.io.SyncFailedException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 
-import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.patching.ContentConflictsException;
 import org.jboss.as.patching.PatchingException;
 import org.jboss.as.patching.metadata.ContentItem;
@@ -140,14 +139,14 @@ public interface PatchLogger extends BasicLogger {
 //    @Message(id = 22, value = "Cannot complete operation. Patch '%s' is currently active")
 //    OperationFailedException patchActive(String patchId);
 
-    @Message(id = 23, value = "Failed to show history of patches")
-    OperationFailedException failedToShowHistory(@Cause Throwable cause);
+//    @Message(id = 23, value = "Failed to show history of patches")
+//    OperationFailedException failedToShowHistory(@Cause Throwable cause);
 
-    @Message(id = 24, value = "Unable to apply or rollback a patch when the server is in a restart-required state.")
-    OperationFailedException serverRequiresRestart();
+//    @Message(id = 24, value = "Unable to apply or rollback a patch when the server is in a restart-required state.")
+//    OperationFailedException serverRequiresRestart();
 
-    @Message(id = 25, value = "failed to load identity info")
-    String failedToLoadIdentity();
+//    @Message(id = 25, value = "failed to load identity info")
+//    String failedToLoadIdentity();
 
     @Message(id = 26, value = "No more patches")
     String noMorePatches();
@@ -217,12 +216,12 @@ public interface PatchLogger extends BasicLogger {
     @Message(id = 47, value = "Cannot copy files from %s to %s: %s")
     IOException cannotCopyFiles(String from, String to, String reason, @Cause Throwable cause);
 
-    @LogMessage(level = ERROR)
-    @Message(id = 48, value = "Error when restoring file[%s] - %s")
-    void deleteRollbackError(String path, String message);
+//    @LogMessage(level = ERROR)
+//    @Message(id = 48, value = "Error when restoring file[%s] - %s")
+//    void deleteRollbackError(String path, String message);
 
-    @Message(id = 49, value = "Some backup files were not removed.")
-    IOException failedToDeleteBackup();
+//    @Message(id = 49, value = "Some backup files were not removed.")
+//    IOException failedToDeleteBackup();
 
     @LogMessage(level = Level.INFO)
     @Message(id = 50, value = "%s cumulative patch ID is: %s, one-off patches include: %s")
